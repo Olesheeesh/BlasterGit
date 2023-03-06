@@ -25,6 +25,7 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastHit();
 
+	virtual void OnRep_ReplicatedMovement() override;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -104,7 +105,13 @@ private:
 	bool bPlayMontage = true;
 
 	bool bRotateRootBone;
-
+	float TurnThreshold = 1;
+	//Proxy
+	FRotator ProxyRotationLastFrame;
+	FRotator ProxyRotation;
+	float ProxyYaw;
+	float TimeSinceLastMovementReplication;
+	float CalculateSpeed();
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);

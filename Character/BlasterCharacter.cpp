@@ -69,15 +69,22 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UELogInfo(GetCharacterMovement()->Velocity.Length());
+	UELogInfo(CalculateSpeed());
 
-	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy)
+	//Both characters on the server have local role "Authority"
+	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
+	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
 	{
 		AimOffset(DeltaTime);
 	}
-	else //Is a simulatedProxy
+	else
 	{
-		SimProxiesTurn();
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
 	}
 
 	HideCharacterWhenCameraClose();
@@ -111,6 +118,15 @@ void ABlasterCharacter::PostInitializeComponents()
 	{
 		Combatt->Character = this;
 	}
+}
+
+void ABlasterCharacter::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+
+	SimProxiesTurn();
+
+	TimeSinceLastMovementReplication = 0.f;
 }
 
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
@@ -159,7 +175,6 @@ void ABlasterCharacter::MoveForward(float Value)
 			isMovingRight = false;
 		}
 	}
-	
 }
 
 void ABlasterCharacter::MoveRight(float Value)
@@ -187,12 +202,12 @@ void ABlasterCharacter::EquipButtonPressed()
 {
 	if(Combatt)
 	{
-		if (HasAuthority()) {
+		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
 		}
 		else
 		{
-		ServerEquipButtonPressed();
+			ServerEquipButtonPressed();
 		}
 	}
 }
@@ -214,6 +229,18 @@ void ABlasterCharacter::CrouchButtonPressed()
 	else 
 	{
 		Crouch();
+	}
+}
+
+void ABlasterCharacter::Jump()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Super::Jump();
 	}
 }
 
@@ -289,9 +316,9 @@ void ABlasterCharacter::ServerSetSprint_Implementation(bool bIsSprinting)
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
 	if (Combatt && Combatt->EquippedWeapon == nullptr) return;
-	FVector Velocity = GetVelocity();
-	Velocity.Z = 0.f;
-	float Speed = Velocity.Size();
+
+	float Speed = CalculateSpeed();
+
 	bool bIsInAir = GetCharacterMovement()->IsFalling();
 
 	if(Speed == 0.f && !bIsInAir)//can AimOffset while Standing still && not jumping
@@ -335,20 +362,35 @@ void ABlasterCharacter::SimProxiesTurn()
 	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
 
 	bRotateRootBone = false;
+	float Speed = CalculateSpeed();
 
-	CalculateAO_Pitch();
-}
+	if(Speed > 0.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
 
-void ABlasterCharacter::Jump()
-{
-	if(bIsCrouched)
+	ProxyRotationLastFrame = ProxyRotation;
+	ProxyRotation = GetActorRotation();
+	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw;
+
+	if(FMath::Abs(ProxyYaw) > TurnThreshold)
 	{
-		UnCrouch();
+		if(ProxyYaw > TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Right;
+		}
+		else if (ProxyYaw < -TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Left;
+		}
+		else
+		{
+			TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		}
+		return;
 	}
-	else
-	{
-		Super::Jump();
-	}
+	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
@@ -451,6 +493,13 @@ FVector ABlasterCharacter::GetHitTarget() const
 {
 	if(Combatt == nullptr) return FVector();
 	return Combatt->HitTarget;
+}
+
+float ABlasterCharacter::CalculateSpeed()
+{
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	return Velocity.Size();
 }
 
 void ABlasterCharacter::UELogInfo(float Value)
