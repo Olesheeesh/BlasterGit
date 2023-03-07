@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "BlasterCharacter.h"
 #include "Blaster/BlaserComponents/CombatComponent.h"
 #include "Blaster/Weapon/Weapon.h"
@@ -14,7 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "BlasterAnimInstance.h"
 #include "Blaster/Blaster.h"
-
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() //Constructor
@@ -69,9 +65,8 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (ProxyYaw != 0.f) {
-		UELogInfo(FMath::Abs(ProxyYaw));
-	}
+	UELogInfo(Combatt->bCanFire);
+	UE_LOG(LogTemp, Warning, TEXT("bFireButtinPressed: %d"), Combatt->bFireButtonPressed);
 
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
@@ -107,7 +102,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ABlasterCharacter::CrouchButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ABlasterCharacter::AimButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ABlasterCharacter::AimButtonReleased);
-	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ABlasterCharacter::FireButtonPressed);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ABlasterCharacter::FireButtonPressed);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ABlasterCharacter::FireButtonReleased);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ABlasterCharacter::SprintButtonPressed);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ABlasterCharacter::SprintButtonReleased);

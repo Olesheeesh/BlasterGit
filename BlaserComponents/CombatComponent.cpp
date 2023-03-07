@@ -12,9 +12,10 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "DrawDebugHelpers.h"
 #include "ParameterCollection.h"
-//#include "Blaster/HUD/BlasterHUD.h"
 #include "Camera/CameraComponent.h"
-// Sets default values for this component's properties
+#include "TimerManager.h"
+
+
 UCombatComponent::UCombatComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -22,7 +23,6 @@ UCombatComponent::UCombatComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 }
-
 
 void UCombatComponent::BeginPlay()
 {
@@ -42,20 +42,103 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 		FHitResult HitResult;
 		TraceUnderCrosshairs(HitResult);
 		HitTarget = HitResult.ImpactPoint; //точка попадани€
-		SetHUDCrosshairs(DeltaTime);
+		SetHUDCrosshairs(DeltaTime, HitResult);
 		InterpFOV(DeltaTime);
 	}
 }
 
-void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
+void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (Character == nullptr || Character->Controller == nullptr) return;//so we can acces controller via character
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, bAiming);
+}
+
+void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
+{
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
+	EquippedWeapon = WeaponToEquip;
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+	if (HandSocket)
+	{
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());//attaching weapon to a socket
+	}
+	EquippedWeapon->SetOwner(Character);
+	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Character->bUseControllerRotationYaw = true;
+}
+
+bool UCombatComponent::GetIsSprinting(bool isSprinting)
+{
+	if(Character && Character->GetVelocity().Length() > Character->GetBaseSpeed() + 1.f)
+	{
+		bSprinting = isSprinting;
+	}
+	else
+	{
+		bSprinting = !isSprinting;
+	}
+	return bSprinting;
+}
+
+void UCombatComponent::InterpFOV(float DeltaTime)
+{
+	if (EquippedWeapon == nullptr) return; // if dont have EquippedWeapon - return of of this function
+	if(bAiming)
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());//how fast zoom when aiming
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFov, DeltaTime, UnZoomInterpSpeed);//EquippedWeapon->GetZoomedFOV()-заменить на CurrentFOV
+	}
+
+	if(Character && Character->GetFollowCamera())
+	{
+		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+	}
+}
+
+void UCombatComponent::SetAiming(bool bIsAiming)
+{
+	bAiming = bIsAiming;//дл€ теб€ в аиме
+	ServerSetAiming(bIsAiming);//передаЄт инфу серверу и остальным клиентам
+	if(Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)//реплицирует информацию всем клиентам
+{
+	bAiming = bIsAiming;
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	if(EquippedWeapon && Character)
+	{
+		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+		Character->bUseControllerRotationYaw = true;
+	}
+}
+
+void UCombatComponent::SetHUDCrosshairs(float DeltaTime, FHitResult& TraceHitResult)
+{
+	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
 
 	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller; //if Controller !null -> equel to itself
-	if(Controller)//check if is valid
+	if (Controller)//check if is valid
 	{
 		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(дл€ подстраховки/дл€ избежани€ багов)
-		if(HUD)
+		if (HUD)
 		{
 			if (EquippedWeapon)
 			{
@@ -92,7 +175,7 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);//возвращаетс€ в исходное сост.
 			}
 
-			if(bAiming)
+			if (bAiming)
 			{
 				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaTime, 30.f);
 			}
@@ -104,86 +187,28 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0, DeltaTime, 20.f);
 
 			HUDPackage.CrosshairSpread =
-				0.5f +
-				CrosshairVelocityFactor + 
-				CrosshairInAirFactor - 
+				0.65f +
+				CrosshairVelocityFactor +
+				CrosshairInAirFactor -
 				CrosshairAimFactor +
 				CrosshairShootingFactor;
+
+			if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairsInterface>())
+			{
+				HUDPackage.CrosshairsColor = FLinearColor::Red;
+				HUDPackage.CrosshairSpread -= 0.15f;
+			}
+			else
+			{
+				HUDPackage.CrosshairsColor = FLinearColor::White;
+			}
 
 			HUD->SetHUDPackage(HUDPackage);
 		}
 	}
-
 }
 
-bool UCombatComponent::GetIsSprinting(bool isSprinting)
-{
-	if(Character && Character->GetVelocity().Length() > Character->GetBaseSpeed() + 1.f)
-	{
-		bSprinting = isSprinting;
-	}
-	else
-	{
-		bSprinting = !isSprinting;
-	}
-	return bSprinting;
-}
-
-void UCombatComponent::InterpFOV(float DeltaTime)
-{
-	if (EquippedWeapon == nullptr) return; // if dont have EquippedWeapon - return of of this function
-	if(bAiming)
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());//how fast zoom when aiming
-	}
-	else
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFov, DeltaTime, UnZoomInterpSpeed);//EquippedWeapon->GetZoomedFOV()-заменить на CurrentFOV
-	}
-
-	if(Character && Character->GetFollowCamera())
-	{
-		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
-	}
-}
-
-void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
-	DOREPLIFETIME(UCombatComponent, bAiming);
-}
-
-void UCombatComponent::SetAiming(bool bIsAiming)
-{
-	bAiming = bIsAiming;//дл€ теб€ в аиме
-	ServerSetAiming(bIsAiming);//передаЄт инфу серверу и остальным клиентам
-	if(Character)
-	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
-}
-
-void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)//реплицирует информацию всем клиентам
-{
-	bAiming = bIsAiming;
-	if (Character)
-	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
-}
-
-void UCombatComponent::OnRep_EquippedWeapon()
-{
-	if(EquippedWeapon && Character)
-	{
-		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-		Character->bUseControllerRotationYaw = true;
-	}
-}
-
-void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult) //tracing projectile
 {
 	FVector2D ViewportSize;
 	if(GEngine && GEngine->GameViewport)
@@ -192,18 +217,18 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	}
 
 	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f); //Set crosshair position to center
-	FVector CrosshairWorldPosiotion;//пустой вектор
+	FVector CrosshairWorldPosition;//пустой вектор
 	FVector CrosshairWorldDirection;//пустой вектор
 	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
 		UGameplayStatics::GetPlayerController(this, 0),
 		CrosshairLocation,
-		CrosshairWorldPosiotion,//заполн€ем вектор 3D координатами
+		CrosshairWorldPosition,//заполн€ем вектор 3D координатами
 		CrosshairWorldDirection//заполн€ем вектор 3D координатами
 	);
 
 	if(bScreenToWorld)//if DeprojectScreenToWorld was success
 	{
-		FVector Start = CrosshairWorldPosiotion;//–асположение прицела
+		FVector Start = CrosshairWorldPosition;//–асположение прицела
 
 		if(Character)//фикс бага, когда прицел сталкиваетс€ с объектами за спиной у character
 		{
@@ -219,35 +244,33 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 			End,
 			ECollisionChannel::ECC_Visibility
 		);
-
-		if(TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UInteractWithCrosshairsInterface>())
-		{
-			HUDPackage.CrosshairsColor = FLinearColor::Red;
-		}
-		else
-		{
-			HUDPackage.CrosshairsColor = FLinearColor::White;
-		}
 	}
 }
-
 
 void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
-	if (bFireButtonPressed && GetIsSprinting(false))
+	if (bFireButtonPressed && EquippedWeapon && GetIsSprinting(false))
 	{
-		FHitResult HitResult;//HitResult
-		TraceUnderCrosshairs(HitResult);
-		ServerFire(HitResult.ImpactPoint);
-
-		if(EquippedWeapon)
-		{
-			CrosshairShootingFactor = 0.75f;
-		}
+		Fire();
 	}
 }
 
+void UCombatComponent::Fire()
+{
+	if (EquippedWeapon == nullptr || GetIsSprinting(true)) return;
+
+	if (bCanFire)
+	{
+		ServerFire(HitTarget);
+		if (EquippedWeapon)
+		{
+			bCanFire = false;
+			CrosshairShootingFactor = 0.75f;
+		}
+		StartFireTimer();
+	}
+}
 void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
 	MulticastFire(TraceHitTarget);
@@ -263,19 +286,27 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 	}
 }
 
-void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
+void UCombatComponent::StartFireTimer()
 {
-	if (Character == nullptr || WeaponToEquip == nullptr) return;
+	if (EquippedWeapon == nullptr || Character == nullptr) return;
 
-	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));//attaching weapon to a socket
-	if(HandSocket)
-	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
-	}
-	EquippedWeapon->SetOwner(Character);
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
+	Character->GetWorldTimerManager().SetTimer(
+		FireTimer,
+		this,
+		&UCombatComponent::FireTimerFinished,
+		EquippedWeapon->FireDelay
+	);
 }
+
+void UCombatComponent::FireTimerFinished() 
+{
+	if (EquippedWeapon == nullptr || Character == nullptr) return;
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bAutomatic) //if weapon is automatic
+	{
+		Fire();
+	}
+}
+
+
 

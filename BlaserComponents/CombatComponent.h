@@ -33,6 +33,8 @@ protected:
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
+	void Fire();
+
 	void FireButtonPressed(bool bPressed);
 
 	UFUNCTION(Server, Reliable)
@@ -43,7 +45,7 @@ protected:
 
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
-	void SetHUDCrosshairs(float DeltaTime);
+	void SetHUDCrosshairs(float DeltaTime, FHitResult& TraceHitResult);
 private:
 	class ABlasterCharacter* Character;
 	class ABlasterPlayerController* Controller;
@@ -95,6 +97,18 @@ private:
 	float UnZoomInterpSpeed = 20.f;
 
 	void InterpFOV(float DeltaTime);
+
+	/*
+	 * Automatic Fire
+	 */
+
+	FTimerHandle FireTimer;
+
+	bool bCanFire = true;
+
+	void StartFireTimer();
+	void FireTimerFinished();
+
 public:	
 
 };
