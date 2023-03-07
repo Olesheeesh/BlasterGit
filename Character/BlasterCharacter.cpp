@@ -47,8 +47,8 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-	NetUpdateFrequency = 66.f;
-	MinNetUpdateFrequency = 33.f;
+	NetUpdateFrequency = 120.f;
+	MinNetUpdateFrequency = 120.f;
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -69,7 +69,9 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UELogInfo(CalculateSpeed());
+	if (ProxyYaw != 0.f) {
+		UELogInfo(FMath::Abs(ProxyYaw));
+	}
 
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
@@ -77,7 +79,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	{
 		AimOffset(DeltaTime);
 	}
-	else
+	else if(GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
 	{
 		TimeSinceLastMovementReplication += DeltaTime;
 		if (TimeSinceLastMovementReplication > 0.25f)
@@ -361,8 +363,8 @@ void ABlasterCharacter::SimProxiesTurn()
 {
 	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
 
-	bRotateRootBone = false;
 	float Speed = CalculateSpeed();
+	bRotateRootBone = false;
 
 	if(Speed > 0.f)
 	{
@@ -506,6 +508,50 @@ void ABlasterCharacter::UELogInfo(float Value)
 {
 	float Speed = GetCharacterMovement()->Velocity.Length();
 	UE_LOG(LogTemp, Warning, TEXT("value: %f"), Value);
+}
+
+void ABlasterCharacter::PrintNetModeAndRole()
+{
+	FString NetModeStr;
+	switch (GetNetMode())
+	{
+	case NM_Standalone:
+		NetModeStr = TEXT("Standalone");
+		break;
+	case NM_ListenServer:
+		NetModeStr = TEXT("ListenServer");
+		break;
+	case NM_Client:
+		NetModeStr = TEXT("Client");
+		break;
+	case NM_DedicatedServer:
+		NetModeStr = TEXT("DedicatedServer");
+		break;
+	case NM_MAX:
+		NetModeStr = TEXT("Unknown");
+		break;
+	}
+	FString RoleStr;
+	switch (GetLocalRole())
+	{
+	case ROLE_None:
+		RoleStr = TEXT("None");
+		break;
+	case ROLE_SimulatedProxy:
+		RoleStr = TEXT("SimulatedProxy");
+		break;
+	case ROLE_AutonomousProxy:
+		RoleStr = TEXT("AutonomousProxy");
+		break;
+	case ROLE_Authority:
+		RoleStr = TEXT("Authority");
+		break;
+	case ROLE_MAX:
+		RoleStr = TEXT("Unknown");
+		break;
+	}
+	if(!HasAuthority())
+	GEngine->AddOnScreenDebugMessage(-1, 120.f, FColor::Red, FString::Printf(TEXT("NetMode: %s, Role: %s \n"), *NetModeStr, *RoleStr));
 }
 
 //1. создаём ActionMapping

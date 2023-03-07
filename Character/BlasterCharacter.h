@@ -105,7 +105,8 @@ private:
 	bool bPlayMontage = true;
 
 	bool bRotateRootBone;
-	float TurnThreshold = 1;
+	UPROPERTY(EditAnywhere)
+	float TurnThreshold = 1.4;//5
 	//Proxy
 	FRotator ProxyRotationLastFrame;
 	FRotator ProxyRotation;
@@ -115,6 +116,7 @@ private:
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);
+	void PrintNetModeAndRole();
 
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool isWeaponEquipped();
