@@ -29,7 +29,17 @@ UCLASS()
 class BLASTER_API ABlasterHUD : public AHUD
 {
 	GENERATED_BODY()
+public:
 	virtual void DrawHUD() override;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	TSubclassOf<class UUserWidget> CharacterOverlayClass;//CharacterOverlayClass is a TSubclassOf variable that holds a reference to a subclass of UUserWidget class (allows to select a UUserWidget subclass in the editor for this particular actor)
+
+	class UCharacterOverlay* CharacterOverlay;//reference to an instance of the UCharacterOverlay class
+
+protected:
+	virtual void BeginPlay() override;
+	void AddCharacterOverlay();
 
 private:
 	FHUDPackage HUDPackage;

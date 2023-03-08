@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "BlasterAnimInstance.h"
 #include "Blaster/Blaster.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() //Constructor
@@ -55,18 +56,24 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ABlasterCharacter, isSprinting);
 	DOREPLIFETIME(ABlasterCharacter, BaseSpeed);
 	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
+	DOREPLIFETIME(ABlasterCharacter, CurrentHealth);
 }
 
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	UELogInfo(FMath::RoundToInt(5.1));
+
+	BlasterPlayerController = Cast<ABlasterPlayerController>(Controller);
+	if(BlasterPlayerController)
+	{
+		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+	}
 }
 
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UELogInfo(Combatt->bCanFire);
-	UE_LOG(LogTemp, Warning, TEXT("bFireButtinPressed: %d"), Combatt->bFireButtonPressed);
 
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
@@ -499,10 +506,15 @@ float ABlasterCharacter::CalculateSpeed()
 	return Velocity.Size();
 }
 
+void ABlasterCharacter::OnRep_Health()
+{
+	BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+}
+
 void ABlasterCharacter::UELogInfo(float Value)
 {
 	float Speed = GetCharacterMovement()->Velocity.Length();
-	UE_LOG(LogTemp, Warning, TEXT("value: %f"), Value);
+	UE_LOG(LogTemp, Error, TEXT("value: %f"), Value);
 }
 
 void ABlasterCharacter::PrintNetModeAndRole()
