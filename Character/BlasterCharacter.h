@@ -22,9 +22,6 @@ public:
 	virtual void PostInitializeComponents() override;
 	void PlayFireMontage(bool bAiming);
 
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHit();
-
 	virtual void OnRep_ReplicatedMovement() override;
 protected:
 	// Called when the game starts or when spawned
@@ -50,6 +47,9 @@ protected:
 	void SimProxiesTurn();
 	UFUNCTION(Server, Reliable)
 	void ServerSetSprint(bool bIsSprinting);
+	UFUNCTION()
+	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)

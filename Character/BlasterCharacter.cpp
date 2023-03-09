@@ -48,26 +48,16 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 	MinNetUpdateFrequency = 120.f;
 }
 
-void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
-	DOREPLIFETIME(ABlasterCharacter, isSprinting);
-	DOREPLIFETIME(ABlasterCharacter, BaseSpeed);
-	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
-	DOREPLIFETIME(ABlasterCharacter, CurrentHealth);
-}
-
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UELogInfo(FMath::RoundToInt(5.1));
 
-	BlasterPlayerController = Cast<ABlasterPlayerController>(Controller);
-	if(BlasterPlayerController)
+	UpdateHUDHealth();
+
+	if(HasAuthority())
 	{
-		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будут вызвана при возникновении события OnTakeAnyDamage
 	}
 }
 
@@ -92,6 +82,17 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	}
 
 	HideCharacterWhenCameraClose();
+}
+
+void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ABlasterCharacter, isSprinting);
+	DOREPLIFETIME(ABlasterCharacter, BaseSpeed);
+	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
+	DOREPLIFETIME(ABlasterCharacter, CurrentHealth);
 }
 
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -397,6 +398,14 @@ void ABlasterCharacter::SimProxiesTurn()
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
+void ABlasterCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
 {
 	if(AO_Yaw > 45.f)
@@ -418,11 +427,6 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 			StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		}
 	}
-}
-
-void ABlasterCharacter::MulticastHit_Implementation()
-{
-	PlayHitReactMontage();
 }
 
 void ABlasterCharacter::HideCharacterWhenCameraClose()
@@ -508,7 +512,17 @@ float ABlasterCharacter::CalculateSpeed()
 
 void ABlasterCharacter::OnRep_Health()
 {
-	BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+void ABlasterCharacter::UpdateHUDHealth()
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;//allows to not cast multiple times(make sure that BlasterPlayerController is set) 
+	if (BlasterPlayerController)
+	{
+		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+	}
 }
 
 void ABlasterCharacter::UELogInfo(float Value)
