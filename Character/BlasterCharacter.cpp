@@ -12,6 +12,8 @@
 #include "BlasterAnimInstance.h"
 #include "Blaster/Blaster.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "TimerManager.h"
+#include "Blaster/GameMode/BlasterGameMode.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() //Constructor
@@ -134,6 +136,32 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+void ABlasterCharacter::Elim()
+{
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(
+		ElimTimer,
+		this,
+		&ABlasterCharacter::ElimTimerFinished,
+		ElimDelay
+	);
+}
+
+void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/effects
+{
+	bElimmed = true;
+	PlayElimMontage();
+}
+
+void ABlasterCharacter::ElimTimerFinished()
+{
+	ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>(); //gamemode
+	if(BlasterGameMode)
+	{
+		BlasterGameMode->RequestRespawn(this, Controller);//dont check Controller, because already checked it in RequestRespawn()
+	}
+}
+
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
 {
 	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
@@ -147,6 +175,15 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
 			SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
 			AnimInstance->Montage_JumpToSection(SectionName);
 		}
+	}
+}
+
+void ABlasterCharacter::PlayElimMontage()
+{
+	UAnimInstance* AnimDeathInstance = GetMesh()->GetAnimInstance();
+	if(AnimDeathInstance && ElimMontage)
+	{
+		AnimDeathInstance->Montage_Play(ElimMontage);
 	}
 }
 
@@ -398,12 +435,6 @@ void ABlasterCharacter::SimProxiesTurn()
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
-void ABlasterCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)
-{
-	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-	UpdateHUDHealth();
-	PlayHitReactMontage();
-}
 
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
@@ -516,6 +547,24 @@ void ABlasterCharacter::OnRep_Health()
 	PlayHitReactMontage();
 }
 
+void ABlasterCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+
+	if (CurrentHealth == 0.f)//not "<=" cause CurrentHealth clamped between 0 and 100
+	{
+		ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>(); //gamemode
+		if (BlasterGameMode)
+		{
+			BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;//make sure that BlasterPlayerController is set
+			ABlasterPlayerController* AttackerController = Cast<ABlasterPlayerController>(InstigatorController);
+			BlasterGameMode->PlayerEliminated(this, BlasterPlayerController, AttackerController);// this - this character
+		}
+	}
+}
+
 void ABlasterCharacter::UpdateHUDHealth()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;//allows to not cast multiple times(make sure that BlasterPlayerController is set) 
@@ -524,6 +573,7 @@ void ABlasterCharacter::UpdateHUDHealth()
 		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
 	}
 }
+
 
 void ABlasterCharacter::UELogInfo(float Value)
 {

@@ -21,8 +21,14 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	void PlayFireMontage(bool bAiming);
-
+	void PlayElimMontage();
 	virtual void OnRep_ReplicatedMovement() override;
+
+	void Elim();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastElim();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -97,6 +103,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	class UAnimMontage* HitReactMontage;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	class UAnimMontage* ElimMontage;
+
 	void HideCharacterWhenCameraClose();
 
 	UPROPERTY(EditAnywhere)
@@ -128,6 +137,15 @@ private:
 
 	class ABlasterPlayerController* BlasterPlayerController;
 
+	bool bElimmed = false;
+
+	FTimerHandle ElimTimer;
+
+	UPROPERTY(EditDefaultsOnly)
+	float ElimDelay = 1.9f;
+
+	void ElimTimerFinished();
+
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);
@@ -144,6 +162,7 @@ public:
 	FVector GetHitTarget() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCameraa; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
+	FORCEINLINE bool isElimmed() const { return bElimmed; }
 	
 };
 
@@ -155,3 +174,5 @@ public:
 //	3.create protected: UFUNCTION(Server, Reliable) with Server foo
 //  4.Declare with *_implementation
 //  Relicated - значит что все клиенты будут значть значение "переменной"
+
+//a forward declaration is required to let the compiler know that these types exist and can be used in the method signature
