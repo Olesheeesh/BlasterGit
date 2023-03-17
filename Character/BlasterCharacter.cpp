@@ -48,6 +48,8 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 	NetUpdateFrequency = 120.f;
 	MinNetUpdateFrequency = 120.f;
+
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
 
 void ABlasterCharacter::BeginPlay()
@@ -66,7 +68,6 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
 	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
@@ -138,8 +139,12 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 
 void ABlasterCharacter::Elim()
 {
+	if (Combatt && Combatt->EquippedWeapon)
+	{
+		Combatt->EquippedWeapon->Dropped();
+	}
 	MulticastElim();
-	GetWorldTimerManager().SetTimer(
+	GetWorldTimerManager().SetTimer(//respawn timer
 		ElimTimer,
 		this,
 		&ABlasterCharacter::ElimTimerFinished,
@@ -151,6 +156,31 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 {
 	bElimmed = true;
 	PlayElimMontage();
+
+	if(DissolveMaterialInstance && DissolveMaterialInstance2)//задаём DynamicDissolveMaterial для всех character на сервере
+	{
+		DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
+		DynamicDissolveMaterialInstance2 = UMaterialInstanceDynamic::Create(DissolveMaterialInstance2, this);
+
+		GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), 0.55f);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 200.f);
+
+		GetMesh()->SetMaterial(1, DynamicDissolveMaterialInstance2);
+		DynamicDissolveMaterialInstance2->SetScalarParameterValue(TEXT("Dissolve2"), 0.55f);
+		DynamicDissolveMaterialInstance2->SetScalarParameterValue(TEXT("Glow2"), 200.f);
+	}
+	StartDissolve();
+
+	//dissable character movement comp
+	GetCharacterMovement()->DisableMovement();//stop moving
+	GetCharacterMovement()->StopMovementImmediately();//stop rotating
+	if(BlasterPlayerController)
+	{
+		DisableInput(BlasterPlayerController);//can't press keys
+	}
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ABlasterCharacter::ElimTimerFinished()
@@ -159,6 +189,25 @@ void ABlasterCharacter::ElimTimerFinished()
 	if(BlasterGameMode)
 	{
 		BlasterGameMode->RequestRespawn(this, Controller);//dont check Controller, because already checked it in RequestRespawn()
+	}
+}
+
+void ABlasterCharacter::UpdateDissoveMaterial(float DissolveValue)//DissolveValue - float value that are getting from curve
+{
+	if(DynamicDissolveMaterialInstance && DynamicDissolveMaterialInstance2)
+	{
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), DissolveValue);//[0.55, -0.55]
+		DynamicDissolveMaterialInstance2->SetScalarParameterValue(TEXT("Dissolve2"), DissolveValue);//[0.55, -0.55]
+	}
+}
+
+void ABlasterCharacter::StartDissolve()
+{
+	DissolveTrack.BindDynamic(this, &ABlasterCharacter::UpdateDissoveMaterial);//when DissolveTrack float delegate updates - updates DissolveValue
+	if(DissolveCurve && DissolveTimeline)
+	{
+		DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTrack);//add curve to a timeline
+		DissolveTimeline->Play();
 	}
 }
 
@@ -470,7 +519,7 @@ void ABlasterCharacter::HideCharacterWhenCameraClose()
 		GetMesh()->SetVisibility(false);
 		if(Combatt && Combatt->EquippedWeapon && Combatt->EquippedWeapon->GetWeaponMesh())
 		{
-			Combatt->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;//SetVisibility(false)
+			Combatt->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;//SetVisibility(true)
 		}
 	}
 	else

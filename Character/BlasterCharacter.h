@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairsInterface.h"
+#include "Components/TimelineComponent.h"
 #include "BlasterCharacter.generated.h"
 
 UCLASS()
@@ -116,6 +117,7 @@ private:
 	bool bRotateRootBone;
 	UPROPERTY(EditAnywhere)
 	float TurnThreshold = 1.4;//5
+
 	//Proxy
 	FRotator ProxyRotationLastFrame;
 	FRotator ProxyRotation;
@@ -145,6 +147,37 @@ private:
 	float ElimDelay = 1.9f;
 
 	void ElimTimerFinished();
+
+	/*
+	 * Dissolve effect
+	 */
+
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* DissolveTimeline;
+
+	FOnTimelineFloat DissolveTrack;// - dynamic delegate, designed to handle timeline float track
+
+	UFUNCTION()
+	void UpdateDissoveMaterial(float DissolveValue);
+
+	void StartDissolve();
+
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* DissolveCurve;//curve
+
+	//Dynamic Instance that we can change at runtime
+	UPROPERTY(VisibleAnywhere, Category = Elim)
+	UMaterialInstanceDynamic* DynamicDissolveMaterialInstance;
+
+	UPROPERTY(VisibleAnywhere, Category = Elim)
+	UMaterialInstanceDynamic* DynamicDissolveMaterialInstance2;
+
+	//Dynamic instance set on the Blueprint, used with a dynamic material instance
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* DissolveMaterialInstance;
+
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* DissolveMaterialInstance2;
 
 public:
 	float MaxSpeed;

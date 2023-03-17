@@ -19,7 +19,7 @@ void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController*
 	{
 		ElimmedCharacter->Destroy();
 	}
-	if(ElimmedController)
+	if(ElimmedController)//respawn in random PlayerStart location
 	{
 		TArray<AActor*> PlayerStarts; //массив с элементами класса AActor
 		UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
