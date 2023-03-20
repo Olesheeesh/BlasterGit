@@ -13,7 +13,10 @@
 #include "Blaster/Blaster.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "TimerManager.h"
+#include "Blaster/DamageArea/DamageArea.h"
+#include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
+#include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() //Constructor
@@ -137,6 +140,16 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+void ABlasterCharacter::Destroyed()
+{
+	Super::Destroyed();
+
+	if (ElimBotComponent)
+	{
+		ElimBotComponent->DestroyComponent();
+	}
+}
+
 void ABlasterCharacter::Elim()
 {
 	if (Combatt && Combatt->EquippedWeapon)
@@ -150,6 +163,7 @@ void ABlasterCharacter::Elim()
 		&ABlasterCharacter::ElimTimerFinished,
 		ElimDelay
 	);
+	UE_LOG(LogTemp, Warning, TEXT("ElimTimer started"));
 }
 
 void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/effects
@@ -175,12 +189,31 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 	//dissable character movement comp
 	GetCharacterMovement()->DisableMovement();//stop moving
 	GetCharacterMovement()->StopMovementImmediately();//stop rotating
+
 	if(BlasterPlayerController)
 	{
 		DisableInput(BlasterPlayerController);//can't press keys
 	}
+
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	//Spawn Elim bot
+	FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
+
+	if(ElimBotEffect)
+	{
+		ElimBotComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(),
+			ElimBotEffect, 
+			ElimBotSpawnPoint, 
+			GetActorRotation()
+		);
+	}
+	if(ElimBotSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ElimBotSound, ElimBotSpawnPoint);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Multicast started"));
 }
 
 void ABlasterCharacter::ElimTimerFinished()
@@ -190,6 +223,7 @@ void ABlasterCharacter::ElimTimerFinished()
 	{
 		BlasterGameMode->RequestRespawn(this, Controller);//dont check Controller, because already checked it in RequestRespawn()
 	}
+	UE_LOG(LogTemp, Warning, TEXT("ElimTimer Finished"));
 }
 
 void ABlasterCharacter::UpdateDissoveMaterial(float DissolveValue)//DissolveValue - float value that are getting from curve
@@ -540,7 +574,7 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 		OverlappingWeapon->ShowPickupWidget(false);
 	}
 	OverlappingWeapon = Weapon;
-	if (IsLocallyControlled())
+	if (IsLocallyControlled())//показывать PickupWidget только тому кто overlap sphere
 	{
 		if (OverlappingWeapon)
 		{
@@ -621,6 +655,7 @@ void ABlasterCharacter::UpdateHUDHealth()
 	{
 		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
 	}
+	UELogInfo(CurrentHealth);
 }
 
 

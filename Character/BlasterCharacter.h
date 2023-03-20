@@ -24,7 +24,7 @@ public:
 	void PlayFireMontage(bool bAiming);
 	void PlayElimMontage();
 	virtual void OnRep_ReplicatedMovement() override;
-
+	virtual void Destroyed() override;
 	void Elim();
 
 	UFUNCTION(NetMulticast, Reliable)
@@ -144,7 +144,7 @@ private:
 	FTimerHandle ElimTimer;
 
 	UPROPERTY(EditDefaultsOnly)
-	float ElimDelay = 1.9f;
+	float ElimDelay = 1.9f;//1.9f
 
 	void ElimTimerFinished();
 
@@ -179,6 +179,19 @@ private:
 	UPROPERTY(EditAnywhere, Category = Elim)
 	UMaterialInstance* DissolveMaterialInstance2;
 
+	/*
+	 * Elim bot
+	 */
+
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* ElimBotEffect;
+
+	UPROPERTY(VisibleAnywhere)
+	UParticleSystemComponent* ElimBotComponent;
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* ElimBotSound;//новая переменная типа USoundCue
+
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);
@@ -196,6 +209,7 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCameraa; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FORCEINLINE bool isElimmed() const { return bElimmed; }
+	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 	
 };
 

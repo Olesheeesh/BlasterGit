@@ -1,8 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Weapon.h"
-
 #include "BulletShell.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
@@ -68,8 +64,8 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
-	if(BlasterCharacter)
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);//проверка что входит именно ABlasterCharacter
+	if(BlasterCharacter)//если преобразование AActor -> ABlasterCharacter успешно - выполнить код(OtherActor == ABlasterCharacter)
 	{
 		BlasterCharacter->SetOverlappingWeapon(this);
 	}
@@ -166,7 +162,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 	}
 }
 
-void AWeapon::Dropped()
+void AWeapon::Dropped()//detach
 {
 	SetWeaponState(EWeaponState::EWS_Dropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
