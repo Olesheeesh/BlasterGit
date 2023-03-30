@@ -3,12 +3,24 @@
 #include "Blaster/HUD/CharacterOverlay.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Blaster/Character/BlasterCharacter.h"
 
 void ABlasterPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
 	BlasterHUD = Cast<ABlasterHUD>(GetHUD()); //BlasterHUD = result of the cast
+}
+
+void ABlasterPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(InPawn);
+	if(BlasterCharacter)
+	{
+		SetHUDHealth(BlasterCharacter->GetCurrentHealth(), BlasterCharacter->GetMaxHealth());
+	}
 }
 
 void ABlasterPlayerController::SetHUDHealth(float CurrentHealth, float MaxHealth)
@@ -29,3 +41,36 @@ void ABlasterPlayerController::SetHUDHealth(float CurrentHealth, float MaxHealth
 		}
 	}
 }
+
+void ABlasterPlayerController::SetHUDScore(float Score)
+{
+	if(BlasterHUD)
+	{
+		bool bHUDValid = BlasterHUD &&
+			BlasterHUD->CharacterOverlay &&
+			BlasterHUD->CharacterOverlay->ScoreAmount;
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+		if(bHUDValid)
+		{
+			FString ScoreText = FString::Printf(TEXT("%d"), FMath::FloorToInt(Score));//FloorToInt Converts a float to a nearest less or equal int
+			BlasterHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreText));
+		}
+	}
+}
+
+void ABlasterPlayerController::SetHUDDefeats(int Defeats)
+{
+	if(BlasterHUD)
+	{
+		bool bHUDValid = BlasterHUD &&
+			BlasterHUD->CharacterOverlay &&
+			BlasterHUD->CharacterOverlay->DefeatsAmount;
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+		if(bHUDValid)
+		{
+			FString DefeatsText = FString::Printf(TEXT("%d"), Defeats);//конвертация int в string
+			BlasterHUD->CharacterOverlay->DefeatsAmount->SetText(FText::FromString(DefeatsText));
+		}
+	}
+}
+

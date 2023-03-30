@@ -96,7 +96,7 @@ private:
 	class UAnimationAsset* FireAnimation;//pointer of type "UAnimationAsset"
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class ABulletShell> ShellClass;
+	TSubclassOf<class ABulletShell> ShellClass;//чтоб появился в редакторе
 
 public:	
 	void SetWeaponState(EWeaponState State);

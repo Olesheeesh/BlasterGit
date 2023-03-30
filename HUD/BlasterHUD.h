@@ -35,6 +35,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Player Stats")
 	TSubclassOf<class UUserWidget> CharacterOverlayClass;//CharacterOverlayClass is a TSubclassOf variable that holds a reference to a subclass of UUserWidget class (allows to select a UUserWidget subclass in the editor for this particular actor)
 
+	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;//reference to an instance of the UCharacterOverlay class
 
 protected:

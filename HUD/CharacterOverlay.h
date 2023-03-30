@@ -17,4 +17,10 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* HealthText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ScoreAmount;//должно быть тоже имя что и в bp, потому что исп. meta = (BindWidget)
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* DefeatsAmount;
 };

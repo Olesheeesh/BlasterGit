@@ -16,6 +16,7 @@
 #include "Blaster/DamageArea/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
+#include "Blaster/PlayerState/BlasterPlayerState.h"
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
@@ -71,6 +72,7 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	PollInit();
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
 	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
@@ -656,6 +658,19 @@ void ABlasterCharacter::UpdateHUDHealth()
 		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
 	}
 	UELogInfo(CurrentHealth);
+}
+
+void ABlasterCharacter::PollInit()//update hud values
+{
+	if (BlasterPlayerState == nullptr)//player state становиться доступным не с первого фрейма -> его не вызываем в BeginPlay, ведь с запуска == nullptr
+	{
+		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+		if(BlasterPlayerState)
+		{
+			BlasterPlayerState->AddToScore(0.f);
+			BlasterPlayerState->AddToDefeats(0);
+		}
+	}
 }
 
 

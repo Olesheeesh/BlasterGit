@@ -39,6 +39,7 @@ protected:
 	);
 
 private:
+	UPROPERTY()
 	class ABlasterCharacter* Character;
 
 	UPROPERTY(EditAnywhere, Category = "KillZone Properties")
