@@ -121,12 +121,16 @@ public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }//weapon mesh is private->need this getter
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 
 	UPROPERTY(EditAnywhere, Category = Combat)//when use UPROPERTY, should add default value to variable
 	float FireDelay = .15;//shooting speed
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	bool bAutomatic = true;
+
+	bool IsEmpty();
 };
+
 
 

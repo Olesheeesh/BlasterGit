@@ -44,7 +44,7 @@ void ABlasterPlayerState::OnRep_Score()//на клиенте
 
 void ABlasterPlayerState::AddToDefeats(int32 DefeatsAmount)
 {
-	Defeats += DefeatsAmount;
+	Defeats += DefeatsAmount;//считается только на сервере, чтоб у игроков не было доступа к данным
 	Character = Character == nullptr ? Cast<ABlasterCharacter>(GetPawn()) : Character;
 
 	if (Character)

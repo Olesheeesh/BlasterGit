@@ -60,15 +60,17 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
 
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
 	if (Controller)
 	{
 		Controller->ShowAmmoHUD(true);
-	}
+}
 
 	if(EquippedWeapon)//if is not null
 	{
 		EquippedWeapon->Dropped();
 	}
+
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
@@ -279,7 +281,7 @@ void UCombatComponent::Fire()
 {
 	if (EquippedWeapon == nullptr || GetIsSprinting(true)) return;
 
-	if (bCanFire)
+	if (CanFire())
 	{
 		ServerFire(HitTarget);
 		if (EquippedWeapon)
@@ -325,6 +327,14 @@ void UCombatComponent::FireTimerFinished()
 	{
 		Fire();
 	}
+}
+
+bool UCombatComponent::CanFire()
+{
+	if (EquippedWeapon == nullptr) return false;
+
+	return !EquippedWeapon->IsEmpty() || !bCanFire;
+
 }
 
 

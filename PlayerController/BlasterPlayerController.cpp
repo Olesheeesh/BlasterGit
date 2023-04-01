@@ -3,6 +3,7 @@
 #include "Blaster/HUD/CharacterOverlay.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Net/UnrealNetwork.h"
 #include "Blaster/Character/BlasterCharacter.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -11,6 +12,13 @@ void ABlasterPlayerController::BeginPlay()
 
 	BlasterHUD = Cast<ABlasterHUD>(GetHUD()); //BlasterHUD = result of the cast
 
+}
+
+void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABlasterPlayerController, HUDIsShown);//when changes, it will be reflected on all clients
 }
 
 void ABlasterPlayerController::OnPossess(APawn* InPawn)
@@ -39,9 +47,10 @@ void ABlasterPlayerController::SetHUDWeaponAmmo(int32 Ammo)
 	}
 }
 
-void ABlasterPlayerController::ShowAmmoHUD(bool ShowHUD)
+void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	HUDIsShown = ShowHUD;
 
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->CharacterOverlay &&
@@ -49,6 +58,29 @@ void ABlasterPlayerController::ShowAmmoHUD(bool ShowHUD)
 		BlasterHUD->CharacterOverlay->AmmoText;
 
 	if(bHUDValid)
+	{
+		if (ShowHUD == true)
+		{
+			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Visible);
+		}
+		else {
+			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void ABlasterPlayerController::OnRep_ShowAmmoHUD(bool ShowHUD)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->WeaponAmmoAmount &&
+		BlasterHUD->CharacterOverlay->AmmoText;
+
+	if (bHUDValid)
 	{
 		if (ShowHUD == true)
 		{

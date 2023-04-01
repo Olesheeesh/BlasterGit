@@ -45,6 +45,7 @@ protected:
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
 	void SetHUDCrosshairs(float DeltaTime, FHitResult& TraceHitResult);
+
 private:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
@@ -111,6 +112,7 @@ private:
 	void StartFireTimer();
 	void FireTimerFinished();
 
+	bool CanFire();
 public:	
 
 };

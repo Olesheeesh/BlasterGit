@@ -99,7 +99,7 @@ void AWeapon::SetHUDAmmo()
 
 void AWeapon::SpendRound()//update for server
 {
-	--Ammo;
+	Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
 	SetHUDAmmo();
 }
 
@@ -214,3 +214,7 @@ void AWeapon::Dropped()//detach
 	BlasterOwnerController = nullptr;//to not change the hudd for last owner character
 }
 
+bool AWeapon::IsEmpty()
+{
+	return Ammo <= 0;//если пустая обойма -> вернет false
+}
