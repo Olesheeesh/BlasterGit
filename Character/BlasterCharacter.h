@@ -198,7 +198,7 @@ private:
 	class ABlasterPlayerState* BlasterPlayerState;
 public:
 	float MaxSpeed;
-	void UELogInfo(float Value);
+	void UELogInfo(ABlasterPlayerController* Value);
 	void PrintNetModeAndRole();
 
 	void SetOverlappingWeapon(AWeapon* Weapon);

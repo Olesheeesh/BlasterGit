@@ -59,7 +59,20 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	UELogInfo(FMath::RoundToInt(5.1));
+	//UELogInfo(FMath::RoundToInt(5.1));
+
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if(BlasterPlayerController)
+	{
+		if (GetEquippedWeapon() == nullptr)
+		{
+			BlasterPlayerController->ShowAmmoHUD(false);
+		}
+		else
+		{
+			BlasterPlayerController->ShowAmmoHUD(true);
+		}
+	}
 
 	UpdateHUDHealth();
 
@@ -73,6 +86,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
+	UELogInfo(BlasterPlayerController);
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
 	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
@@ -154,6 +168,11 @@ void ABlasterCharacter::Destroyed()
 
 void ABlasterCharacter::Elim()
 {
+	if (BlasterPlayerController)
+	{
+		BlasterPlayerController->ShowAmmoHUD(false);
+	}
+
 	if (Combatt && Combatt->EquippedWeapon)
 	{
 		Combatt->EquippedWeapon->Dropped();
@@ -172,6 +191,10 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 {
 	bElimmed = true;
 	PlayElimMontage();
+	if(BlasterPlayerController)
+	{
+		BlasterPlayerController->SetHUDWeaponAmmo(0);
+	}
 
 	if(DissolveMaterialInstance && DissolveMaterialInstance2)//задаём DynamicDissolveMaterial для всех character на сервере
 	{
@@ -657,7 +680,7 @@ void ABlasterCharacter::UpdateHUDHealth()
 	{
 		BlasterPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
 	}
-	UELogInfo(CurrentHealth);
+	//UELogInfo(CurrentHealth);
 }
 
 void ABlasterCharacter::PollInit()//update hud values
@@ -674,10 +697,10 @@ void ABlasterCharacter::PollInit()//update hud values
 }
 
 
-void ABlasterCharacter::UELogInfo(float Value)
+void ABlasterCharacter::UELogInfo(ABlasterPlayerController* Value)
 {
 	float Speed = GetCharacterMovement()->Velocity.Length();
-	UE_LOG(LogTemp, Error, TEXT("value: %f"), Value);
+	UE_LOG(LogTemp, Error, TEXT("value: %d"), Value);
 }
 
 void ABlasterCharacter::PrintNetModeAndRole()

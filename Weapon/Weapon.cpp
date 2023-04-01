@@ -5,6 +5,7 @@
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimationAsset.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 
@@ -59,12 +60,14 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState); //here we register variable that we want to replicate
+	DOREPLIFETIME(AWeapon, Ammo); //here we register variable that we want to replicate
 }
 
+
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                              UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);//проверка что входит именно ABlasterCharacter
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);//проверка что пересекает именно ABlasterCharacter
 	if(BlasterCharacter)//если преобразование AActor -> ABlasterCharacter успешно - выполнить код(OtherActor == ABlasterCharacter)
 	{
 		BlasterCharacter->SetOverlappingWeapon(this);
@@ -81,6 +84,44 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	}
 }
 
+void AWeapon::SetHUDAmmo()
+{
+	BlasterOwnerCharacter = BlasterOwnerCharacter == nullptr ? Cast<ABlasterCharacter>(GetOwner()) : BlasterOwnerCharacter;
+	if (BlasterOwnerCharacter)
+	{
+		BlasterOwnerController = BlasterOwnerController == nullptr ? Cast<ABlasterPlayerController>(BlasterOwnerCharacter->Controller) : BlasterOwnerController;
+		if (BlasterOwnerController)
+		{
+			BlasterOwnerController->SetHUDWeaponAmmo(Ammo);
+		}
+	}
+}
+
+void AWeapon::SpendRound()//update for server
+{
+	--Ammo;
+	SetHUDAmmo();
+}
+
+void AWeapon::OnRep_Ammo()//update for client
+{
+	SetHUDAmmo();
+}
+
+void AWeapon::OnRep_Owner()
+{
+	Super::OnRep_Owner();
+	if(Owner == nullptr)//for clients
+	{
+		BlasterOwnerCharacter = nullptr;
+		BlasterOwnerController = nullptr;
+	}
+	else
+	{
+		SetHUDAmmo();//if Owner != nullptr -> set HUD
+	}
+}
+
 void AWeapon::SetWeaponState(EWeaponState State)
 {
 	WeaponState = State;
@@ -94,7 +135,7 @@ void AWeapon::SetWeaponState(EWeaponState State)
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EWeaponState::EWS_Dropped:
-		ShowPickupWidget(true);
+		ShowPickupWidget(false);
 		if (HasAuthority())
 		{
 			AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -117,7 +158,7 @@ void AWeapon::OnRep_WeaponState()//for client
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EWeaponState::EWS_Dropped:
-		ShowPickupWidget(true);
+		ShowPickupWidget(false);
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -155,11 +196,12 @@ void AWeapon::Fire(const FVector& HitTarget)
 						ShellClass,
 						SocketTransform.GetLocation(),
 						SocketTransform.GetRotation().Rotator()//Fquat rotation, so getting rotation with Rotator()
-						);
+					);
 				}
 			}
 		}
 	}
+	SpendRound();
 }
 
 void AWeapon::Dropped()//detach
@@ -168,5 +210,7 @@ void AWeapon::Dropped()//detach
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	WeaponMesh->DetachFromComponent(DetachRules);
 	SetOwner(nullptr);
+	BlasterOwnerCharacter = nullptr;
+	BlasterOwnerController = nullptr;//to not change the hudd for last owner character
 }
 
