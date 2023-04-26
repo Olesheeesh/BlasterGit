@@ -11,7 +11,7 @@
 
 AWeapon::AWeapon()
 {
-	bReplicates = true; //class is replicated(spawns on all machines) will exis independetly of the server
+	bReplicates = true; //class is replicated(spawns on all machines) will exist independetly of the server
 	PrimaryActorTick.bCanEverTick = false;
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
@@ -20,6 +20,7 @@ AWeapon::AWeapon()
 
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
@@ -217,4 +218,10 @@ void AWeapon::Dropped()//detach
 bool AWeapon::IsEmpty()
 {
 	return Ammo <= 0;//если пустая обойма -> вернет false
+}
+
+void AWeapon::AddAmmo(int32 AmmoToAdd)
+{
+	Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity);
+	SetHUDAmmo();
 }

@@ -16,8 +16,11 @@
 #include "Blaster/DamageArea/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
+#include "Blaster/HUD/OverheadWidget.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Blaster/Weapon/WeaponTypes.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter() //Constructor
@@ -60,6 +63,15 @@ void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	//UELogInfo(FMath::RoundToInt(5.1));
+	if (OverheadWidget)
+	{
+		UOverheadWidget* OverheadWidgetInstance = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+		if (OverheadWidgetInstance)
+		{
+			OverheadWidgetInstance->ShowPlayerNetRole(this);
+		}
+	}
+
 
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController)
@@ -86,9 +98,8 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
-	UELogInfo(BlasterPlayerController);
 	//Both characters on the server have local role "Authority"
-	//SimulatedProxy - is a server client on AutonomousProxy(client 1)(left window)
+	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
 	{
 		AimOffset(DeltaTime);
@@ -136,6 +147,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ABlasterCharacter::FireButtonReleased);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ABlasterCharacter::SprintButtonPressed);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ABlasterCharacter::SprintButtonReleased);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABlasterCharacter::ReloadButtonPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -436,6 +448,34 @@ void ABlasterCharacter::SprintButtonReleased()
 	SetSprint(false);
 }
 
+void ABlasterCharacter::ReloadButtonPressed()
+{
+	if(Combatt)
+	{
+		Combatt->Reload();
+	}
+}
+
+void ABlasterCharacter::PlayReloadingMontage()
+{
+	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (ReloadingMontage && AnimInstance)
+	{
+		AnimInstance->Montage_Play(ReloadingMontage);
+		FName SectionName;
+
+		switch (Combatt->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_AssaultRifle :
+			SectionName = FName("Rifle");
+			break;
+		}
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
 void ABlasterCharacter::SetSprint(bool bIsSprinting)
 {
 	isSprinting = bIsSprinting;
@@ -642,6 +682,12 @@ FVector ABlasterCharacter::GetHitTarget() const
 	return Combatt->HitTarget;
 }
 
+ECombatState ABlasterCharacter::GetCombatState() const
+{
+	if (Combatt == nullptr) return ECombatState::ECS_MAX;
+	return Combatt->CombatState;
+}
+
 float ABlasterCharacter::CalculateSpeed()
 {
 	FVector Velocity = GetVelocity();
@@ -697,7 +743,7 @@ void ABlasterCharacter::PollInit()//update hud values
 }
 
 
-void ABlasterCharacter::UELogInfo(ABlasterPlayerController* Value)
+void ABlasterCharacter::UELogInfo(float Value)
 {
 	float Speed = GetCharacterMovement()->Velocity.Length();
 	UE_LOG(LogTemp, Error, TEXT("value: %d"), Value);
@@ -746,6 +792,7 @@ void ABlasterCharacter::PrintNetModeAndRole()
 	if(!HasAuthority())
 	GEngine->AddOnScreenDebugMessage(-1, 120.f, FColor::Red, FString::Printf(TEXT("NetMode: %s, Role: %s \n"), *NetModeStr, *RoleStr));
 }
+
 
 //1. создаём ActionMapping
 //2. создаем void *Pressed/Released

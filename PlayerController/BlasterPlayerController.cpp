@@ -14,11 +14,35 @@ void ABlasterPlayerController::BeginPlay()
 
 }
 
+void ABlasterPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	SetHUDTime();
+	CheckTimeSyn(DeltaTime);
+}
+
+void ABlasterPlayerController::CheckTimeSyn(float DeltaTime)
+{
+	TimeSyncRunningTime += DeltaTime;
+	if (IsLocalController() && TimeSyncRunningTime > TimeSyncFrequency)
+	{
+		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
+		TimeSyncRunningTime = 0.f;
+	}
+}
+
+void ABlasterPlayerController::OnRep_MatchState()
+{
+
+}
+
 void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABlasterPlayerController, HUDIsShown);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(ABlasterPlayerController, MatchState);//when changes, it will be reflected on all clients
 }
 
 void ABlasterPlayerController::OnPossess(APawn* InPawn)
@@ -47,6 +71,21 @@ void ABlasterPlayerController::SetHUDWeaponAmmo(int32 Ammo)
 	}
 }
 
+void ABlasterPlayerController::SetHUDCarriedAmmo(int32 AmmoAmount)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->CarriedAmmoAmount;
+
+	if(bHUDValid)
+	{
+		FString AmmoText = FString::Printf(TEXT("%d"), AmmoAmount);//float -> FString
+		BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetText(FText::FromString(AmmoText));
+	}
+}
+
 void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
@@ -55,7 +94,9 @@ void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->CharacterOverlay &&
 		BlasterHUD->CharacterOverlay->WeaponAmmoAmount &&
-		BlasterHUD->CharacterOverlay->AmmoText;
+		BlasterHUD->CharacterOverlay->AmmoText &&
+		BlasterHUD->CharacterOverlay->CarriedAmmoAmount &&
+		BlasterHUD->CharacterOverlay->Slash;
 
 	if(bHUDValid)
 	{
@@ -63,10 +104,14 @@ void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 		{
 			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Visible);
 			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
 			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
@@ -78,7 +123,9 @@ void ABlasterPlayerController::OnRep_ShowAmmoHUD(bool ShowHUD)
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->CharacterOverlay &&
 		BlasterHUD->CharacterOverlay->WeaponAmmoAmount &&
-		BlasterHUD->CharacterOverlay->AmmoText;
+		BlasterHUD->CharacterOverlay->AmmoText &&
+		BlasterHUD->CharacterOverlay->CarriedAmmoAmount &&
+		BlasterHUD->CharacterOverlay->Slash;
 
 	if (bHUDValid)
 	{
@@ -86,13 +133,18 @@ void ABlasterPlayerController::OnRep_ShowAmmoHUD(bool ShowHUD)
 		{
 			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Visible);
 			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
 			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
+
 
 void ABlasterPlayerController::SetHUDHealth(float CurrentHealth, float MaxHealth)
 {
@@ -142,3 +194,73 @@ void ABlasterPlayerController::SetHUDDefeats(int Defeats)
 	}
 }
 
+void ABlasterPlayerController::SetHUDMatchCountdown(float CountdownTime)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->MatchCountdown;
+
+	if(bHUDValid)
+	{
+		int32 Minutes = FMath::FloorToInt(CountdownTime / 60.f);
+		int32 Seconds = CountdownTime - Minutes * 60;
+
+		FString MatchCountdown = FString::Printf(TEXT("%02d:%02d "), Minutes, Seconds);
+		BlasterHUD->CharacterOverlay->MatchCountdown->SetText(FText::FromString(MatchCountdown));
+	}
+}
+
+void ABlasterPlayerController::SetHUDTime()
+{
+	uint32 SecondsLeft = FMath::CeilToInt(MatchTime - GetServerTime());//"120"(MatchTime) - one second, every second
+	if(CountdownInt != SecondsLeft)//use to update time not every frame, but every time it changes(every second)
+	{
+		SetHUDMatchCountdown(MatchTime - GetServerTime());
+	}
+
+	CountdownInt = SecondsLeft;
+}
+
+
+void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeofClientRequest)
+{
+	//сервер получает пакет
+	float ServerTimeOfReceipt = GetWorld()->GetTimeSeconds();
+	//возвращает своё время назад(ServerTimeOfReceipt) вместе с TimeofClientRequest
+	ClientReportServerTime(TimeofClientRequest, ServerTimeOfReceipt);
+}
+
+
+void ABlasterPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerRecievedClientRequest)
+{
+	//когда клиент получает rpc, мы можем посчитать время за сколько она дошла(roundtrip time)
+	float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;//время того сколько времени прошло с тех пор как было отправлено serverRpc
+	//calculate server's current time
+	float CurrentServerTime = TimeServerRecievedClientRequest + (0.5 * RoundTripTime);//время за сколько сервер получил запрос
+	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
+	//now playerController on the client knows the difference between server's starting time and client's starting time
+}
+
+float ABlasterPlayerController::GetServerTime()
+{
+	if (HasAuthority()) return GetWorld()->GetTimeSeconds();
+	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
+}
+
+void ABlasterPlayerController::ReceivedPlayer()
+{
+	Super::ReceivedPlayer();
+	if(IsLocalController())
+	{
+		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
+	}
+
+}
+
+void ABlasterPlayerController::OnMatchStateSet(FName State)
+{
+	MatchState = State;
+
+}

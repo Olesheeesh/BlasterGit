@@ -30,4 +30,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* AmmoText;
 
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Slash;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* CarriedAmmoAmount;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MatchCountdown;
 };

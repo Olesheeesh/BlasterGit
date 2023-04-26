@@ -6,6 +6,7 @@
 #include "Blaster/BlaserComponents/CombatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Blaster/BlasterTypes/CombatState.h"
 #include "Blaster/Weapon/Weapon.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
@@ -83,5 +84,8 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 			FColor::Red
 		);
 	}
+	bUseFabric = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;//when not reloading, we can ude fabric
+	bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
 }
 

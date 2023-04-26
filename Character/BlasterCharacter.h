@@ -7,6 +7,7 @@
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairsInterface.h"
 #include "Components/TimelineComponent.h"
+#include "Blaster/BlasterTypes/CombatState.h"
 #include "BlasterCharacter.generated.h"
 
 UCLASS()
@@ -30,6 +31,8 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
+	void PlayReloadingMontage();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -44,6 +47,7 @@ protected:
 	void AimButtonReleased();
 	void SprintButtonPressed();
 	void SprintButtonReleased();
+	void ReloadButtonPressed();
 	void SetSprint(bool bIsSprinting);
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
@@ -59,6 +63,7 @@ protected:
 	void UpdateHUDHealth();
 	//Poll for any relevant classes and initialize our HUD
 	void PollInit();
+
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
@@ -75,7 +80,7 @@ private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combatt;
 
 	UFUNCTION(Server, Reliable)
@@ -107,6 +112,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	class UAnimMontage* ElimMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	class UAnimMontage* ReloadingMontage;
 
 	void HideCharacterWhenCameraClose();
 
@@ -198,7 +206,7 @@ private:
 	class ABlasterPlayerState* BlasterPlayerState;
 public:
 	float MaxSpeed;
-	void UELogInfo(ABlasterPlayerController* Value);
+	void UELogInfo(float Value);
 	void PrintNetModeAndRole();
 
 	void SetOverlappingWeapon(AWeapon* Weapon);
@@ -215,7 +223,7 @@ public:
 	FORCEINLINE bool isElimmed() const { return bElimmed; }
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-	
+	ECombatState GetCombatState() const;
 };
 
 

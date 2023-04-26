@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "WeaponTypes.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -57,6 +58,23 @@ public:
 	UPROPERTY(EditAnywhere)
 	float ZoomInterpSpeed = 20.f;
 
+	UPROPERTY(EditAnywhere, Category = Combat)//when use UPROPERTY, should add default value to variable
+	float FireDelay = .13;//shooting speed
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	bool bAutomatic = true;
+
+	bool IsEmpty();
+
+	bool isOutOfAmmo();
+
+	void AddAmmo(int32 AmmoToAdd);
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* EquipSound;
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* OutOfAmmoSound;
 protected:
 	virtual void BeginPlay() override;
 
@@ -115,6 +133,9 @@ private:
 	UPROPERTY()//на случай если не инициализирован, чтоб не крашнуло
 	class ABlasterPlayerController* BlasterOwnerController;
 
+	UPROPERTY(EditAnywhere)
+	EWeaponType WeaponType;
+
 public:	
 	void SetWeaponState(EWeaponState State);
 	FORCEINLINE USphereComponent* GetAreaSphere() const {  return AreaSphere; }
@@ -122,14 +143,10 @@ public:
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
+	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 
-	UPROPERTY(EditAnywhere, Category = Combat)//when use UPROPERTY, should add default value to variable
-	float FireDelay = .15;//shooting speed
 
-	UPROPERTY(EditAnywhere, Category = Combat)
-	bool bAutomatic = true;
-
-	bool IsEmpty();
 };
 
 

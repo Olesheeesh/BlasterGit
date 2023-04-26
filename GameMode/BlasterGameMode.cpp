@@ -5,6 +5,45 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 
+ABlasterGameMode::ABlasterGameMode()
+{
+	bDelayedStart = true;//game made stay in WaitingToStart state.
+}
+
+void ABlasterGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+	LevelStartingTime = GetWorld()->GetTimeSeconds();//time of launching the game to entering Blaster map
+	if (GEngine)
+	{
+		FString Text = FString::Printf(TEXT("LevelStartingTime is %f"), LevelStartingTime);
+		//GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Purple, Text);
+	}
+}
+
+void ABlasterGameMode::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	//UE_LOG(LogTemp, Error, TEXT("GetWorld()->GetTimeSeconds() is %f"), FMath::CeilToFloat(GetWorld()->GetTimeSeconds()));
+	if(MatchState == MatchState::WaitingToStart)
+	{
+		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;//10-15+15
+		//UE_LOG(LogTemp, Error, TEXT("CountdownTime is %f"), CountdownTime);
+	}
+	if(CountdownTime <= 0.f)
+	{
+		StartMatch();
+	}
+}
+
+void ABlasterGameMode::OnMatchStateSet()
+{
+	Super::OnMatchStateSet();
+
+
+
+}
+
 void ABlasterGameMode::PlayerEliminated(ABlasterCharacter* ElimmedCharacter, ABlasterPlayerController* VictimController,
                                         ABlasterPlayerController* AttackerController)
 {
