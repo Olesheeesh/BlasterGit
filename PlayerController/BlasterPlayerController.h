@@ -23,10 +23,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ShowAmmoHUD(bool ShowHUD);
 
-	UFUNCTION()
-	void OnRep_ShowAmmoHUD(bool ShowHUD);
-
 	void SetHUDMatchCountdown(float CountdownTime);
+	void SetHUDAnnouncementCountdown(float CountdownTime);
 
 	virtual void Tick(float DeltaTime) override;
 
@@ -39,6 +37,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
+	void PollInit();
 
 	/*
 	 * Sync time between client and server
@@ -61,14 +60,21 @@ protected:
 
 	void CheckTimeSyn(float DeltaTime);
 
-private:
-	UPROPERTY(ReplicatedUsing = OnRep_ShowAmmoHUD)
-	bool HUDIsShown = false;
+	void HandleMatchHasStarted();
 
+	UFUNCTION(Server, Reliable)
+	void ServerCheckMatchState();
+
+	UFUNCTION(Client, Reliable)
+	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime);//informing client of the match state when it joins
+
+private:
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
 
-	float MatchTime = 120.f;
+	float LevelStartingTime = 0.f;
+	float MatchTime = 0.f;
+	float WarmupTime = 0.f;
 
 	uint32 CountdownInt = 0;
 
@@ -77,4 +83,15 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
 	FName MatchState;
+
+	UPROPERTY()
+	class UCharacterOverlay* CharacterOverlay;
+
+	bool bInitializeCharacterOverlay = false;
+
+	float HUDCurrentHealth;
+	float HUDMaxHealth;
+	float HUDScore;
+	int32 HUDDefeats;
 };
+

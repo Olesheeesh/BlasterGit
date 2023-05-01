@@ -5,19 +5,23 @@
 #include "Components/TextBlock.h"
 #include "Net/UnrealNetwork.h"
 #include "Blaster/Character/BlasterCharacter.h"
+#include "Blaster/GameMode/BlasterGameMode.h"
+#include "Blaster/HUD/Announcement.h"
+#include "GameFramework/GameMode.h"
+#include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
 	BlasterHUD = Cast<ABlasterHUD>(GetHUD()); //BlasterHUD = result of the cast
-
+	ServerCheckMatchState();
 }
 
 void ABlasterPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	PollInit();
 	SetHUDTime();
 	CheckTimeSyn(DeltaTime);
 }
@@ -32,16 +36,10 @@ void ABlasterPlayerController::CheckTimeSyn(float DeltaTime)
 	}
 }
 
-void ABlasterPlayerController::OnRep_MatchState()
-{
-
-}
-
 void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABlasterPlayerController, HUDIsShown);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(ABlasterPlayerController, MatchState);//when changes, it will be reflected on all clients
 }
 
@@ -89,7 +87,6 @@ void ABlasterPlayerController::SetHUDCarriedAmmo(int32 AmmoAmount)
 void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
-	HUDIsShown = ShowHUD;
 
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->CharacterOverlay &&
@@ -115,36 +112,6 @@ void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 		}
 	}
 }
-
-void ABlasterPlayerController::OnRep_ShowAmmoHUD(bool ShowHUD)
-{
-	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
-	
-	bool bHUDValid = BlasterHUD &&
-		BlasterHUD->CharacterOverlay &&
-		BlasterHUD->CharacterOverlay->WeaponAmmoAmount &&
-		BlasterHUD->CharacterOverlay->AmmoText &&
-		BlasterHUD->CharacterOverlay->CarriedAmmoAmount &&
-		BlasterHUD->CharacterOverlay->Slash;
-
-	if (bHUDValid)
-	{
-		if (ShowHUD == true)
-		{
-			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Visible);
-			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Visible);
-			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Visible);
-			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Visible);
-		}
-		else {
-			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
-			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Hidden);
-			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Hidden);
-			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
-		}
-	}
-}
-
 
 void ABlasterPlayerController::SetHUDHealth(float CurrentHealth, float MaxHealth)
 {
@@ -162,6 +129,12 @@ void ABlasterPlayerController::SetHUDHealth(float CurrentHealth, float MaxHealth
 		FString HealthText = FString::Printf(TEXT("%d/%d"), FMath::RoundToInt(CurrentHealth), FMath::RoundToInt(MaxHealth));
 		BlasterHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
 	}
+	else
+	{
+		bInitializeCharacterOverlay = true;
+		HUDCurrentHealth = CurrentHealth;
+		HUDMaxHealth = MaxHealth;
+	}
 }
 
 void ABlasterPlayerController::SetHUDScore(float Score)
@@ -177,6 +150,11 @@ void ABlasterPlayerController::SetHUDScore(float Score)
 		FString ScoreText = FString::Printf(TEXT("%d"), FMath::FloorToInt(Score));//FloorToInt Converts a float to a nearest less or equal int
 		BlasterHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreText));
 	}
+	else
+	{
+		bInitializeCharacterOverlay = true;
+		HUDScore = Score;
+	}
 }
 
 void ABlasterPlayerController::SetHUDDefeats(int Defeats)
@@ -191,6 +169,11 @@ void ABlasterPlayerController::SetHUDDefeats(int Defeats)
 	{
 		FString DefeatsText = FString::Printf(TEXT("%d"), Defeats);//конвертация int в string
 		BlasterHUD->CharacterOverlay->DefeatsAmount->SetText(FText::FromString(DefeatsText));
+	}
+	else
+	{
+		bInitializeCharacterOverlay = true;
+		HUDDefeats = Defeats;
 	}
 }
 
@@ -212,17 +195,63 @@ void ABlasterPlayerController::SetHUDMatchCountdown(float CountdownTime)
 	}
 }
 
+void ABlasterPlayerController::SetHUDAnnouncementCountdown(float CountdownTime)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->AnnouncementWidget &&
+		BlasterHUD->AnnouncementWidget->WapmupTimeText;
+
+	if(bHUDValid)
+	{
+		int32 Minutes = FMath::FloorToInt(CountdownTime / 60.f);
+		int32 Seconds = CountdownTime - Minutes * 60;//if CountdownTime == 125 -> Seconds = 5
+
+		FString MatchCountDown = FString::Printf(TEXT("%d:%d"), Minutes, Seconds);
+		BlasterHUD->AnnouncementWidget->WapmupTimeText->SetText(FText::FromString(MatchCountDown));
+	}
+}
+
 void ABlasterPlayerController::SetHUDTime()
 {
-	uint32 SecondsLeft = FMath::CeilToInt(MatchTime - GetServerTime());//"120"(MatchTime) - one second, every second
+	float TimeLeft = 0.f;
+	if (MatchState == MatchState::WaitingToStart) TimeLeft = WarmupTime - GetServerTime() + LevelStartingTime;
+	else if (MatchState == MatchState::InProgress) TimeLeft = WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
+
+	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);//"120"(MatchTime) - one second, every second
 	if(CountdownInt != SecondsLeft)//use to update time not every frame, but every time it changes(every second)
 	{
-		SetHUDMatchCountdown(MatchTime - GetServerTime());
+		if(MatchState == MatchState::WaitingToStart)
+		{
+			SetHUDAnnouncementCountdown(TimeLeft);
+		}
+		if(MatchState == MatchState::InProgress)
+		{
+			SetHUDMatchCountdown(TimeLeft);
+		}
 	}
 
 	CountdownInt = SecondsLeft;
 }
 
+void ABlasterPlayerController::PollInit()
+{
+	if(CharacterOverlay == nullptr)
+	{
+		if (BlasterHUD && BlasterHUD->CharacterOverlay)
+		{
+			CharacterOverlay = BlasterHUD->CharacterOverlay;
+			if (CharacterOverlay)
+			{
+				SetHUDHealth(HUDCurrentHealth, HUDMaxHealth);
+				SetHUDScore(HUDScore);
+				SetHUDDefeats(HUDDefeats);
+				ShowAmmoHUD(false);
+			}
+		}
+	}
+}
 
 void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeofClientRequest)
 {
@@ -231,7 +260,6 @@ void ABlasterPlayerController::ServerRequestServerTime_Implementation(float Time
 	//возвращает своё время назад(ServerTimeOfReceipt) вместе с TimeofClientRequest
 	ClientReportServerTime(TimeofClientRequest, ServerTimeOfReceipt);
 }
-
 
 void ABlasterPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerRecievedClientRequest)
 {
@@ -256,11 +284,61 @@ void ABlasterPlayerController::ReceivedPlayer()
 	{
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
 	}
-
 }
 
 void ABlasterPlayerController::OnMatchStateSet(FName State)
 {
 	MatchState = State;
+	
+	if(MatchState == MatchState::InProgress)
+	{
+		HandleMatchHasStarted();
+	}
+}
 
+void ABlasterPlayerController::OnRep_MatchState()
+{
+	if (MatchState == MatchState::InProgress)
+	{
+		HandleMatchHasStarted();
+	}
+}
+
+void ABlasterPlayerController::HandleMatchHasStarted()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD)
+	{
+		BlasterHUD->AddCharacterOverlay();
+		if (BlasterHUD->AnnouncementWidget)
+		{
+			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void ABlasterPlayerController::ServerCheckMatchState_Implementation()
+{
+	ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
+	if(GameMode)
+	{
+		WarmupTime = GameMode->WarmupTime;
+		MatchTime = GameMode->MatchTime;
+		LevelStartingTime = GameMode->LevelStartingTime;
+		MatchState = GameMode->GetMatchState();
+		ClientJoinMidGame(MatchState, WarmupTime, MatchTime, LevelStartingTime);
+	}
+}
+
+void ABlasterPlayerController::ClientJoinMidGame_Implementation(FName StateOfMatch, float Warmup, float Match, float StartingTime)
+{
+	WarmupTime = Warmup;
+	MatchTime = Match;
+	LevelStartingTime = StartingTime;
+	MatchState = StateOfMatch;
+	OnMatchStateSet(MatchState);
+	if (BlasterHUD && MatchState == MatchState::WaitingToStart)
+	{
+		BlasterHUD->AddAnnouncementWidget();//here because in WaitingToStart BlasterHUD is not exist
+	}
 }

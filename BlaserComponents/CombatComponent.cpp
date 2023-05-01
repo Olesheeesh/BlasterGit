@@ -118,6 +118,7 @@ void UCombatComponent::Reload()
 {
 	if(CarriedAmmo > 0 && CombatState != ECombatState::ECS_Reloading)
 	{
+		HandleReload();
 		ServerReload();
 	}
 }
