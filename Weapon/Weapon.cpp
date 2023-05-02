@@ -220,6 +220,11 @@ bool AWeapon::IsEmpty()
 	return Ammo <= 0;//если пустая обойма -> вернет false
 }
 
+bool AWeapon::MagIsFull()
+{
+	return Ammo == MagCapacity;
+}
+
 void AWeapon::AddAmmo(int32 AmmoToAdd)
 {
 	Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity);

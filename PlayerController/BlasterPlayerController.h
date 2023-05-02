@@ -32,7 +32,7 @@ public:
 
 	virtual void ReceivedPlayer() override;//Synced with server clock as soon as possible
 
-	void OnMatchStateSet(FName State);
+	void OnMatchStateSet(FName State);//определяет кокой будет HUD при разных MatchState
 
 protected:
 	virtual void BeginPlay() override;
@@ -47,7 +47,8 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerRequestServerTime(float TimeofClientRequest);//send client's current time to the server
 
-	//REports the current server time to a client in response to ServerRequestServerTime
+	//REports the current server time to a client in response to 
+
 	UFUNCTION(Client, Reliable)
 	void ClientReportServerTime(float TimeOfClientRequest, float TimeServerRecievedClientRequest);
 

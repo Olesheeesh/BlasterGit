@@ -231,7 +231,6 @@ void ABlasterPlayerController::SetHUDTime()
 			SetHUDMatchCountdown(TimeLeft);
 		}
 	}
-
 	CountdownInt = SecondsLeft;
 }
 
@@ -240,7 +239,7 @@ void ABlasterPlayerController::PollInit()
 	if(CharacterOverlay == nullptr)
 	{
 		if (BlasterHUD && BlasterHUD->CharacterOverlay)
-		{
+		{	
 			CharacterOverlay = BlasterHUD->CharacterOverlay;
 			if (CharacterOverlay)
 			{
@@ -253,21 +252,28 @@ void ABlasterPlayerController::PollInit()
 	}
 }
 
-void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeofClientRequest)
+void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)
 {
 	//сервер получает пакет
-	float ServerTimeOfReceipt = GetWorld()->GetTimeSeconds();
+	float TimeServerRecievedClientRequest = TimeOfClientRequest;//GetWorld()->GetTimeSeconds() - локальное врем€
 	//возвращает своЄ врем€ назад(ServerTimeOfReceipt) вместе с TimeofClientRequest
-	ClientReportServerTime(TimeofClientRequest, ServerTimeOfReceipt);
+	ClientReportServerTime(TimeOfClientRequest, TimeServerRecievedClientRequest);//TimeofClientRequest - врем€ клиента в момент отправки запроса
+	UE_LOG(LogTemp, Error, TEXT("TimeServerRecievedClientRequest: %f"), TimeServerRecievedClientRequest);
+	UE_LOG(LogTemp, Error, TEXT("TimeofClientRequest: %f"), TimeOfClientRequest);
+	UE_LOG(LogTemp, Error, TEXT("RTT: %f"), (TimeServerRecievedClientRequest - TimeOfClientRequest));
 }
 
+//обработка ответа сервера на запрос, который был отправлен из функции ServerRequestServerTime
 void ABlasterPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerRecievedClientRequest)
 {
-	//когда клиент получает rpc, мы можем посчитать врем€ за сколько она дошла(roundtrip time)
+	//round-trip time - врем€, прошедшее между отправкой запроса и получением ответа сервера
 	float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;//врем€ того сколько времени прошло с тех пор как было отправлено serverRpc
+	UE_LOG(LogTemp, Error, TEXT("TimeofClientRequest: %f"), TimeOfClientRequest);
+	UE_LOG(LogTemp, Error, TEXT("GetWorld()->GetTimeSeconds(): %f"), GetWorld()->GetTimeSeconds());
+	UE_LOG(LogTemp, Error, TEXT("RoundTripTime: %f"), RoundTripTime);
 	//calculate server's current time
 	float CurrentServerTime = TimeServerRecievedClientRequest + (0.5 * RoundTripTime);//врем€ за сколько сервер получил запрос
-	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
+	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();//(задержка)разница между текущим временем сервера и временем клиента, используетс€ дл€ коррекции времени на клиенте.
 	//now playerController on the client knows the difference between server's starting time and client's starting time
 }
 
@@ -277,12 +283,13 @@ float ABlasterPlayerController::GetServerTime()
 	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
-void ABlasterPlayerController::ReceivedPlayer()
+void ABlasterPlayerController::ReceivedPlayer()//вызываетс€ на сервере, когда новый игрок присоедин€етс€ к игре
 {
 	Super::ReceivedPlayer();
 	if(IsLocalController())
 	{
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
+		UE_LOG(LogTemp, Error, TEXT("GetTimeSeconds in ReceivedPlayer: %f"), GetWorld()->GetTimeSeconds());
 	}
 }
 
@@ -339,6 +346,6 @@ void ABlasterPlayerController::ClientJoinMidGame_Implementation(FName StateOfMat
 	OnMatchStateSet(MatchState);
 	if (BlasterHUD && MatchState == MatchState::WaitingToStart)
 	{
-		BlasterHUD->AddAnnouncementWidget();//here because in WaitingToStart BlasterHUD is not exist
+		BlasterHUD->AddAnnouncementWidget();//here because in WaitingToStart, BlasterHUD is not exist
 	}
 }

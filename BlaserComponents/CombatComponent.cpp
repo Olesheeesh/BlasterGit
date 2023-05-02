@@ -116,7 +116,7 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 
 void UCombatComponent::Reload()
 {
-	if(CarriedAmmo > 0 && CombatState != ECombatState::ECS_Reloading)
+	if(CarriedAmmo > 0 && !EquippedWeapon->MagIsFull() && CombatState != ECombatState::ECS_Reloading)
 	{
 		HandleReload();
 		ServerReload();

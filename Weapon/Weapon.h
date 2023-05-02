@@ -68,6 +68,8 @@ public:
 
 	bool isOutOfAmmo();
 
+	bool MagIsFull();
+
 	void AddAmmo(int32 AmmoToAdd);
 
 	UPROPERTY(EditAnywhere)
@@ -145,8 +147,6 @@ public:
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
-
-
 };
 
 

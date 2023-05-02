@@ -17,7 +17,7 @@ void ABlasterGameMode::BeginPlay()
 	if (GEngine)
 	{
 		FString Text = FString::Printf(TEXT("LevelStartingTime is %f"), LevelStartingTime);
-		//GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Purple, Text);
+		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Purple, Text);
 	}
 }
 
