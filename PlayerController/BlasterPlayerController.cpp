@@ -8,6 +8,9 @@
 #include "Blaster/GameMode/BlasterGameMode.h"
 #include "Blaster/HUD/Announcement.h"
 #include "GameFramework/GameMode.h"
+#include "Blaster/BlaserComponents/CombatComponent.h"
+#include "Blaster/GameState/BlasterGameState.h"
+#include "Blaster/PlayerState/BlasterPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -46,8 +49,12 @@ void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 void ABlasterPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-
 	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(InPawn);
+	if (MatchState == MatchState::Cooldown && BlasterCharacter)
+	{
+		BlasterCharacter->bDisableGameplay = true;
+	}
+
 	if(BlasterCharacter)
 	{
 		SetHUDHealth(BlasterCharacter->GetCurrentHealth(), BlasterCharacter->GetMaxHealth());
@@ -234,18 +241,12 @@ void ABlasterPlayerController::SetHUDTime()
 
 	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);//"120"(MatchTime) - one second, every second
 
-	FString ToDisplay = FString::Printf(TEXT("Seconds left: %d"), SecondsLeft);
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, ToDisplay);
-
-	if(HasAuthority())
+	if(HasAuthority())//Блок if(HasAuthority()) просто снова добавляет LevelStartingTime для учета дополнительного времени сервера в лобби
 	{
 		BlasterGameMode = BlasterGameMode == nullptr ? Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this)) : BlasterGameMode;
 		if(BlasterGameMode)
 		{
 			SecondsLeft = FMath::CeilToInt(BlasterGameMode->GetCountdownTime() + LevelStartingTime);
-
-			FString ToDisplay2 = FString::Printf(TEXT("Server_Seconds left: %d"), SecondsLeft);
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Yellow, ToDisplay2);
 		}
 	}
 
@@ -376,8 +377,48 @@ void ABlasterPlayerController::HandleCooldown()
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
 			FString Announcement("New Match Starts In: ");
 			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
-			BlasterHUD->AnnouncementWidget->InfoText->SetText(FText());
+
+			ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
+			ABlasterPlayerState* BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+
+			if(BlasterGameState && BlasterPlayerState)
+			{
+				TArray<ABlasterPlayerState*> TopPlayers = BlasterGameState->TopScoringPlayers;
+				FString MostWantedPlayersInfo;
+				if(TopPlayers.Num() == 0)
+				{
+					MostWantedPlayersInfo = FString("No MVPs, u are so damn loosers.. ");
+				}
+				else if (TopPlayers.Num() == 1 && TopPlayers[0] == BlasterPlayerState)
+				{
+					MostWantedPlayersInfo = FString("You are an MVP");
+				}
+				else if(TopPlayers.Num() == 1)
+				{
+					MostWantedPlayersInfo = FString::Printf(TEXT("MVP IS: \n %s"), *TopPlayers[0]->GetPlayerName());
+				}
+				else if(TopPlayers.Num() > 1)
+				{
+					MostWantedPlayersInfo = FString("Most Valuable Players ARE: \n");
+					for(auto& MVPlayers : TopPlayers)
+					{
+						MostWantedPlayersInfo.Append(FString::Printf(TEXT("%s\n"), *MVPlayers->GetPlayerName()));
+					}
+				}
+
+				BlasterHUD->AnnouncementWidget->InfoText->SetText(FText::FromString(MostWantedPlayersInfo));
+
+			}
+
 		}
+	}
+
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+
+	if(BlasterCharacter && BlasterCharacter->GetCombatComponent())
+	{
+		BlasterCharacter->bDisableGameplay = true;
+		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
 	}
 }
 

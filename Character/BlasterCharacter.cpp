@@ -62,7 +62,6 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	//UELogInfo(FMath::RoundToInt(5.1));
 	if (OverheadWidget)
 	{
 		UOverheadWidget* OverheadWidgetInstance = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
@@ -71,7 +70,6 @@ void ABlasterCharacter::BeginPlay()
 			OverheadWidgetInstance->ShowPlayerNetRole(this);
 		}
 	}
-
 
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController)
@@ -100,11 +98,24 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	PollInit();
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
-	if(GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
+	RotateInPlace(DeltaTime);
+
+	HideCharacterWhenCameraClose();
+}
+
+void ABlasterCharacter::RotateInPlace(float DeltaTime)
+{
+	if (bDisableGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
+	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
 	{
 		AimOffset(DeltaTime);
 	}
-	else if(GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
+	else if (GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
 	{
 		TimeSinceLastMovementReplication += DeltaTime;
 		if (TimeSinceLastMovementReplication > 0.25f)
@@ -113,8 +124,6 @@ void ABlasterCharacter::Tick(float DeltaTime)
 		}
 		CalculateAO_Pitch();
 	}
-
-	HideCharacterWhenCameraClose();
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -126,6 +135,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ABlasterCharacter, BaseSpeed);
 	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
 	DOREPLIFETIME(ABlasterCharacter, CurrentHealth);
+	DOREPLIFETIME(ABlasterCharacter, bDisableGameplay);
 }
 
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -176,6 +186,14 @@ void ABlasterCharacter::Destroyed()
 	{
 		ElimBotComponent->DestroyComponent();
 	}
+
+	ABlasterGameMode* BlasterGameMode = Cast< ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
+	bool bMatchStateNotInProgress = BlasterGameMode && BlasterGameMode->GetMatchState() != MatchState::InProgress;
+
+	if(Combatt->EquippedWeapon && bMatchStateNotInProgress)
+	{
+		Combatt->EquippedWeapon->Destroy();
+	}
 }
 
 void ABlasterCharacter::Elim()
@@ -223,13 +241,10 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 	}
 	StartDissolve();
 
-	//dissable character movement comp
-	GetCharacterMovement()->DisableMovement();//stop moving
-	GetCharacterMovement()->StopMovementImmediately();//stop rotating
-
-	if(BlasterPlayerController)
+	bDisableGameplay = true;
+	if(Combatt)
 	{
-		DisableInput(BlasterPlayerController);//can't press keys
+		Combatt->FireButtonPressed(false);
 	}
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -323,6 +338,7 @@ void ABlasterCharacter::PlayHitReactMontage()
 
 void ABlasterCharacter::MoveForward(float Value)
 {
+	if (bDisableGameplay)return;
 	if (Controller != nullptr && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);//"." - from that rotation is getting the Yaw
@@ -341,6 +357,7 @@ void ABlasterCharacter::MoveForward(float Value)
 
 void ABlasterCharacter::MoveRight(float Value)
 {
+	if (bDisableGameplay)return;
 	if (Controller != nullptr && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -362,6 +379,7 @@ void ABlasterCharacter::LookUp(float Value)
 
 void ABlasterCharacter::EquipButtonPressed()
 {
+	if (bDisableGameplay)return;
 	if(Combatt)
 	{
 		if (HasAuthority()) { //на сервере
@@ -384,6 +402,7 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 
 void ABlasterCharacter::CrouchButtonPressed()
 {
+	if (bDisableGameplay)return;
 	if(bIsCrouched)
 	{
 		UnCrouch();
@@ -396,6 +415,7 @@ void ABlasterCharacter::CrouchButtonPressed()
 
 void ABlasterCharacter::Jump()
 {
+	if (bDisableGameplay)return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -408,6 +428,7 @@ void ABlasterCharacter::Jump()
 
 void ABlasterCharacter::AimButtonPressed()
 {
+	if (bDisableGameplay)return;
 	if(Combatt)
 	{
 		Combatt->SetAiming(true);
@@ -416,6 +437,7 @@ void ABlasterCharacter::AimButtonPressed()
 
 void ABlasterCharacter::AimButtonReleased()
 {
+	if (bDisableGameplay)return;
 	if (Combatt)
 	{
 		Combatt->SetAiming(false);
@@ -424,6 +446,7 @@ void ABlasterCharacter::AimButtonReleased()
 
 void ABlasterCharacter::FireButtonPressed()
 {
+	if (bDisableGameplay)return;
 	if (Combatt)
 	{
 		Combatt->FireButtonPressed(true);
@@ -432,6 +455,7 @@ void ABlasterCharacter::FireButtonPressed()
 
 void ABlasterCharacter::FireButtonReleased()
 {
+	if (bDisableGameplay)return;
 	if (Combatt)
 	{
 		Combatt->FireButtonPressed(false);
@@ -440,16 +464,19 @@ void ABlasterCharacter::FireButtonReleased()
 
 void ABlasterCharacter::SprintButtonPressed()
 {
+	if (bDisableGameplay)return;
 	SetSprint(true);
 }
 
 void ABlasterCharacter::SprintButtonReleased()
 {
+	if (bDisableGameplay)return;
 	SetSprint(false);
 }
 
 void ABlasterCharacter::ReloadButtonPressed()
 {
+	if (bDisableGameplay)return;
 	if(Combatt)
 	{
 		Combatt->Reload();
@@ -741,6 +768,7 @@ void ABlasterCharacter::PollInit()//update hud values
 		}
 	}
 }
+
 
 
 void ABlasterCharacter::UELogInfo(float Value)

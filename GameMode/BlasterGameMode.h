@@ -24,13 +24,13 @@ public:
 	virtual void RequestRespawn(class ACharacter* ElimmedCharacter, class AController* ElimmedController);//virtual because we would might to verride it in child classes
 
 	UPROPERTY(EditDefaultsOnly)
-		float WarmupTime = 10.f;
+	float WarmupTime = 10.f;
 
 	UPROPERTY(EditDefaultsOnly)
-		float MatchTime = 180.f;
+	float MatchTime = 180.f;
 
 	UPROPERTY(EditDefaultsOnly)
-		float CooldownTime = 10.f;
+	float CooldownTime = 10.f;
 
 	float LevelStartingTime = 0.f;
 
@@ -41,8 +41,9 @@ protected:
 private:
 	float CountdownTime = 0.f;
 
+	UPROPERTY()
+	class ABlasterCharacter* BlasterCharacter;
 public:
 	FORCEINLINE float GetCountdownTime() const { return CountdownTime; }
-
 };
 

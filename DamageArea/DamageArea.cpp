@@ -82,9 +82,5 @@ void ADamageArea::UpdateDamage()
 
 
 // Called every frame
-void ADamageArea::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	FString DebugMessage = FString::Printf(TEXT("Other Actor: %p"), Actor);
-}
+
 

@@ -14,7 +14,6 @@ class BLASTER_API ADamageArea : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ADamageArea();
-	virtual void Tick(float DeltaTime) override;
 
 protected:
 	// Called when the game starts or when spawned

@@ -84,8 +84,8 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 			FColor::Red
 		);
 	}
-	bUseFabric = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;//when not reloading, we can ude fabric
-	bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+	bUseFabric = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;//when not reloading, we can use fabric
+	bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
+	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
 }
 
