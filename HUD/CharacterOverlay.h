@@ -37,5 +37,5 @@ public:
 	UTextBlock* CarriedAmmoAmount;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* MatchCountdown;
+	UTextBlock* MatchCountdownText;
 };
