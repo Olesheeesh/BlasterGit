@@ -18,9 +18,15 @@ public:
 	class UTextBlock* WapmupTimeText;
 
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* AnnouncementText;
+		class UTextBlock* AnnouncementText;
 
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* InfoText;
+		class UTextBlock* InfoText;
 
+	UPROPERTY(meta = (BindWidget))
+		class UTextBlock* StartingInfoText;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	class UWidgetAnimation* CountdownAnimation;
+	
 };

@@ -21,13 +21,16 @@ public:
 	ABlasterGameMode();
 	virtual void Tick(float DeltaTime) override;
 	virtual void PlayerEliminated(class ABlasterCharacter* ElimmedCharacter, class ABlasterPlayerController* VictimController, ABlasterPlayerController* AttackerController);
-	virtual void RequestRespawn(class ACharacter* ElimmedCharacter, class AController* ElimmedController);//virtual because we would might to verride it in child classes
+	virtual void RequestRespawn(class ACharacter* ElimmedCharacter, class AController* ElimmedController);//virtual because we would might to override it in child classes
 
 	UPROPERTY(EditDefaultsOnly)
 	float WarmupTime = 10.f;
 
 	UPROPERTY(EditDefaultsOnly)
 	float MatchTime = 180.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float EndGameTime = 15.f;
 
 	UPROPERTY(EditDefaultsOnly)
 	float CooldownTime = 10.f;

@@ -61,6 +61,8 @@ protected:
 
 	void CheckTimeSyn(float DeltaTime);
 
+	void HandleWaitingToStart();
+
 	void HandleMatchHasStarted();
 
 	void HandleCooldown();
@@ -69,7 +71,7 @@ protected:
 	void ServerCheckMatchState();
 
 	UFUNCTION(Client, Reliable)
-	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float Cooldown);//informing client of the match state when it joins
+	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float EndGame, float Cooldown);//informing client of the match state when it joins
 
 private:
 	UPROPERTY()
@@ -81,6 +83,7 @@ private:
 	float LevelStartingTime = 0.f;
 	float MatchTime = 0.f;
 	float WarmupTime = 0.f;
+	float EndGameTime = 0.f;
 	float CooldownTime = 0.f;
 
 	uint32 CountdownInt = 0;

@@ -30,7 +30,7 @@ void ABlasterGameMode::BeginPlay()
 void ABlasterGameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	//UE_LOG(LogTemp, Error, TEXT("LevelStartingTime is %f"), LevelStartingTime);
+
 	if(MatchState == MatchState::WaitingToStart)
 	{
 		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;//10-15+15
@@ -49,7 +49,7 @@ void ABlasterGameMode::Tick(float DeltaTime)
 	}
 	else if (MatchState == MatchState::Cooldown)
 	{
-		CountdownTime = WarmupTime + MatchTime + CooldownTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		CountdownTime = WarmupTime + MatchTime + CooldownTime + EndGameTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
 		if (CountdownTime <= 0.f)
 		{
 			RestartGame();
