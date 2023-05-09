@@ -49,7 +49,7 @@ void ABlasterGameMode::Tick(float DeltaTime)
 	}
 	else if (MatchState == MatchState::Cooldown)
 	{
-		CountdownTime = WarmupTime + MatchTime + CooldownTime + EndGameTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
+		CountdownTime = WarmupTime + MatchTime + CooldownTime - GetWorld()->GetTimeSeconds() + LevelStartingTime;
 		if (CountdownTime <= 0.f)
 		{
 			RestartGame();

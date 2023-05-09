@@ -35,6 +35,7 @@ public:
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -206,6 +207,7 @@ private:
 
 	UPROPERTY()
 	class ABlasterPlayerState* BlasterPlayerState;
+
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);

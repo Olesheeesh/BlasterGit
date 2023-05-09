@@ -19,9 +19,17 @@ public:
 
 	void UpdateTopScore(class ABlasterPlayerState* ScoringPlayer);
 
+	UFUNCTION(Server, Reliable)
+	void GetAllPlayerStates();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastData(const TArray<ABlasterPlayerState*>& Data);
 	UPROPERTY(Replicated)//replicate so that all clients know who are top scoring players as soon as the game ends
 	TArray<class ABlasterPlayerState*> TopScoringPlayers;
 
+	UPROPERTY(Replicated)
+	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
+	
 private:
 	float TopScore = 0.f;
 };

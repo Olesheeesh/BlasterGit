@@ -10,7 +10,10 @@
 #include "GameFramework/GameMode.h"
 #include "Blaster/BlaserComponents/CombatComponent.h"
 #include "Blaster/GameState/BlasterGameState.h"
+#include "Blaster/HUD/ScoreBoardWidget.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
+#include "Components/Image.h"
+#include "Components/VerticalBox.h"
 #include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -240,7 +243,7 @@ void ABlasterPlayerController::SetHUDTime()
 	float TimeLeft = 0.f;
 	if (MatchState == MatchState::WaitingToStart) TimeLeft = WarmupTime - GetServerTime() + LevelStartingTime;
 	else if (MatchState == MatchState::InProgress) TimeLeft = WarmupTime + MatchTime - GetServerTime() + LevelStartingTime;
-	else if (MatchState == MatchState::Cooldown) TimeLeft = WarmupTime + MatchTime + EndGameTime + CooldownTime - GetServerTime() + LevelStartingTime;
+	else if (MatchState == MatchState::Cooldown) TimeLeft = WarmupTime + MatchTime + CooldownTime - GetServerTime() + LevelStartingTime;
 
 	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);//"120"(MatchTime) - one second, every second
 
@@ -387,7 +390,7 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 	}
 }
 
-void ABlasterPlayerController::HandleCooldown()
+void ABlasterPlayerController::HandleCooldownn()
 {
 	BlasterHUD = BlasterHUD ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 
@@ -402,7 +405,7 @@ void ABlasterPlayerController::HandleCooldown()
 		if(bHUDValid)
 		{
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
-			BlasterHUD->AnnouncementWidget->InfoText->SetVisibility(ESlateVisibility::Visible);//это
+			BlasterHUD->AnnouncementWidget->InfoText->SetVisibility(ESlateVisibility::Visible);//добавить после завершения EndGameTime
 			BlasterHUD->AnnouncementWidget->StartingInfoText->SetVisibility(ESlateVisibility::Hidden);
 
 			FString Announcement("Game Restarts In: ");
@@ -443,6 +446,66 @@ void ABlasterPlayerController::HandleCooldown()
 	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 
 	if(BlasterCharacter && BlasterCharacter->GetCombatComponent())
+	{
+		BlasterCharacter->bDisableGameplay = true;
+		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
+	}
+}
+
+//BlasterCharacter->isElimmed() == true ? BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden) : BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden);
+void ABlasterPlayerController::HandleCooldown()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	if (BlasterHUD)
+	{
+		BlasterHUD->CharacterOverlay->RemoveFromParent();
+		BlasterHUD->AddScoreBoardWidget();
+
+		bool bHUDValid = BlasterHUD->ScoreBoardWidget &&
+			BlasterHUD->ScoreBoardWidget->PlayersS &&
+			BlasterHUD->AnnouncementWidget &&
+			BlasterHUD->AnnouncementWidget->AnnouncementText;
+
+		if (bHUDValid)
+		{
+			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
+
+			FString Announcement("Game Restarts In: ");
+			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
+
+			ABlasterGameState* BlasterGameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));
+			if (BlasterGameState)
+			{
+				if (HasAuthority())
+				{
+					BlasterGameState->GetAllPlayerStates();
+				}
+
+				TArray<ABlasterPlayerState*> BlasterPlayerStates = BlasterGameState->BlasterPlayerStates;
+
+				UE_LOG(LogTemp, Error, TEXT("BlasterPlayerStates.Num(): %d"), BlasterPlayerStates.Num());
+
+				if (!BlasterPlayerStates.IsEmpty())
+				{
+					// создаем виджеты для всех игроков и добавляем их в ScoreBoardWidget
+					for (auto& PlayerStat : BlasterPlayerStates)
+					{
+						UPlayerScore* NewPlayerScoreWidget = CreateWidget<UPlayerScore>(this, BlasterHUD->PlayerScoreClass);
+						if (NewPlayerScoreWidget)
+						{
+							NewPlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Visible);
+							NewPlayerScoreWidget->Kills->SetText(FText::AsNumber(PlayerStat->GetScore()));
+							BlasterHUD->ScoreBoardWidget->PlayersS->AddChild(NewPlayerScoreWidget);
+						}
+					}
+				}
+			}
+		}
+	}
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+
+	if (BlasterCharacter && BlasterCharacter->GetCombatComponent())
 	{
 		BlasterCharacter->bDisableGameplay = true;
 		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);

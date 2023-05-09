@@ -100,30 +100,16 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	RotateInPlace(DeltaTime);
 
-	HideCharacterWhenCameraClose();
-}
-
-void ABlasterCharacter::RotateInPlace(float DeltaTime)
-{
-	if (bDisableGameplay)
+	if (HasAuthority())
 	{
-		bUseControllerRotationYaw = false;
-		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-		return;
-	}
-	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
-	{
-		AimOffset(DeltaTime);
-	}
-	else if (GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
-	{
-		TimeSinceLastMovementReplication += DeltaTime;
-		if (TimeSinceLastMovementReplication > 0.25f)
+		static bool prevIsDead = bElimmed;
+		if (bElimmed != prevIsDead)
 		{
-			OnRep_ReplicatedMovement();
+			UE_LOG(LogTemp, Error, TEXT("isDead: %d"), bElimmed);
+			prevIsDead = bElimmed;
 		}
-		CalculateAO_Pitch();
 	}
+	HideCharacterWhenCameraClose();
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -169,6 +155,29 @@ void ABlasterCharacter::PostInitializeComponents()
 	}
 }
 
+void ABlasterCharacter::RotateInPlace(float DeltaTime)
+{
+	if (bDisableGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
+	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled()) //using offset only for players who are controlling the character
+	{
+		AimOffset(DeltaTime);
+	}
+	else if (GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
+	{
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
+	}
+}
+
 void ABlasterCharacter::OnRep_ReplicatedMovement()
 {
 	Super::OnRep_ReplicatedMovement();
@@ -207,6 +216,7 @@ void ABlasterCharacter::Elim()
 	{
 		Combatt->EquippedWeapon->Dropped();
 	}
+
 	MulticastElim();
 	GetWorldTimerManager().SetTimer(//respawn timer
 		ElimTimer,
@@ -274,6 +284,7 @@ void ABlasterCharacter::ElimTimerFinished()
 	if(BlasterGameMode)
 	{
 		BlasterGameMode->RequestRespawn(this, Controller);//dont check Controller, because already checked it in RequestRespawn()
+		bElimmed = false;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("ElimTimer Finished"));
 }
@@ -768,8 +779,6 @@ void ABlasterCharacter::PollInit()//update hud values
 		}
 	}
 }
-
-
 
 void ABlasterCharacter::UELogInfo(float Value)
 {

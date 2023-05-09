@@ -65,6 +65,8 @@ protected:
 
 	void HandleMatchHasStarted();
 
+	void HandleCooldownn();
+
 	void HandleCooldown();
 
 	UFUNCTION(Server, Reliable)

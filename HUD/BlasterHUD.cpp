@@ -3,6 +3,8 @@
 #include "Announcement.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterOverlay.h"
+#include "PlayerScore.h"
+#include "ScoreBoardWidget.h"
 
 void ABlasterHUD::BeginPlay()
 {
@@ -27,6 +29,26 @@ void ABlasterHUD::AddAnnouncementWidget()
 	{
 		AnnouncementWidget = CreateWidget<UAnnouncement>(PlayerController, AnnouncementClass);
 		AnnouncementWidget->AddToViewport();
+	}
+}
+
+void ABlasterHUD::AddScoreBoardWidget()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if(PlayerController && ScoreBoardClass)
+	{
+		ScoreBoardWidget = CreateWidget<UScoreBoardWidget>(PlayerController, ScoreBoardClass);
+		ScoreBoardWidget->AddToViewport();
+	}
+}
+
+void ABlasterHUD::AddPlayerScoreWidget()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if (PlayerController && PlayerScoreClass)
+	{
+		PlayerScoreWidget = CreateWidget<UPlayerScore>(PlayerController, PlayerScoreClass);
+		PlayerScoreWidget->AddToViewport();
 	}
 }
 
