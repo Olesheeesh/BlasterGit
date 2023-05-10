@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PlayerScore.h"
 #include "GameFramework/HUD.h"
 #include "BlasterHUD.generated.h"
 
@@ -38,15 +39,29 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Announcements")
 	TSubclassOf<class UUserWidget> AnnouncementClass;
 
+	UPROPERTY(EditAnywhere, Category = "Score Board");
+	TSubclassOf<class UUserWidget> ScoreBoardClass;
+
+	UPROPERTY(EditAnywhere, Category = "PlayerScore");
+	TSubclassOf<class UUserWidget> PlayerScoreClass;
+
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;//reference to an instance of the UCharacterOverlay class
 
 	UPROPERTY()
 	class UAnnouncement* AnnouncementWidget;
 
-	void AddCharacterOverlay();
+	UPROPERTY()
+	class UScoreBoardWidget* ScoreBoardWidget;
 
+	UPROPERTY()
+	UPlayerScore* PlayerScoreWidget;
+
+	void AddCharacterOverlay();
 	void AddAnnouncementWidget();
+	void AddScoreBoardWidget();
+	void AddPlayerScoreWidget();
+
 protected:
 	virtual void BeginPlay() override;
 

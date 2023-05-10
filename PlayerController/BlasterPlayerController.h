@@ -23,6 +23,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ShowAmmoHUD(bool ShowHUD);
 
+	void FillScoreBoard();
+	void ShowScoreBoard(bool ShowWidget);
+
 	void SetHUDMatchCountdown(float CountdownTime);
 	void SetHUDAnnouncementCountdown(float CountdownTime);
 
@@ -80,6 +83,9 @@ private:
 	UPROPERTY()
 	class ABlasterGameMode* BlasterGameMode;
 
+	UPROPERTY()
+	class ABlasterGameState* BlasterGameState;
+
 	float LevelStartingTime = 0.f;
 	float MatchTime = 0.f;
 	float WarmupTime = 0.f;
@@ -96,6 +102,9 @@ private:
 
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
+
+	UPROPERTY()
+	class UScoreBoardWidget* ScoreBoardWidget;
 
 	bool bInitializeCharacterOverlay = false;
 

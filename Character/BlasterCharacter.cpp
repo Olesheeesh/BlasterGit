@@ -158,6 +158,8 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ABlasterCharacter::SprintButtonPressed);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ABlasterCharacter::SprintButtonReleased);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABlasterCharacter::ReloadButtonPressed);
+	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Pressed, this, &ABlasterCharacter::ShowScoreBoardButtonPressed);
+	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardButtonReleased);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -459,6 +461,22 @@ void ABlasterCharacter::FireButtonReleased()
 	if (Combatt)
 	{
 		Combatt->FireButtonPressed(false);
+	}
+}
+
+void ABlasterCharacter::ShowScoreBoardButtonPressed()
+{
+	if(PlayerController)
+	{
+		PlayerController->ShowScoreBoard(true);
+	}
+}
+
+void ABlasterCharacter::ShowScoreBoardButtonReleased()
+{
+	if (PlayerController)
+	{
+		PlayerController->ShowScoreBoard(false);
 	}
 }
 

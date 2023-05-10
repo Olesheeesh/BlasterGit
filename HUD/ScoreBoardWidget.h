@@ -13,5 +13,15 @@ UCLASS()
 class BLASTER_API UScoreBoardWidget : public UWidgetBlueprint
 {
 	GENERATED_BODY()
-	
+
+public:
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* PlayersNumText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MapNameText;
+
+	UPROPERTY(meta = (BindWidget))
+	class UVerticalBox* PlayersS;
+
 };

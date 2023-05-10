@@ -56,6 +56,8 @@ protected:
 	virtual void Jump() override;
 	void FireButtonPressed();
 	void FireButtonReleased();
+	void ShowScoreBoardButtonPressed();
+	void ShowScoreBoardButtonReleased();
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
 	UFUNCTION(Server, Reliable)
@@ -79,11 +81,14 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
 
-	UFUNCTION()
-	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combatt;
+
+	UPROPERTY()
+	class ABlasterPlayerController* PlayerController;
+
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
