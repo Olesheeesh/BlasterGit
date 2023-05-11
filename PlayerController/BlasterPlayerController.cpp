@@ -502,7 +502,8 @@ void ABlasterPlayerController::FillScoreBoard()
 					}
 				}
 			}
-			if(HasAuthority()) StartSBTimer();
+			SBIsVisible == true ? StartSBTimer() : StopSBTimer();
+
 			UE_LOG(LogTemp, Warning, TEXT("ScoreBoardToUpdateTimer started"));
 		}
 	}
@@ -517,6 +518,11 @@ void ABlasterPlayerController::StartSBTimer()
 		UpdateSBDelay,
 		true
 	);
+}
+
+void ABlasterPlayerController::StopSBTimer()
+{
+	GetWorldTimerManager().ClearTimer(ScoreBoardToUpdateTimer);
 }
 
 void ABlasterPlayerController::RequestPlayerStates()
@@ -534,16 +540,19 @@ void ABlasterPlayerController::ShowScoreBoard()
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	if (BlasterHUD)
 	{
+		SBIsVisible = true;
 		BlasterHUD->AddScoreBoardWidget();
 		FillScoreBoard();
 	}
 }
+
 
 void ABlasterPlayerController::CloseScoreBoard()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	if (BlasterHUD && BlasterHUD->ScoreBoardWidget)
 	{
+		SBIsVisible = false;
 		BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Hidden);
 		if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("SB is closed"));
 	}

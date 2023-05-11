@@ -110,6 +110,7 @@ private:
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
 
+	// Score Board
 	UPROPERTY()
 	class UScoreBoardWidget* ScoreBoardWidget;
 
@@ -118,10 +119,12 @@ private:
 	FTimerHandle ScoreBoardToUpdateTimer;
 
 	void StartSBTimer();
+	void StopSBTimer();
 
 	float UpdateSBDelay = 0.2f;
 
 	bool bInitializeCharacterOverlay = false;
+	bool SBIsVisible = false;
 
 	float HUDCurrentHealth;
 	float HUDMaxHealth;
