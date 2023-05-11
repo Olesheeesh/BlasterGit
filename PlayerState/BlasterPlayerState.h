@@ -29,4 +29,6 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Defeats)
 	int32 Defeats;
+public:
+	FORCEINLINE int32 GetDefeats() const { return Defeats; }
 };

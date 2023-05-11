@@ -18,4 +18,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UVerticalBox* PlayersS;
 
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* PlayersNumText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MapNameText;
 };

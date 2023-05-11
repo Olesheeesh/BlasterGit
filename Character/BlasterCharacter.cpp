@@ -144,6 +144,8 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ABlasterCharacter::SprintButtonPressed);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ABlasterCharacter::SprintButtonReleased);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABlasterCharacter::ReloadButtonPressed);
+	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Pressed, this, &ABlasterCharacter::ShowScoreBoardPressed);
+	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardReleased);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -526,6 +528,19 @@ void ABlasterCharacter::SetSprint(bool bIsSprinting)
 		GetCharacterMovement()->MaxWalkSpeed = BaseSpeed;
 	}
 	ServerSetSprint(bIsSprinting);
+}
+
+void ABlasterCharacter::ShowScoreBoardPressed()
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if(BlasterPlayerController) BlasterPlayerController->ShowScoreBoard();
+}
+
+void ABlasterCharacter::ShowScoreBoardReleased()
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if(BlasterPlayerController) BlasterPlayerController->CloseScoreBoard();
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString("Tab released"));
 }
 
 void ABlasterCharacter::ServerSetSprint_Implementation(bool bIsSprinting)

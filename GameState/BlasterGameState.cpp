@@ -38,11 +38,13 @@ void ABlasterGameState::UpdateTopScore(ABlasterPlayerState* ScoringPlayer)
 void ABlasterGameState::MulticastData_Implementation(const TArray<ABlasterPlayerState*>& Data)
 {
 	BlasterPlayerStates = Data;
-	UE_LOG(LogTemp, Log, TEXT("BlasterPlayerStates.Num(): %d"), BlasterPlayerStates.Num());
+	UE_LOG(LogTemp, Log, TEXT("MULTICASTBlasterPlayerStates.Num(): %d"), BlasterPlayerStates.Num());
 }
 
 void ABlasterGameState::GetAllPlayerStates_Implementation()
 {
+	BlasterPlayerStates.Empty();
+	UE_LOG(LogTemp, Log, TEXT("GS1"));
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; It++)
 	{
 		APlayerController* PlayerController = It->Get();
@@ -54,16 +56,19 @@ void ABlasterGameState::GetAllPlayerStates_Implementation()
 			{
 				// добавляем PlayerState в массив BlasterPlayerState
 				BlasterPlayerStates.Add(BlasterPlayerState);
-				UE_LOG(LogTemp, Log, TEXT("PlayerState: %s"), *BlasterPlayerState->GetPlayerName());
-				UE_LOG(LogTemp, Log, TEXT("PlayerState.Num(): %d"), BlasterPlayerStates.Num());
+				UE_LOG(LogTemp, Log, TEXT("ServerPlayerState: %s"), *BlasterPlayerState->GetPlayerName());
+				UE_LOG(LogTemp, Log, TEXT("ServerPlayerState.Num(): %d"), BlasterPlayerStates.Num());
 			}
 		}
 	}
+	UE_LOG(LogTemp, Log, TEXT("GS2"));
 	// Replicate the updated array to all clients
 	if (HasAuthority())
 	{
+		UE_LOG(LogTemp, Log, TEXT("__GSAutority1"));
 		BlasterPlayerStates.Sort(); // ensure the array is sorted to ensure consistent order
 		MulticastData(BlasterPlayerStates);
+		UE_LOG(LogTemp, Log, TEXT("__GSAutority2"));
 	}
 }
 

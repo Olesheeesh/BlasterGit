@@ -34,6 +34,15 @@ public:
 
 	void OnMatchStateSet(FName State);//определяет кокой будет HUD при разных MatchState
 
+	void FillScoreBoard();
+
+	UFUNCTION(Server, Reliable)
+	void UpdateScoreBoard();
+
+	void ShowScoreBoard();
+
+	void CloseScoreBoard();
+	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
@@ -82,6 +91,9 @@ private:
 	UPROPERTY()
 	class ABlasterGameMode* BlasterGameMode;
 
+	UPROPERTY()
+	class ABlasterGameState* BlasterGameState;
+
 	float LevelStartingTime = 0.f;
 	float MatchTime = 0.f;
 	float WarmupTime = 0.f;
@@ -98,6 +110,12 @@ private:
 
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
+
+	UPROPERTY()
+	class UScoreBoardWidget* ScoreBoardWidget;
+
+	bool GotAllPlayerStates = false;
+	bool CooldownIsHandled = false;
 
 	bool bInitializeCharacterOverlay = false;
 

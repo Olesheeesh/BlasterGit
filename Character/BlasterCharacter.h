@@ -52,6 +52,8 @@ protected:
 	void SprintButtonReleased();
 	void ReloadButtonPressed();
 	void SetSprint(bool bIsSprinting);
+	void ShowScoreBoardPressed();
+	void ShowScoreBoardReleased();
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
 	virtual void Jump() override;
@@ -79,6 +81,9 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
+
+	UPROPERTY()
+	class ABlasterPlayerController* BlasterPlayerController;
 
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
@@ -148,9 +153,6 @@ private:
 	float MaxHealth = 100.f;
 	UFUNCTION()
 	void OnRep_Health();
-
-	UPROPERTY()
-	class ABlasterPlayerController* BlasterPlayerController;
 
 	bool bElimmed = false;
 
