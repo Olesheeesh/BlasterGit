@@ -36,8 +36,7 @@ public:
 
 	void FillScoreBoard();
 
-	UFUNCTION(Server, Reliable)
-	void UpdateScoreBoard();
+	void RequestPlayerStates();
 
 	void ShowScoreBoard();
 

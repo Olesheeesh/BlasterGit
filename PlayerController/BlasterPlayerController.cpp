@@ -22,6 +22,7 @@ void ABlasterPlayerController::BeginPlay()
 
 	BlasterHUD = Cast<ABlasterHUD>(GetHUD()); //BlasterHUD = result of the cast
 	ServerCheckMatchState();
+	RequestPlayerStates();
 }
 
 void ABlasterPlayerController::Tick(float DeltaTime)
@@ -286,18 +287,10 @@ void ABlasterPlayerController::PollInit()
 			}
 		}
 	}
-	else if (ScoreBoardWidget == nullptr)
-	{//B
-		if (BlasterHUD && BlasterHUD->ScoreBoardWidget)
-		{
-			ScoreBoardWidget = BlasterHUD->ScoreBoardWidget;
-			if (ScoreBoardWidget)
-			{
-				UE_LOG(LogTemp, Error, TEXT("1. FillScoreBoard is initialized"));
-				FillScoreBoard();
-			}
-		}
-	}
+	/*else if (ScoreBoardWidget == nullptr)
+	{
+		
+	}*/
 }
 
 void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)
@@ -512,18 +505,20 @@ void ABlasterPlayerController::FillScoreBoard()
 	}
 }
 
-void ABlasterPlayerController::UpdateScoreBoard_Implementation()
+void ABlasterPlayerController::RequestPlayerStates()
 {
-	if(BlasterHUD && BlasterHUD->ScoreBoardWidget && BlasterHUD->ScoreBoardWidget->PlayersS)
+	BlasterGameState = BlasterGameState == nullptr ? Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)) : BlasterGameState;
+
+	if (BlasterGameState && HasAuthority())
 	{
-		;
+		BlasterGameState->GetAllPlayerStates();
 	}
 }
 
 void ABlasterPlayerController::ShowScoreBoard()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
-	if (BlasterHUD)
+	if (BlasterHUD && !CooldownIsHandled)
 	{
 		BlasterHUD->AddScoreBoardWidget();
 		FillScoreBoard();
@@ -561,6 +556,7 @@ void ABlasterPlayerController::HandleCooldown()
 			FString Announcement("Game Restarts In: ");
 			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
 			FillScoreBoard();
+			CooldownIsHandled = true;
 		}
 	}
 	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
