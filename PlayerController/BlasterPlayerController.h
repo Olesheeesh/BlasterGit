@@ -113,8 +113,13 @@ private:
 	UPROPERTY()
 	class UScoreBoardWidget* ScoreBoardWidget;
 
-	bool GotAllPlayerStates = false;
 	bool CooldownIsHandled = false;
+
+	FTimerHandle ScoreBoardToUpdateTimer;
+
+	void StartSBTimer();
+
+	float UpdateSBDelay = 0.2f;
 
 	bool bInitializeCharacterOverlay = false;
 
@@ -122,5 +127,7 @@ private:
 	float HUDMaxHealth;
 	float HUDScore;
 	int32 HUDDefeats;
+public:
+	FORCEINLINE bool GetCooldownIsHandled() const { return CooldownIsHandled; }
 };
 

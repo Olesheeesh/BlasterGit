@@ -14,6 +14,7 @@
 #include "Blaster/PlayerState/BlasterPlayerState.h"
 #include "Components/Image.h"
 #include "Components/VerticalBox.h"
+#include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -367,6 +368,7 @@ void ABlasterPlayerController::OnRep_MatchState()
 	}
 }
 
+
 void ABlasterPlayerController::HandleWaitingToStart()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
@@ -459,6 +461,7 @@ void ABlasterPlayerController::HandleCooldownn()
 
 void ABlasterPlayerController::FillScoreBoard()
 {
+
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->ScoreBoardWidget->PlayersS &&
 		BlasterHUD->ScoreBoardWidget->PlayersNumText &&
@@ -472,9 +475,7 @@ void ABlasterPlayerController::FillScoreBoard()
 		}
 		if (BlasterGameState && HasAuthority())
 		{
-			UE_LOG(LogTemp, Log, TEXT("__1"));
 			BlasterGameState->GetAllPlayerStates();
-			UE_LOG(LogTemp, Log, TEXT("__01"));
 		}
 		if (BlasterGameState)
 		{
@@ -501,8 +502,21 @@ void ABlasterPlayerController::FillScoreBoard()
 					}
 				}
 			}
+			if(HasAuthority()) StartSBTimer();
+			UE_LOG(LogTemp, Warning, TEXT("ScoreBoardToUpdateTimer started"));
 		}
 	}
+}
+
+void ABlasterPlayerController::StartSBTimer()
+{
+	GetWorldTimerManager().SetTimer(
+		ScoreBoardToUpdateTimer,
+		this,
+		&ABlasterPlayerController::FillScoreBoard,
+		UpdateSBDelay,
+		true
+	);
 }
 
 void ABlasterPlayerController::RequestPlayerStates()
@@ -518,7 +532,7 @@ void ABlasterPlayerController::RequestPlayerStates()
 void ABlasterPlayerController::ShowScoreBoard()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
-	if (BlasterHUD && !CooldownIsHandled)
+	if (BlasterHUD)
 	{
 		BlasterHUD->AddScoreBoardWidget();
 		FillScoreBoard();
@@ -550,6 +564,7 @@ void ABlasterPlayerController::HandleCooldown()
 			BlasterHUD->AnnouncementWidget &&
 			BlasterHUD->AnnouncementWidget->AnnouncementText;
 
+		//—юда
 		if (bHUDValid)
 		{
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
@@ -557,6 +572,8 @@ void ABlasterPlayerController::HandleCooldown()
 			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
 			FillScoreBoard();
 			CooldownIsHandled = true;
+
+
 		}
 	}
 	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());

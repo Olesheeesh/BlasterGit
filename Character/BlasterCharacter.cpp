@@ -533,7 +533,7 @@ void ABlasterCharacter::SetSprint(bool bIsSprinting)
 void ABlasterCharacter::ShowScoreBoardPressed()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
-	if(BlasterPlayerController) BlasterPlayerController->ShowScoreBoard();
+	if(BlasterPlayerController && !BlasterPlayerController->GetCooldownIsHandled()) BlasterPlayerController->ShowScoreBoard();
 }
 
 void ABlasterCharacter::ShowScoreBoardReleased()
