@@ -100,15 +100,6 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	RotateInPlace(DeltaTime);
 
-	if (HasAuthority())
-	{
-		static bool prevIsDead = bElimmed;
-		if (bElimmed != prevIsDead)
-		{
-			UE_LOG(LogTemp, Error, TEXT("isDead: %d"), bElimmed);
-			prevIsDead = bElimmed;
-		}
-	}
 	HideCharacterWhenCameraClose();
 }
 
@@ -231,7 +222,6 @@ void ABlasterCharacter::Elim()
 
 void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/effects
 {
-	bElimmed = true;
 	PlayElimMontage();
 	if(BlasterPlayerController)
 	{
@@ -540,7 +530,6 @@ void ABlasterCharacter::ShowScoreBoardReleased()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController) BlasterPlayerController->CloseScoreBoard();
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString("Tab released"));
 }
 
 void ABlasterCharacter::ServerSetSprint_Implementation(bool bIsSprinting)
@@ -762,6 +751,7 @@ void ABlasterCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const 
 
 	if (CurrentHealth == 0.f)//not "<=" cause CurrentHealth clamped between 0 and 100
 	{
+		bElimmed = true;
 		ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>(); //gamemode
 		if (BlasterGameMode)
 		{

@@ -461,7 +461,6 @@ void ABlasterPlayerController::HandleCooldownn()
 
 void ABlasterPlayerController::FillScoreBoard()
 {
-
 	bool bHUDValid = BlasterHUD &&
 		BlasterHUD->ScoreBoardWidget->PlayersS &&
 		BlasterHUD->ScoreBoardWidget->PlayersNumText &&
@@ -497,7 +496,7 @@ void ABlasterPlayerController::FillScoreBoard()
 						NewPlayerScoreWidget->isDead->SetVisibility(BlasterCharacter->isElimmed() == true ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 						NewPlayerScoreWidget->Kills->SetText(FText::AsNumber(PlayerStat->GetScore()));
 						NewPlayerScoreWidget->Deaths->SetText(FText::AsNumber(PlayerStat->GetDefeats()));
-						NewPlayerScoreWidget->Ping->SetText(FText::AsNumber(PlayerStat->GetPing()));
+						NewPlayerScoreWidget->Ping->SetText(FText::AsNumber(PlayerStat->GetPing()));//deprecated
 						BlasterHUD->ScoreBoardWidget->PlayersS->AddChild(NewPlayerScoreWidget);
 					}
 				}
@@ -554,7 +553,7 @@ void ABlasterPlayerController::CloseScoreBoard()
 	{
 		SBIsVisible = false;
 		BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Hidden);
-		if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("SB is closed"));
+		
 	}
 }
 
@@ -579,8 +578,9 @@ void ABlasterPlayerController::HandleCooldown()
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
 			FString Announcement("Game Restarts In: ");
 			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
-			FillScoreBoard();
 			CooldownIsHandled = true;
+			CloseScoreBoard();
+			FillScoreBoard();
 
 
 		}

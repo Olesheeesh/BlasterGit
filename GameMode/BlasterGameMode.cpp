@@ -20,11 +20,11 @@ void ABlasterGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	LevelStartingTime = GetWorld()->GetTimeSeconds();//time of launching the game to entering Blaster map
-	if (GEngine)
-	{
-		FString Text = FString::Printf(TEXT("LevelStartingTime is %f"), LevelStartingTime);
-		GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Purple, Text);
-	}
+	//if (GEngine)
+	//{
+		//FString Text = FString::Printf(TEXT("LevelStartingTime is %f"), LevelStartingTime);
+		//GEngine->AddOnScreenDebugMessage(-1, 20, FColor::Purple, Text);
+	//}
 }
 
 void ABlasterGameMode::Tick(float DeltaTime)
