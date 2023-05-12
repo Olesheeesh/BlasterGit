@@ -244,6 +244,7 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 	StartDissolve();
 
 	bDisableGameplay = true;
+	GetCharacterMovement()->DisableMovement();
 	if(Combatt)
 	{
 		Combatt->FireButtonPressed(false);
@@ -529,7 +530,7 @@ void ABlasterCharacter::ShowScoreBoardPressed()
 void ABlasterCharacter::ShowScoreBoardReleased()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
-	if(BlasterPlayerController) BlasterPlayerController->CloseScoreBoard();
+	if(BlasterPlayerController && !BlasterPlayerController->GetCooldownIsHandled()) BlasterPlayerController->CloseScoreBoard();
 }
 
 void ABlasterCharacter::ServerSetSprint_Implementation(bool bIsSprinting)

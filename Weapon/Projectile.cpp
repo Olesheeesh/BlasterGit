@@ -49,7 +49,7 @@ void AProjectile::BeginPlay()
 	}
 	if(HasAuthority())//чтоб OnHit event просчитывался только на сервере
 	{
-		CollisionBox->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);//& - комьютер не создаёт локальную копию переменной, а сразу к ней обращается
+		CollisionBox->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);//& - компьютер не создаёт локальную копию переменной, а сразу к ней обращается
 	}
 }
 
@@ -61,11 +61,8 @@ void AProjectile::Tick(float DeltaTime)
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-
-	if (ImpactHitMaterial)
-	{
-		UDecalComponent* DecalComponent = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), ImpactHitMaterial, FVector(10.0f), Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), 5.0f);
-	}
+	UDecalComponent* DecalComponent = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), ImpactHitMaterial, FVector(10.0f), Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), 5.0f);
+	
 	Destroy();
 }
 

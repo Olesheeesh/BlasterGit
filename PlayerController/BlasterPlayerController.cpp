@@ -389,11 +389,46 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	if (BlasterHUD)
 	{
-		BlasterHUD->AddCharacterOverlay();
+		if(BlasterHUD->CharacterOverlay == nullptr) BlasterHUD->AddCharacterOverlay();
 		if (BlasterHUD->AnnouncementWidget)
 		{
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
+	}
+}
+
+void ABlasterPlayerController::HandleCooldown()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	if (BlasterHUD)
+	{
+		BlasterHUD->CharacterOverlay->RemoveFromParent();
+		BlasterHUD->AddScoreBoardWidget();
+
+		bool bHUDValid = BlasterHUD->ScoreBoardWidget &&
+			BlasterHUD->ScoreBoardWidget->PlayersS &&
+			BlasterHUD->AnnouncementWidget &&
+			BlasterHUD->AnnouncementWidget->AnnouncementText;
+
+		//—юда
+		if (bHUDValid)
+		{
+			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
+			FString Announcement("Game Restarts In: ");
+			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
+			CooldownIsHandled = true;
+			ShowScoreBoard();
+
+
+		}
+	}
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+
+	if (BlasterCharacter && BlasterCharacter->GetCombatComponent())
+	{
+		BlasterCharacter->bDisableGameplay = true;
+		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
 	}
 }
 
@@ -456,6 +491,16 @@ void ABlasterPlayerController::HandleCooldownn()
 	{
 		BlasterCharacter->bDisableGameplay = true;
 		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
+	}
+}
+
+void ABlasterPlayerController::RequestPlayerStates()
+{
+	BlasterGameState = BlasterGameState == nullptr ? Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)) : BlasterGameState;
+
+	if (BlasterGameState && HasAuthority())
+	{
+		BlasterGameState->GetAllPlayerStates();
 	}
 }
 
@@ -524,16 +569,6 @@ void ABlasterPlayerController::StopSBTimer()
 	GetWorldTimerManager().ClearTimer(ScoreBoardToUpdateTimer);
 }
 
-void ABlasterPlayerController::RequestPlayerStates()
-{
-	BlasterGameState = BlasterGameState == nullptr ? Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this)) : BlasterGameState;
-
-	if (BlasterGameState && HasAuthority())
-	{
-		BlasterGameState->GetAllPlayerStates();
-	}
-}
-
 void ABlasterPlayerController::ShowScoreBoard()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
@@ -544,7 +579,6 @@ void ABlasterPlayerController::ShowScoreBoard()
 		FillScoreBoard();
 	}
 }
-
 
 void ABlasterPlayerController::CloseScoreBoard()
 {
@@ -558,41 +592,7 @@ void ABlasterPlayerController::CloseScoreBoard()
 }
 
 //BlasterCharacter->isElimmed() == true ? BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden) : BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden);
-void ABlasterPlayerController::HandleCooldown()
-{
-	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 
-	if (BlasterHUD)
-	{
-		BlasterHUD->CharacterOverlay->RemoveFromParent();
-		BlasterHUD->AddScoreBoardWidget();
-
-		bool bHUDValid = BlasterHUD->ScoreBoardWidget &&
-			BlasterHUD->ScoreBoardWidget->PlayersS &&
-			BlasterHUD->AnnouncementWidget &&
-			BlasterHUD->AnnouncementWidget->AnnouncementText;
-
-		//—юда
-		if (bHUDValid)
-		{
-			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Visible);
-			FString Announcement("Game Restarts In: ");
-			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
-			CooldownIsHandled = true;
-			CloseScoreBoard();
-			FillScoreBoard();
-
-
-		}
-	}
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
-
-	if (BlasterCharacter && BlasterCharacter->GetCombatComponent())
-	{
-		BlasterCharacter->bDisableGameplay = true;
-		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
-	}
-}
 
 
 void ABlasterPlayerController::ServerCheckMatchState_Implementation()
