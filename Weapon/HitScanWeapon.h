@@ -7,7 +7,7 @@
 #include "HitScanWeapon.generated.h"
 
 /**
- * Inherit the properties of the weapon class
+ * Inherit the properties of the weapon class, diff between HitScanWeapon and Projectile- it perform a line trace(instant hits) and not launch projectiles
  */
 UCLASS()
 class BLASTER_API AHitScanWeapon : public AWeapon
@@ -22,6 +22,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	class UParticleSystem* ImpactParticle;
 
-
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* BeamParticle;
 
 };

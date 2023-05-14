@@ -2,6 +2,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 void AHitScanWeapon::Fire(const FVector& HitTarget)
 {
@@ -12,7 +13,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	AController* InstigatorController = OwnerPawn->GetController();
 
 	const USkeletalMeshSocket* MuzzleFlashSocket = GetWeaponMesh()->GetSocketByName("MuzzleFlash");
-	if(MuzzleFlashSocket && InstigatorController)
+	if(MuzzleFlashSocket)
 	{
 		FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());//position, rotation, scale
 		FVector Start = SocketTransform.GetLocation();
@@ -28,21 +29,20 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 				End,
 				ECollisionChannel::ECC_Visibility
 			);
+			FVector BeamEnd = End;
 			if(FireHit.bBlockingHit)
 			{
+				BeamEnd = FireHit.ImpactPoint;
 				ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(FireHit.GetActor());//character that was hit
-				if(BlasterCharacter)
+				if(BlasterCharacter && InstigatorController && HasAuthority())//HasAuthority() - call apply damage, only if we are the server
 				{
-					if (HasAuthority())//call apply damage, only if we are the server
-					{
-						UGameplayStatics::ApplyDamage(
-							BlasterCharacter,
-							Damage,
-							InstigatorController,
-							this,
-							UDamageType::StaticClass()
-						);
-					}
+					UGameplayStatics::ApplyDamage(
+					BlasterCharacter,
+					Damage,
+					InstigatorController,
+					this,
+					UDamageType::StaticClass()
+					);
 				}
 				if(ImpactParticle)
 				{
@@ -52,6 +52,18 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 						FireHit.ImpactPoint,
 						FireHit.ImpactNormal.Rotation()//ImpactNormal is a vector
 					);
+				}
+			}
+			if(BeamParticle)
+			{
+				UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(
+					World,
+					BeamParticle,
+					SocketTransform
+				);
+				if(Beam)
+				{
+					Beam->SetVectorParameter(FName("Target"), BeamEnd);//create vector param by name
 				}
 			}
 		}
