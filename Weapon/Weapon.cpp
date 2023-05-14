@@ -13,6 +13,7 @@ AWeapon::AWeapon()
 {
 	bReplicates = true; //class is replicated(spawns on all machines) will exist independetly of the server
 	PrimaryActorTick.bCanEverTick = false;
+	SetReplicateMovement(true);//actor's movement replicates to clients
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(RootComponent);

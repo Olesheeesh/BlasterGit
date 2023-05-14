@@ -35,6 +35,9 @@ protected:
 	class UAudioComponent* ProjectileLoopComponent;
 
 	UPROPERTY(EditAnywhere)
+	class URocketMovementComponent* RocketMovementComponent;
+
+	UPROPERTY(EditAnywhere)
 	USoundAttenuation* LoopingSoundAttenuation;
 
 	FTimerHandle DestroyTimer;

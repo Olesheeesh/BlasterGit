@@ -1,9 +1,17 @@
 #include "ProjectileBullet.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
+AProjectileBullet::AProjectileBullet()
+{
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+	ProjectileMovementComponent->bRotationFollowsVelocity = true;
+	ProjectileMovementComponent->SetIsReplicated(true);
+}
+
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+                              FVector NormalImpulse, const FHitResult& Hit)
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());//cast to ACaracter result of GetOwner()
 	if(OwnerCharacter)
@@ -27,7 +35,7 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
  
 /*
  *		Projectile.cpp
- * OnHit in Projectile is only doing destroy and spawning pullet hole
+ * OnHit in Projectile is only doing destroy and spawning bullet hole
  *
  */
 
@@ -40,5 +48,5 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 
 /*
  *		BlasterCharacter.cpp
- *	RecieveDamage(), bound this foo to OnTakeAnyDamage(), only at the server!
+ *	RecieveDamage(), bound this foo with OnTakeAnyDamage(), only at the server!
  */
