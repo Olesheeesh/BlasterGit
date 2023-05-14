@@ -269,6 +269,16 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 		UGameplayStatics::PlaySoundAtLocation(this, ElimBotSound, ElimBotSpawnPoint);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Multicast started"));
+
+	bool bHideSniperScoope = IsLocallyControlled() && 
+		isAiming() == true && 
+		Combatt->EquippedWeapon && 
+		Combatt->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
+
+	if (bHideSniperScoope)
+	{
+		ShowSniperScopeWidget(false);
+	}
 }
 
 void ABlasterCharacter::ElimTimerFinished()
@@ -506,6 +516,9 @@ void ABlasterCharacter::PlayReloadingMontage()
 			SectionName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_Pistol:
+			SectionName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_SniperRifle:
 			SectionName = FName("Rifle");
 			break;
 		}
