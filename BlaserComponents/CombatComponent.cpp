@@ -155,7 +155,6 @@ void UCombatComponent::UpdateAmmoValues()
 		CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= ReloadAmount;
 		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
-
 	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
 	if (Controller)
 	{
@@ -198,7 +197,6 @@ int32 UCombatComponent::AmountToReload()
 		int32 least = FMath::Min(RoomInMag, AmountCarried);
 		return FMath::Clamp(RoomInMag, 0, least);
 	}
-
 	return 0;
 }
 
@@ -216,7 +214,6 @@ void UCombatComponent::OnRep_CombatState()//logic for client
 		}
 	}
 }
-
 
 bool UCombatComponent::GetIsSprinting(bool isSprinting)
 {
@@ -501,6 +498,7 @@ void UCombatComponent::InitializeCarriedAmmo()
 {
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, StartingARAmmo);//Emplace() ~= add, but avoid any temporaries.  EWT_AssaultRifle value = 30
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_RocketLauncher, StartingRocketAmmo);
+	CarriedAmmoMap.Emplace(EWeaponType::EWT_Pistol, StartingPistolAmmo);
 }
 
 
