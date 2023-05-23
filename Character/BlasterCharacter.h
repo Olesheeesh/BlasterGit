@@ -36,7 +36,7 @@ public:
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
 
-	UFUNCTION(BlueprintImplementableEvent)//so we can implement this in character blueprint
+	UFUNCTION(BlueprintImplementableEvent)//should implement in character blueprint
 	void ShowSniperScopeWidget(bool bShowScope);
 protected:
 	// Called when the game starts or when spawned
@@ -154,9 +154,11 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats")
 	float MaxHealth = 100.f;
+
 	UFUNCTION()
 	void OnRep_Health();
 
+	UPROPERTY(Replicated)
 	bool bElimmed = false;
 
 	FTimerHandle ElimTimer;

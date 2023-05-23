@@ -42,6 +42,8 @@ public:
 
 	void CloseScoreBoard();
 	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
+
+	void HideSniperScope();
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();

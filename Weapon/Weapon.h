@@ -76,7 +76,7 @@ public:
 	class USoundCue* EquipSound;
 
 	UPROPERTY(EditAnywhere)
-	class USoundCue* OutOfAmmoSound;
+	USoundCue* OutOfAmmoSound;
 protected:
 	virtual void BeginPlay() override;
 

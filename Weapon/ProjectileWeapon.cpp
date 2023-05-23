@@ -21,7 +21,7 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 		FRotator TargetRotation = ToTarget.Rotation();
 		if(ProjectileClass && InstigatorPawn)
 		{
-			FActorSpawnParameters SpawnParams;
+			FActorSpawnParameters SpawnParams;//Struct of optional parameters passed to SpawnActor function(s)
 			SpawnParams.Owner = GetOwner();
 			SpawnParams.Instigator = InstigatorPawn;
 			UWorld* World = GetWorld();
@@ -32,7 +32,7 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 					SocketTransform.GetLocation(),
 					TargetRotation,
 					SpawnParams
-					);
+				);
 			}
 		}
 	}

@@ -30,9 +30,9 @@ public:
 
 	void FireButtonPressed(bool bPressed);
 
+	void SetAiming(bool bIsAiming);
 protected:
 	virtual void BeginPlay() override;
-	void SetAiming(bool bIsAiming);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
@@ -57,6 +57,26 @@ protected:
 	void HandleReload();
 
 	int32 AmountToReload();
+
+	/*
+	 * Aiming and FOV
+	 */
+
+	 //Field of view when not aiming; set to the camera's base FOV in BeginPlay
+	float DefaultFov;//90
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CurrentFOV;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float ZoomedFOV = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float UnZoomInterpSpeed = 20.f;
+
+	UFUNCTION(BlueprintCallable)
+	void InterpFOV(float DeltaTime);
+
 private:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
@@ -96,23 +116,6 @@ private:
 	float CrosshairShootingFactor;
 
 	/*
-	 * Aiming and FOV
-	 */
-
-	//Field of view when not aiming; set to the camera's base FOV in BeginPlay
-	float DefaultFov;
-
-	float CurrentFOV;
-
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	float ZoomedFOV = 30.f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	float UnZoomInterpSpeed = 20.f;
-
-	void InterpFOV(float DeltaTime);
-
-	/*
 	 * Automatic Fire
 	 */
 
@@ -146,6 +149,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	int32 StartingSniperAmmo = 0;
 
+	UPROPERTY(EditAnywhere)
+	int32 StartingSMGAmmo = 0;
+
+	UPROPERTY(EditAnywhere)
+	int32 StartingShotgunAmmo = 0;
+
 	void InitializeCarriedAmmo();
 
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
@@ -160,7 +169,8 @@ private:
 
 	void PlayOutOfAmmoSound();
 public:	
-
+	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
+	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 };
 
 

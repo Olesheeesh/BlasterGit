@@ -62,15 +62,15 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (OverheadWidget)
+	/*if (OverheadWidget)
 	{
 		UOverheadWidget* OverheadWidgetInstance = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
 		if (OverheadWidgetInstance)
 		{
 			OverheadWidgetInstance->ShowPlayerNetRole(this);
 		}
-	}
-
+	}*/
+	UE_LOG(LogTemp, Warning, TEXT("I am just respawned: %f"), GetFollowCamera()->FieldOfView);
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController)
 	{
@@ -96,6 +96,8 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
+	//UE_LOG(LogTemp, Warning, TEXT("Current FOV_BC_Tick: %f"), GetFollowCamera()->FieldOfView);
+
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	RotateInPlace(DeltaTime);
@@ -270,12 +272,12 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Multicast started"));
 
-	bool bHideSniperScoope = IsLocallyControlled() && 
+	bool bSniperScopeIsValid = IsLocallyControlled() && 
 		isAiming() == true && 
 		Combatt->EquippedWeapon && 
 		Combatt->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle;
 
-	if (bHideSniperScoope)
+	if (bSniperScopeIsValid)
 	{
 		ShowSniperScopeWidget(false);
 	}
@@ -519,6 +521,12 @@ void ABlasterCharacter::PlayReloadingMontage()
 			SectionName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_SniperRifle:
+			SectionName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_SubmachineGun:
+			SectionName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_ShotGun:
 			SectionName = FName("Rifle");
 			break;
 		}

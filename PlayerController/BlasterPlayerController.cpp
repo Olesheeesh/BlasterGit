@@ -15,6 +15,8 @@
 #include "Components/Image.h"
 #include "Components/VerticalBox.h"
 #include "TimerManager.h"
+#include "Blaster/Weapon/Weapon.h"
+#include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -272,6 +274,26 @@ void ABlasterPlayerController::SetHUDTime()
 	CountdownInt = SecondsLeft;
 }
 
+void ABlasterPlayerController::HideSniperScope()
+{
+	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+
+	bool bSniperScopeIsValid = BlasterCharacter &&
+		BlasterCharacter->IsLocallyControlled() &&
+		BlasterCharacter->isAiming() == true &&
+		BlasterCharacter->GetCombatComponent()->GetEquippedWeapon() &&
+		BlasterCharacter->GetCombatComponent()->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_SniperRifle &&
+		BlasterCharacter->GetFollowCamera();
+
+	if (bSniperScopeIsValid)
+	{
+		BlasterCharacter->ShowSniperScopeWidget(false);
+		BlasterCharacter->GetFollowCamera()->SetFieldOfView(90.f);
+		UE_LOG(LogTemp, Error, TEXT("Should call"));
+		UE_LOG(LogTemp, Warning, TEXT("Current FOV1: %f"), BlasterCharacter->GetFollowCamera()->FieldOfView);
+	}
+}
+
 void ABlasterPlayerController::PollInit()
 {
 	if (CharacterOverlay == nullptr)
@@ -418,6 +440,7 @@ void ABlasterPlayerController::HandleCooldown()
 			FString Announcement("Game Restarts In: ");
 			BlasterHUD->AnnouncementWidget->AnnouncementText->SetText(FText::FromString(Announcement));
 			CooldownIsHandled = true;
+			HideSniperScope();
 			ShowScoreBoard();
 
 
@@ -548,7 +571,7 @@ void ABlasterPlayerController::FillScoreBoard()
 			}
 			SBIsVisible == true ? StartSBTimer() : StopSBTimer();
 
-			UE_LOG(LogTemp, Warning, TEXT("ScoreBoardToUpdateTimer started"));
+			//UE_LOG(LogTemp, Warning, TEXT("ScoreBoardToUpdateTimer started"));
 		}
 	}
 }
@@ -587,14 +610,10 @@ void ABlasterPlayerController::CloseScoreBoard()
 	{
 		SBIsVisible = false;
 		BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Hidden);
-		
 	}
 }
 
 //BlasterCharacter->isElimmed() == true ? BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden) : BlasterHUD->PlayerScoreWidget->isDead->SetVisibility(ESlateVisibility::Hidden);
-
-
-
 void ABlasterPlayerController::ServerCheckMatchState_Implementation()
 {
 	ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
