@@ -260,6 +260,10 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 	{
 		Character->ShowSniperScopeWidget(bIsAiming);
 	}
+	if(Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_GrenadeLauncher)
+	{
+		Character->ShowGrenadeLauncherScopeWidget(bIsAiming);
+	}
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)//реплицирует информацию всем клиентам
@@ -508,6 +512,7 @@ void UCombatComponent::InitializeCarriedAmmo()
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_SniperRifle, StartingSniperAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_SubmachineGun, StartingSMGAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_ShotGun, StartingShotgunAmmo);
+	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, StartingGrenadeLauncherAmmo);
 }
 
 

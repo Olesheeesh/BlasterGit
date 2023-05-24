@@ -38,6 +38,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)//should implement in character blueprint
 	void ShowSniperScopeWidget(bool bShowScope);
+
+	UFUNCTION(BlueprintImplementableEvent)//should implement in character blueprint
+	void ShowGrenadeLauncherScopeWidget(bool bShowScope);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -73,6 +76,13 @@ protected:
 	void RotateInPlace(float DeltaTime);
 
 private:
+
+	UPROPERTY(VisibleAnywhere)
+	class USkeletalMeshComponent* ArmsMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Transformation")
+	TObjectPtr<USceneComponent> Arms;
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
 

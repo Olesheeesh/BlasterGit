@@ -26,6 +26,12 @@
 ABlasterCharacter::ABlasterCharacter() //Constructor
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	Arms = CreateDefaultSubobject<USceneComponent>("Arms");
+
+	ArmsMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmsMesh"));
+	ArmsMesh->SetupAttachment(Arms);
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	CameraBoom->TargetArmLength = 250.f;
@@ -50,6 +56,7 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	GetMesh()->bOwnerNoSee = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
@@ -280,6 +287,7 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 	if (bSniperScopeIsValid)
 	{
 		ShowSniperScopeWidget(false);
+		ShowGrenadeLauncherScopeWidget(false);
 	}
 }
 
@@ -527,6 +535,9 @@ void ABlasterCharacter::PlayReloadingMontage()
 			SectionName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_ShotGun:
+			SectionName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_GrenadeLauncher:
 			SectionName = FName("Rifle");
 			break;
 		}
