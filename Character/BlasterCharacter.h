@@ -41,6 +41,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)//should implement in character blueprint
 	void ShowGrenadeLauncherScopeWidget(bool bShowScope);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	class UCameraComponent* FollowCamera;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -77,17 +80,15 @@ protected:
 
 private:
 
+
 	UPROPERTY(VisibleAnywhere)
 	class USkeletalMeshComponent* ArmsMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Transformation")
-	TObjectPtr<USceneComponent> Arms;
+	TObjectPtr<USceneComponent> FPScene;
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
-
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class UCameraComponent* FollowCameraa;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
@@ -239,7 +240,7 @@ public:
 	AWeapon* GetEquippedWeapon();
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; } //returning what enum:: ETurnInPlace equals
 	FVector GetHitTarget() const;
-	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCameraa; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FORCEINLINE bool isElimmed() const { return bElimmed; }
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }

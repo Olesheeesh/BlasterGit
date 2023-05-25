@@ -23,28 +23,31 @@
 #include "Blaster/Weapon/WeaponTypes.h"
 
 // Sets default values
-ABlasterCharacter::ABlasterCharacter() //Constructor
+ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	Arms = CreateDefaultSubobject<USceneComponent>("Arms");
+	FPScene = CreateDefaultSubobject<USceneComponent>(TEXT("FPScene"));
+	FPScene->SetupAttachment(RootComponent);
+
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+	FollowCamera->SetupAttachment(FPScene);
+	FollowCamera->bUsePawnControlRotation = true;
 
 	ArmsMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmsMesh"));
-	ArmsMesh->SetupAttachment(Arms);
+	ArmsMesh->SetupAttachment(FPScene);
+	ArmsMesh->bOnlyOwnerSee = true;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(GetMesh());
+	/*CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(ArmsMesh);
 	CameraBoom->TargetArmLength = 250.f;
-	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bUsePawnControlRotation = true;*/
 
-	FollowCameraa = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCameraa->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCameraa->bUsePawnControlRotation = false;
 
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	OverheadWidget = CreateDefaultSubobject <UWidgetComponent> (TEXT("OverheadWidget"));
+	
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
 	Combatt = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
@@ -66,6 +69,7 @@ ABlasterCharacter::ABlasterCharacter() //Constructor
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
 
+
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -77,7 +81,7 @@ void ABlasterCharacter::BeginPlay()
 			OverheadWidgetInstance->ShowPlayerNetRole(this);
 		}
 	}*/
-	UE_LOG(LogTemp, Warning, TEXT("I am just respawned: %f"), GetFollowCamera()->FieldOfView);
+	//UE_LOG(LogTemp, Warning, TEXT("I am just respawned: %f"), GetFollowCamera()->FieldOfView);
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController)
 	{
@@ -95,7 +99,7 @@ void ABlasterCharacter::BeginPlay()
 
 	if(HasAuthority())
 	{
-		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будут вызвана при возникновении события OnTakeAnyDamage
+		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будет вызвана при возникновении события OnTakeAnyDamage
 	}
 }
 
@@ -109,7 +113,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	RotateInPlace(DeltaTime);
 
-	HideCharacterWhenCameraClose();
+	//HideCharacterWhenCameraClose();
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -689,7 +693,7 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
-void ABlasterCharacter::HideCharacterWhenCameraClose()
+/*void ABlasterCharacter::HideCharacterWhenCameraClose()
 {
 	if (!IsLocallyControlled()) return; //should only be executed by the locally controlled player
 
@@ -711,7 +715,7 @@ void ABlasterCharacter::HideCharacterWhenCameraClose()
 			Combatt->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;//SetVisibility(false)
 		}
 	}
-}
+}*/
 
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {

@@ -56,7 +56,7 @@ void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 void ABlasterPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(InPawn);
+	BlasterCharacter = Cast<ABlasterCharacter>(InPawn);
 	if (MatchState == MatchState::Cooldown && BlasterCharacter)
 	{
 		BlasterCharacter->bDisableGameplay = true;
@@ -276,7 +276,7 @@ void ABlasterPlayerController::SetHUDTime()
 
 void ABlasterPlayerController::HideSniperScope()
 {
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 
 	bool bSniperScopeIsValid = BlasterCharacter &&
 		BlasterCharacter->IsLocallyControlled() &&
@@ -288,7 +288,7 @@ void ABlasterPlayerController::HideSniperScope()
 	if (bSniperScopeIsValid)
 	{
 		BlasterCharacter->ShowSniperScopeWidget(false);
-		BlasterCharacter->GetFollowCamera()->SetFieldOfView(90.f);
+		BlasterCharacter->GetFollowCamera()->SetFieldOfView(SniperZoom);
 		UE_LOG(LogTemp, Error, TEXT("Should call"));
 		UE_LOG(LogTemp, Warning, TEXT("Current FOV1: %f"), BlasterCharacter->GetFollowCamera()->FieldOfView);
 	}
@@ -446,7 +446,7 @@ void ABlasterPlayerController::HandleCooldown()
 
 		}
 	}
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 
 	if (BlasterCharacter && BlasterCharacter->GetCombatComponent())
 	{
@@ -508,7 +508,7 @@ void ABlasterPlayerController::HandleCooldownn()
 
 		}
 	}
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 
 	if(BlasterCharacter && BlasterCharacter->GetCombatComponent())
 	{
@@ -548,7 +548,7 @@ void ABlasterPlayerController::FillScoreBoard()
 		{
 			BlasterHUD->ScoreBoardWidget->PlayersS->ClearChildren();
 
-			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+			BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 			BlasterPlayerStates = BlasterGameState->BlasterPlayerStates;
 			BlasterHUD->ScoreBoardWidget->PlayersNumText->SetText(FText::AsNumber(BlasterPlayerStates.Num()));
 			BlasterHUD->ScoreBoardWidget->MapNameText->SetText(FText::FromString(UGameplayStatics::GetCurrentLevelName(this)));

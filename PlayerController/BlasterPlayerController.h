@@ -90,6 +90,9 @@ private:
 	class ABlasterHUD* BlasterHUD;
 
 	UPROPERTY()
+	class ABlasterCharacter* BlasterCharacter;
+
+	UPROPERTY()
 	class ABlasterGameMode* BlasterGameMode;
 
 	UPROPERTY()
@@ -132,6 +135,9 @@ private:
 	float HUDMaxHealth;
 	float HUDScore;
 	int32 HUDDefeats;
+
+	UPROPERTY(EditAnywhere)
+	float SniperZoom = 90.f;
 public:
 	FORCEINLINE bool GetCooldownIsHandled() const { return CooldownIsHandled; }
 };
