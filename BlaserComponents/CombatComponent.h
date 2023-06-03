@@ -23,6 +23,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
+
 	void Reload();
 
 	UFUNCTION(BlueprintCallable)
@@ -101,7 +102,6 @@ private:
 
 	FVector HitTarget;
 
-	bool GetIsSprinting(bool bSprinting);
 
 	bool bSprinting;
 

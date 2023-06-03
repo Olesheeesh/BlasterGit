@@ -18,6 +18,7 @@ class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCro
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
+	friend class UCombatComponent;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;// Called to bind functionality to input
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -43,7 +44,8 @@ public:
 	void ShowGrenadeLauncherScopeWidget(bool bShowScope);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
-	class UCameraComponent* FollowCamera;
+	class UCameraComponent* PlayerCamera;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -77,12 +79,14 @@ protected:
 	//Poll for any relevant classes and initialize our HUD
 	void PollInit();
 	void RotateInPlace(float DeltaTime);
-
+	bool GetIsSprinting();
 private:
+	float HighestSpeed = 0.f;
 
+	bool currentbUseControllerRotationYaw = false;
 
 	UPROPERTY(VisibleAnywhere)
-	class USkeletalMeshComponent* ArmsMesh;
+	class USkeletalMeshComponent* HeadMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Transformation")
 	TObjectPtr<USceneComponent> FPScene;
@@ -234,13 +238,14 @@ public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool isWeaponEquipped();
 	bool isAiming(); //getter for BlasterCharacter
+
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; } //getter AO_Yaw
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; } //getter AO_Pitch
 	FORCEINLINE float GetBaseSpeed() const { return BaseSpeed; } //use getter because BaseSpeed is a private variable 
 	AWeapon* GetEquippedWeapon();
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; } //returning what enum:: ETurnInPlace equals
 	FVector GetHitTarget() const;
-	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return PlayerCamera; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FORCEINLINE bool isElimmed() const { return bElimmed; }
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
@@ -248,9 +253,9 @@ public:
 	ECombatState GetCombatState() const;
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
+	
+
 };
-
-
 
 //tî replicate:
 //	1.Set UPROPERTY(Replicated)

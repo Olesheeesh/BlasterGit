@@ -21,30 +21,32 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Blaster/Weapon/WeaponTypes.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
 ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	FPScene = CreateDefaultSubobject<USceneComponent>(TEXT("FPScene"));
-	FPScene->SetupAttachment(RootComponent);
+	HeadMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HeadMesh"));
+	HeadMesh->SetupAttachment(GetMesh());
+	AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("neck_01"));
+	HeadMesh->SetCollisionObjectType(ECC_SkeletalMesh);
+	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	HeadMesh->bOnlyOwnerSee = true;
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(FPScene);
-	FollowCamera->bUsePawnControlRotation = true;
-
-	ArmsMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmsMesh"));
-	ArmsMesh->SetupAttachment(FPScene);
-	ArmsMesh->bOnlyOwnerSee = true;
+	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
+	PlayerCamera->AttachToComponent(HeadMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
+	PlayerCamera->bUsePawnControlRotation = true;
+	bUseControllerRotationYaw = true;
 
 	/*CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(ArmsMesh);
 	CameraBoom->TargetArmLength = 250.f;
 	CameraBoom->bUsePawnControlRotation = true;*/
 
-
-	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
@@ -59,7 +61,7 @@ ABlasterCharacter::ABlasterCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	GetMesh()->bOwnerNoSee = true;
+	GetMesh()->bOwnerNoSee = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
@@ -68,7 +70,6 @@ ABlasterCharacter::ABlasterCharacter()
 
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
-
 
 void ABlasterCharacter::BeginPlay()
 {
@@ -107,10 +108,19 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
-	//UE_LOG(LogTemp, Warning, TEXT("Current FOV_BC_Tick: %f"), GetFollowCamera()->FieldOfView);
-
+	float Speed = GetCharacterMovement()->Velocity.Size();
+	if (HighestSpeed < Speed)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Highest speed: %f"), Speed);
+		HighestSpeed = Speed;
+	}
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
+	/*if (currentbUseControllerRotationYaw != bUseControllerRotationYaw)
+	{
+		UE_LOG(LogTemp, Error, TEXT("bUseControllerRotationYaw: %d"), bUseControllerRotationYaw);
+		currentbUseControllerRotationYaw = bUseControllerRotationYaw;
+	}*/
 	RotateInPlace(DeltaTime);
 
 	//HideCharacterWhenCameraClose();
@@ -265,6 +275,7 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//Spawn Elim bot
 	FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
@@ -502,6 +513,26 @@ void ABlasterCharacter::SprintButtonReleased()
 	SetSprint(false);
 }
 
+bool ABlasterCharacter::GetIsSprinting()
+{
+	if (GetCharacterMovement()->Velocity.Size() > BaseSpeed && bPressedJump || GetCharacterMovement()->IsFalling())
+	{
+		return false;
+	}
+	else if(GetVelocity().Length() > GetBaseSpeed())
+	{
+		return true;
+	}
+	else if(GetVelocity().Length() <= GetBaseSpeed())
+	{
+		return false;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 void ABlasterCharacter::ReloadButtonPressed()
 {
 	if (bDisableGameplay)return;
@@ -607,7 +638,9 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 			InterpAO_Yaw = AO_Yaw;
 		}
 		bUseControllerRotationYaw = true;
+		
 		TurnInPlace(DeltaTime);
+		
 	}
 	if(Speed > 0.f || bIsInAir)//dont use AimOffset while moving
 	{
@@ -623,6 +656,7 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 void ABlasterCharacter::CalculateAO_Pitch()
 {
 	AO_Pitch = GetBaseAimRotation().Pitch;
+	//UE_LOG(LogTemp, Warning, TEXT("AO_Pitch1 %f: "), AO_Pitch);
 	if (AO_Pitch > 90.f && !IsLocallyControlled())
 	{
 		//map pitch from [270, 360) to [-90, 0)
@@ -630,6 +664,7 @@ void ABlasterCharacter::CalculateAO_Pitch()
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
+	//UE_LOG(LogTemp, Error, TEXT("AO_Pitch2 %f: "), AO_Pitch);
 }
 
 void ABlasterCharacter::SimProxiesTurn()
@@ -672,11 +707,11 @@ void ABlasterCharacter::SimProxiesTurn()
 
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
 {
-	if(AO_Yaw > 45.f)
+	if(AO_Yaw > 90.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Right;
 	}
-	else if(AO_Yaw < -45.f)
+	else if(AO_Yaw < -90.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Left;
 	}
@@ -754,6 +789,7 @@ bool ABlasterCharacter::isAiming()//getter(use getter to set in another class(an
 {
 	return (Combatt && Combatt->bAiming); //return true if Combat is valid && bAiming is true
 }
+
 
 AWeapon* ABlasterCharacter::GetEquippedWeapon()//return currently equipped weapon
 {
