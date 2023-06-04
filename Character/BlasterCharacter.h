@@ -69,6 +69,8 @@ protected:
 	virtual void Jump() override;
 	void FireButtonPressed();
 	void FireButtonReleased();
+	void ChangeOpticPressed();
+
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
 	UFUNCTION(Server, Reliable)
@@ -86,7 +88,7 @@ private:
 	bool currentbUseControllerRotationYaw = false;
 
 	UPROPERTY(VisibleAnywhere)
-	class USkeletalMeshComponent* HeadMesh;
+	class USkeletalMeshComponent* FPSMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Transformation")
 	TObjectPtr<USceneComponent> FPScene;
@@ -100,11 +102,17 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
 
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingScope)
+	class AScope* OverlappingScope;
+
 	UPROPERTY()
 	class ABlasterPlayerController* BlasterPlayerController;
 
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+
+	UFUNCTION()
+	void OnRep_OverlappingScope(AScope* LastScope);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combatt;
@@ -236,6 +244,7 @@ public:
 	void PrintNetModeAndRole();
 
 	void SetOverlappingWeapon(AWeapon* Weapon);
+	void SetOverlappingScope(AScope* Scope);
 	bool isWeaponEquipped();
 	bool isAiming(); //getter for BlasterCharacter
 
@@ -243,6 +252,7 @@ public:
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; } //getter AO_Pitch
 	FORCEINLINE float GetBaseSpeed() const { return BaseSpeed; } //use getter because BaseSpeed is a private variable 
 	AWeapon* GetEquippedWeapon();
+	AScope* GetEquippedScope();
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; } //returning what enum:: ETurnInPlace equals
 	FVector GetHitTarget() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return PlayerCamera; }
@@ -253,6 +263,7 @@ public:
 	ECombatState GetCombatState() const;
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
+	FORCEINLINE USkeletalMeshComponent* GetFPSMesh() const { return FPSMesh; }
 	
 
 };

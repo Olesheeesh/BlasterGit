@@ -15,6 +15,7 @@
 #include "Camera/CameraComponent.h"
 #include "Blaster/HUD/BlasterHUD.h"
 #include "TimerManager.h"
+#include "Blaster/Weapon/Scopes/Scope.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -58,6 +59,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, EquippedScope);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(UCombatComponent, bAiming);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
@@ -76,7 +78,6 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("RightHandSocket");
-
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
@@ -115,6 +116,7 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	Character->bUseControllerRotationYaw = true;
 }
 
+
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
 	if (EquippedWeapon && Character)
@@ -132,7 +134,7 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	if (EquippedWeapon->EquipSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(
-		this,
+			this,
 			EquippedWeapon->EquipSound,
 			Character->GetActorLocation()
 		);
@@ -142,6 +144,57 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	Character->bUseControllerRotationYaw = true;
 }
 
+void UCombatComponent::EquipScope(AScope* ScopeToEquip)
+{
+	if (Character == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() > 3) return;
+
+	EquippedScope = ScopeToEquip;
+	CurrentScope = EquippedScope;
+	UE_LOG(LogTemp, Error, TEXT("IN EQUIPWEAPON Current scope: %s"), *CurrentScope->GetName());
+	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+
+	Optics.AddUnique(EquippedScope);
+	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
+	UE_LOG(LogTemp, Error, TEXT("%s"), *SocketName);
+	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+
+	if(WeaponSightSocket)
+	{
+		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+	}
+
+	EquippedScope->SetOwner(Character);
+}
+
+void UCombatComponent::OnRep_EquippedScope()
+{
+	if (EquippedWeapon && EquippedScope && Character)
+	{
+		EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+
+		Optics.AddUnique(EquippedScope);
+		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
+		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+
+		if (WeaponSightSocket)
+		{
+			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+		}
+
+		EquippedScope->SetOwner(Character);
+	}
+}
+
+void UCombatComponent::CycleThroughOptics()
+{
+	UE_LOG(LogTemp, Error, TEXT("BEFORE IF Current scope: %s"), *CurrentScope->GetName());
+	if(++OpticIndex >= Optics.Num())
+	{
+		OpticIndex = 0;
+	}
+	CurrentScope = Optics[OpticIndex];
+	UE_LOG(LogTemp, Error, TEXT("Current scope: %s"), *CurrentScope->GetName());
+}
 
 void UCombatComponent::Reload()
 {
@@ -269,6 +322,8 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 
 	bAiming = bIsAiming;//для тебя в аиме
 	ServerSetAiming(bIsAiming);//передаёт инфу серверу и остальным клиентам
+
+
 	if(Character)
 	{
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;

@@ -21,6 +21,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Blaster/Weapon/WeaponTypes.h"
+#include "Blaster/Weapon/Scopes/Scope.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
@@ -28,17 +29,17 @@ ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	HeadMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HeadMesh"));
-	HeadMesh->SetupAttachment(GetMesh());
+	FPSMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSMesh"));
+	FPSMesh->SetupAttachment(GetMesh());
 	AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("neck_01"));
-	HeadMesh->SetCollisionObjectType(ECC_SkeletalMesh);
-	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	HeadMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	HeadMesh->bOnlyOwnerSee = true;
+	FPSMesh->SetCollisionObjectType(ECC_SkeletalMesh);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	FPSMesh->bOnlyOwnerSee = true;
 
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	PlayerCamera->AttachToComponent(HeadMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
+	PlayerCamera->AttachToComponent(FPSMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
 	PlayerCamera->bUsePawnControlRotation = true;
 	bUseControllerRotationYaw = true;
 
@@ -108,12 +109,12 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
-	float Speed = GetCharacterMovement()->Velocity.Size();
+	/*float Speed = GetCharacterMovement()->Velocity.Size();
 	if (HighestSpeed < Speed)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Highest speed: %f"), Speed);
 		HighestSpeed = Speed;
-	}
+	}*/
 	//Both characters on the server have local role "Authority"
 	//SimulatedProxy - is a client at server(AutonomousProxy(client 1)(left window))
 	/*if (currentbUseControllerRotationYaw != bUseControllerRotationYaw)
@@ -131,6 +132,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingScope, COND_OwnerOnly);
 	DOREPLIFETIME(ABlasterCharacter, isSprinting);
 	DOREPLIFETIME(ABlasterCharacter, BaseSpeed);
 	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
@@ -160,6 +162,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABlasterCharacter::ReloadButtonPressed);
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Pressed, this, &ABlasterCharacter::ShowScoreBoardPressed);
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardReleased);
+	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -275,7 +278,7 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FPSMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//Spawn Elim bot
 	FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
@@ -423,6 +426,7 @@ void ABlasterCharacter::EquipButtonPressed()
 	{
 		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
+			Combatt->EquipScope(OverlappingScope);
 		}
 		else
 		{
@@ -436,6 +440,7 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 	if (Combatt)
 	{
 		Combatt->EquipWeapon(OverlappingWeapon);
+		Combatt->EquipScope(OverlappingScope);
 	}
 }
 
@@ -499,6 +504,11 @@ void ABlasterCharacter::FireButtonReleased()
 	{
 		Combatt->FireButtonPressed(false);
 	}
+}
+
+void ABlasterCharacter::ChangeOpticPressed()
+{
+	Combatt->CycleThroughOptics();
 }
 
 void ABlasterCharacter::SprintButtonPressed()
@@ -768,6 +778,22 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 	}
 }
 
+void ABlasterCharacter::SetOverlappingScope(AScope* Scope)
+{
+	if(OverlappingScope)
+	{
+		OverlappingScope->ShowPickupWidget(false);
+	}
+	OverlappingScope = Scope;
+	if(IsLocallyControlled())
+	{
+		if(OverlappingScope)
+		{
+			OverlappingScope->ShowPickupWidget(true);
+		}
+	}
+}
+
 void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 {
 	if(OverlappingWeapon)
@@ -777,6 +803,18 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 	if(LastWeapon)
 	{
 		LastWeapon->ShowPickupWidget(false);
+	}
+}
+
+void ABlasterCharacter::OnRep_OverlappingScope(AScope* LastScope)
+{
+	if (OverlappingScope)
+	{
+		OverlappingScope->ShowPickupWidget(true);
+	}
+	if (LastScope)
+	{
+		LastScope->ShowPickupWidget(false);
 	}
 }
 
@@ -790,11 +828,16 @@ bool ABlasterCharacter::isAiming()//getter(use getter to set in another class(an
 	return (Combatt && Combatt->bAiming); //return true if Combat is valid && bAiming is true
 }
 
-
 AWeapon* ABlasterCharacter::GetEquippedWeapon()//return currently equipped weapon
 {
 	if (Combatt == nullptr) return nullptr;
 	return Combatt->EquippedWeapon;
+}
+
+AScope* ABlasterCharacter::GetEquippedScope()
+{
+	if (Combatt == nullptr) return nullptr;
+	return Combatt->EquippedScope;
 }
 
 FVector ABlasterCharacter::GetHitTarget() const

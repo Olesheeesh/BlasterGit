@@ -77,6 +77,10 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	USoundCue* OutOfAmmoSound;
+
+	UPROPERTY(EditAnywhere)//should be replicated
+	float AimInterpSpeed = 10.f;
+
 protected:
 	virtual void BeginPlay() override;
 

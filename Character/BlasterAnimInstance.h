@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "Blaster/BlasterTypes/TurningInPlace.h"
+#include "Blaster/Weapon/Weapon.h"
 #include "BlasterAnimInstance.generated.h"
 
 /**
@@ -21,7 +22,13 @@ public:
 
 private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	class ABlasterCharacter* BlasterCharacter;
+	ABlasterCharacter* BlasterCharacter;
+
+	UPROPERTY(BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
+
+	UPROPERTY(BlueprintReadOnly, Category = Scope, meta = (AllowPrivateAccess = "true"))
+	class AScope* EquippedScope;
 
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float Speed;
@@ -34,8 +41,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bWeaponEquipped;
-
-	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bIsCrouched;
@@ -85,4 +90,60 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bTransfromRightHand;
+
+public:
+	/*
+	 * True Fps Tutorial
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sockets");
+	FTransform SightTransform;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sockets");
+	FTransform RelativeHandTransform;
+
+	UFUNCTION(BlueprintCallable)
+	void SetSightTransform();
+	UFUNCTION(BlueprintCallable)
+	void SetRelativeHand();
+
+	UPROPERTY(EditAnywhere)
+	float DistanceToSight = 30.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = Aiming, meta = (AllowPrivateAccess = "true"))
+	float AimAlpha = 0.f;
+
+	void InterpAiming(float DeltaTime, float Target);
+
+	UPROPERTY()
+	AScope* CurrentScope;
+
+
+
+//public:
+
+	/*
+	 *References
+	 */
+
+	
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims");
+	FIKProperties IKProperties;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Anim")
+	USkeletalMeshComponent* Mesh;*/
+
+	/*
+	 * IK VARS
+	 */
+
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims");
+	//FTransform CameraTransform;
+
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims");
+	//FTransform RelativeCameraTransform;
+	
+//protected:
+	//virtual void SetVars(const float DeltaTime);
+	//virtual void CalculateWeaponSway(const float DeltaTime);
 };

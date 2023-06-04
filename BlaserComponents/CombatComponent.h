@@ -19,10 +19,14 @@ public:
 	// Sets default values for this component's properties
 	UCombatComponent();
 	friend class ABlasterCharacter;
+	friend class AScope;
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
+
+	void EquipScope(class AScope* ScopeToEquip);
 
 	void Reload();
 
@@ -40,6 +44,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+
+	UFUNCTION()
+	void OnRep_EquippedScope();
 
 	void Fire();
 
@@ -88,6 +95,9 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
 	AWeapon* EquippedWeapon; //variable to store currently equipped weapon
+
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedScope)
+	AScope* EquippedScope;
 
 	UPROPERTY(Replicated)
 	bool bAiming = false;
@@ -171,8 +181,28 @@ private:
 	bool isOutOfAmmo();
 
 	void PlayOutOfAmmoSound();
+
+	/*
+	 * FPS TUTORIAL
+	 */
+
+	bool bInterpAiming = false;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
+	TArray<AScope*> Optics;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
+	AScope* CurrentScope;
+
+	uint8 OpticIndex = 0;
+
+	void CycleThroughOptics();
+
 public:	
 	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
+	FORCEINLINE AScope* GetEquippedScope() const { return EquippedScope; }
+	FORCEINLINE AScope* GetCurrentScope() const { return CurrentScope; }
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 };
 

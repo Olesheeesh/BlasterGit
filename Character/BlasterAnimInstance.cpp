@@ -8,15 +8,17 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "Blaster/Weapon/Weapon.h"
+#include "Blaster/Weapon/Scopes/Scope.h"
+#include "Camera/CameraComponent.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());
+	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());//ref to chracter
 }
 
-void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
+void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 {
 	Super::NativeUpdateAnimation(DeltaTime);
 
@@ -34,11 +36,31 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 	bWeaponEquipped = BlasterCharacter->isWeaponEquipped();
 	EquippedWeapon = BlasterCharacter->GetEquippedWeapon();
+	EquippedScope = BlasterCharacter->GetEquippedScope();
 	bIsCrouched = BlasterCharacter->bIsCrouched;
 	bAiming = BlasterCharacter->isAiming();
 	TurningInPlace = BlasterCharacter->GetTurningInPlace();
 	bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
 	bElimmed = BlasterCharacter->isElimmed();
+	//CurrentScope = BlasterCharacter->GetCombatComponent()->GetCurrentScope();
+	//AimSpeed = EquippedWeapon->AimInterpSpeed;
+	/*
+	 * Youtube tutorial
+	 */
+	SetSightTransform();
+	if (bWeaponEquipped)
+	{
+		SetRelativeHand();
+		if (bAiming)
+		{
+			InterpAiming(DeltaTime, 1.f);
+		}
+		else
+		{
+			InterpAiming(DeltaTime, 0.f);
+		}
+	}
+
 
 	//offset yaw for strafing
 	FRotator AimRotation = BlasterCharacter->GetBaseAimRotation();
@@ -68,13 +90,13 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
 
-		if (BlasterCharacter->IsLocallyControlled())
+		/*if (BlasterCharacter->IsLocallyControlled())
 		{
 			bLocallyControlled = true;
 			FTransform RightHandTransform = BlasterCharacter->GetMesh()->GetSocketTransform(FName("hand_r"), ERelativeTransformSpace::RTS_World);
 			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(), RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - BlasterCharacter->GetHitTarget()));
 			RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaTime, 30.f);
-		}
+		}*/
 
 		FTransform MuzzleTipTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("MuzzleFlash"), ERelativeTransformSpace::RTS_World);
 		FVector MuzzleX(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::X)); //Vector(x)
@@ -91,4 +113,37 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
 	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
 }
+
+void UBlasterAnimInstance::SetSightTransform()
+{
+	if (BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->GetMesh()) {
+		FTransform FollowCameraTransform = BlasterCharacter->GetFollowCamera()->GetComponentTransform();
+		FTransform FPSMeshTransfrom = BlasterCharacter->GetMesh()->GetComponentTransform();
+		FTransform CameraRelativeToArms = FollowCameraTransform.GetRelativeTransform(FPSMeshTransfrom);//make camera relative to arms
+		FVector SightForwardVector = CameraRelativeToArms.GetRotation().GetForwardVector();
+		FVector SightLocation = SightForwardVector * DistanceToSight + CameraRelativeToArms.GetLocation();//расстояние до прицела
+		SightTransform.SetLocation(SightLocation);
+		SightTransform.SetRotation(CameraRelativeToArms.GetRotation());
+	}
+}
+
+void UBlasterAnimInstance::SetRelativeHand()
+{
+	if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() && EquippedScope && BlasterCharacter->GetMesh())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Current scopeMesh: %s"), *BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetName());
+		FTransform AimSocket = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocket = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		RelativeHandTransform = AimSocket.GetRelativeTransform(HandSocket);
+	}
+}
+
+void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
+{
+	AimAlpha = FMath::FInterpTo(AimAlpha, Target, DeltaTime, EquippedWeapon->AimInterpSpeed);
+	
+	//UE_LOG(LogTemp, Error, TEXT("AimAlpha: %f"), AimAlpha);
+	//UE_LOG(LogTemp, Error, TEXT("bAiming: %d"), bAiming);
+}
+
 
