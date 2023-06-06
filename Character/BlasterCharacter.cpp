@@ -508,7 +508,10 @@ void ABlasterCharacter::FireButtonReleased()
 
 void ABlasterCharacter::ChangeOpticPressed()
 {
-	Combatt->CycleThroughOptics();
+	if (Combatt)
+	{
+		Combatt->CycleThroughOptics();
+	}
 }
 
 void ABlasterCharacter::SprintButtonPressed()

@@ -42,11 +42,23 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
 
+	UFUNCTION(Server, Reliable)
+	void ServerSetCurrentScope(AScope* CurrScope);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetOpticIndex(uint8 Index);
+
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
 	UFUNCTION()
 	void OnRep_EquippedScope();
+
+	//UFUNCTION()
+	//void OnRep_CurrentScope();
+
+	UFUNCTION()
+	void OnRep_OpticIndex();
 
 	void Fire();
 
@@ -186,15 +198,19 @@ private:
 	 * FPS TUTORIAL
 	 */
 
-	bool bInterpAiming = false;
 
 protected:
+
+	UPROPERTY()
+	class UBlasterAnimInstance* AnimInstance;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
 	TArray<AScope*> Optics;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
+	UPROPERTY(Replicated)
 	AScope* CurrentScope;
 
+	UPROPERTY(ReplicatedUsing = OnRep_OpticIndex)
 	uint8 OpticIndex = 0;
 
 	void CycleThroughOptics();

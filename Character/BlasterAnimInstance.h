@@ -19,6 +19,7 @@ class BLASTER_API UBlasterAnimInstance : public UAnimInstance
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -95,16 +96,21 @@ public:
 	/*
 	 * True Fps Tutorial
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sockets");
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform");
 	FTransform SightTransform;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sockets");
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform");
 	FTransform RelativeHandTransform;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform");
+	FTransform FinalHandTransform;
 
 	UFUNCTION(BlueprintCallable)
 	void SetSightTransform();
 	UFUNCTION(BlueprintCallable)
-	void SetRelativeHand();
+	void SetRelativeHandTransform();
+	UFUNCTION(BlueprintCallable)
+	void SetFinalHandTransform();
 
 	UPROPERTY(EditAnywhere)
 	float DistanceToSight = 30.f;
@@ -114,9 +120,14 @@ public:
 
 	void InterpAiming(float DeltaTime, float Target);
 
+
+	void InterpRelativeHand(float DeltaTime);
 	UPROPERTY()
 	AScope* CurrentScope;
 
+	bool bInterpRelativeHand = false;
+
+	bool bRelativeHandIsSet;
 
 
 //public:
@@ -147,3 +158,4 @@ public:
 	//virtual void SetVars(const float DeltaTime);
 	//virtual void CalculateWeaponSway(const float DeltaTime);
 };
+

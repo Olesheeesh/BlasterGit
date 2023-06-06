@@ -10,12 +10,21 @@
 #include "Blaster/Weapon/Weapon.h"
 #include "Blaster/Weapon/Scopes/Scope.h"
 #include "Camera/CameraComponent.h"
+#include "Net/UnrealNetwork.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
 	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());//ref to chracter
+	bRelativeHandIsSet = false;
+}
+
+void UBlasterAnimInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UBlasterAnimInstance, bRelativeHandIsSet);
 }
 
 void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
@@ -42,25 +51,35 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	TurningInPlace = BlasterCharacter->GetTurningInPlace();
 	bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
 	bElimmed = BlasterCharacter->isElimmed();
+
 	//CurrentScope = BlasterCharacter->GetCombatComponent()->GetCurrentScope();
 	//AimSpeed = EquippedWeapon->AimInterpSpeed;
 	/*
 	 * Youtube tutorial
 	 */
 	SetSightTransform();
+
 	if (bWeaponEquipped)
 	{
-		SetRelativeHand();
+		if (!bRelativeHandIsSet)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BEFORE bRelativeHandIsSet is: %d"), bRelativeHandIsSet);//false
+			SetRelativeHandTransform();
+			UE_LOG(LogTemp, Error, TEXT("AFTER bRelativeHandIsSet is: %d"), bRelativeHandIsSet);//false
+		}
 		if (bAiming)
 		{
 			InterpAiming(DeltaTime, 1.f);
+			if (bInterpRelativeHand)
+			{
+				InterpRelativeHand(DeltaTime);
+			}
 		}
 		else
 		{
 			InterpAiming(DeltaTime, 0.f);
 		}
 	}
-
 
 	//offset yaw for strafing
 	FRotator AimRotation = BlasterCharacter->GetBaseAimRotation();
@@ -114,6 +133,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
 }
 
+
 void UBlasterAnimInstance::SetSightTransform()
 {
 	if (BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->GetMesh()) {
@@ -127,23 +147,45 @@ void UBlasterAnimInstance::SetSightTransform()
 	}
 }
 
-void UBlasterAnimInstance::SetRelativeHand()
+void UBlasterAnimInstance::SetRelativeHandTransform()
 {
+	if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() == nullptr) UE_LOG(LogTemp, Error, TEXT("Current scope is null:"));
+	if (EquippedScope == nullptr) UE_LOG(LogTemp, Error, TEXT("EquippedScope is null:"));
+	if (EquippedScope && BlasterCharacter->GetMesh() == nullptr) UE_LOG(LogTemp, Error, TEXT("Mesh is null:"));//not null
+
 	if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() && EquippedScope && BlasterCharacter->GetMesh())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Current scopeMesh: %s"), *BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetName());
-		FTransform AimSocket = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
-		FTransform HandSocket = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
-		RelativeHandTransform = AimSocket.GetRelativeTransform(HandSocket);
+		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
+		bRelativeHandIsSet = true;
+		UE_LOG(LogTemp, Error, TEXT("bRelativeHandIsSet is: %d"), bRelativeHandIsSet);
 	}
+}
+
+void UBlasterAnimInstance::SetFinalHandTransform()
+{
+	FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+	FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+	FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 }
 
 void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
 {
 	AimAlpha = FMath::FInterpTo(AimAlpha, Target, DeltaTime, EquippedWeapon->AimInterpSpeed);
-	
-	//UE_LOG(LogTemp, Error, TEXT("AimAlpha: %f"), AimAlpha);
-	//UE_LOG(LogTemp, Error, TEXT("bAiming: %d"), bAiming);
+}
+
+void UBlasterAnimInstance::InterpRelativeHand(float DeltaTime)
+{
+	RelativeHandTransform = UKismetMathLibrary::TInterpTo(RelativeHandTransform, FinalHandTransform, DeltaTime, 10.f);
+	if (RelativeHandTransform.Equals(FinalHandTransform))
+	{
+		bInterpRelativeHand = false;//измен€ет значение bInterpRelativeHand в экземпл€ре CombatComponent, который находитс€ на стороне сервера
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Here is a problem"));
+	}
 }
 
 

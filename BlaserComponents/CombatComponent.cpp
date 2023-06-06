@@ -15,6 +15,7 @@
 #include "Camera/CameraComponent.h"
 #include "Blaster/HUD/BlasterHUD.h"
 #include "TimerManager.h"
+#include "Blaster/Character/BlasterAnimInstance.h"
 #include "Blaster/Weapon/Scopes/Scope.h"
 #include "Sound/SoundCue.h"
 
@@ -60,6 +61,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(UCombatComponent, EquippedScope);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, CurrentScope);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, OpticIndex);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(UCombatComponent, bAiming);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
@@ -117,6 +120,19 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 }
 
 
+void UCombatComponent::ServerSetCurrentScope_Implementation(AScope* CurrScope)
+{
+	CurrentScope = CurrScope;
+}
+
+void UCombatComponent::ServerSetOpticIndex_Implementation(uint8 Index)
+{
+	OpticIndex = Index;
+
+	AnimInstance->SetFinalHandTransform();
+	AnimInstance->bInterpRelativeHand = true;
+}
+
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
 	if (EquippedWeapon && Character)
@@ -146,16 +162,16 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 {
-	if (Character == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() > 3) return;
+	if (Character == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() >= 3) return;
 
 	EquippedScope = ScopeToEquip;
-	CurrentScope = EquippedScope;
-	UE_LOG(LogTemp, Error, TEXT("IN EQUIPWEAPON Current scope: %s"), *CurrentScope->GetName());
 	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
 
 	Optics.AddUnique(EquippedScope);
+	CurrentScope = EquippedScope;
+
 	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
-	UE_LOG(LogTemp, Error, TEXT("%s"), *SocketName);
+
 	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
 
 	if(WeaponSightSocket)
@@ -164,6 +180,11 @@ void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 	}
 
 	EquippedScope->SetOwner(Character);
+
+	if(!Character->HasAuthority() && OpticIndex)
+	{
+		ServerSetOpticIndex(OpticIndex);
+	}
 }
 
 void UCombatComponent::OnRep_EquippedScope()
@@ -171,9 +192,12 @@ void UCombatComponent::OnRep_EquippedScope()
 	if (EquippedWeapon && EquippedScope && Character)
 	{
 		EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+		CurrentScope = EquippedScope;
 
 		Optics.AddUnique(EquippedScope);
+
 		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
+
 		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
 
 		if (WeaponSightSocket)
@@ -185,15 +209,39 @@ void UCombatComponent::OnRep_EquippedScope()
 	}
 }
 
-void UCombatComponent::CycleThroughOptics()
+void UCombatComponent::OnRep_OpticIndex()
 {
-	UE_LOG(LogTemp, Error, TEXT("BEFORE IF Current scope: %s"), *CurrentScope->GetName());
-	if(++OpticIndex >= Optics.Num())
+	if (Character == nullptr || EquippedScope == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	if (++OpticIndex >= Optics.Num())
 	{
 		OpticIndex = 0;
 	}
 	CurrentScope = Optics[OpticIndex];
-	UE_LOG(LogTemp, Error, TEXT("Current scope: %s"), *CurrentScope->GetName());
+
+	AnimInstance->SetFinalHandTransform();
+	AnimInstance->bInterpRelativeHand = true;
+}
+
+void UCombatComponent::CycleThroughOptics()
+{
+	if (Character == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	if (AnimInstance && CurrentScope && EquippedScope && Character->GetMesh())
+	{
+		if (++OpticIndex >= Optics.Num())
+		{
+			OpticIndex = 0;
+		}
+		CurrentScope = Optics[OpticIndex];
+
+		if (!Character->HasAuthority()) ServerSetCurrentScope(CurrentScope);
+
+		AnimInstance->SetFinalHandTransform();
+		AnimInstance->bInterpRelativeHand = true;
+	}
 }
 
 void UCombatComponent::Reload()
@@ -297,7 +345,6 @@ void UCombatComponent::OnRep_CombatState()//logic for client
 	}
 }
 
-
 void UCombatComponent::InterpFOV(float DeltaTime)
 {
 	if (EquippedWeapon == nullptr) return; // if dont have EquippedWeapon - return out of this function
@@ -321,8 +368,10 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 	if (Character == nullptr || EquippedWeapon == nullptr) return;
 
 	bAiming = bIsAiming;//для тебя в аиме
-	ServerSetAiming(bIsAiming);//передаёт инфу серверу и остальным клиентам
-
+	if (!Character->HasAuthority())
+	{
+		ServerSetAiming(bIsAiming);//передаёт инфу серверу и остальным клиентам
+	}
 
 	if(Character)
 	{
@@ -346,7 +395,6 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)//реплициру
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
 }
-
 
 void UCombatComponent::SetHUDCrosshairs(float DeltaTime, FHitResult& TraceHitResult)
 {
