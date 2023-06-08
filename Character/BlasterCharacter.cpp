@@ -162,7 +162,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABlasterCharacter::ReloadButtonPressed);
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Pressed, this, &ABlasterCharacter::ShowScoreBoardPressed);
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardReleased);
-	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticPressed);
+	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -506,12 +506,18 @@ void ABlasterCharacter::FireButtonReleased()
 	}
 }
 
-void ABlasterCharacter::ChangeOpticPressed()
+void ABlasterCharacter::ChangeOpticButtonPressed()
 {
 	if (Combatt)
 	{
 		Combatt->CycleThroughOptics();
 	}
+}
+
+void ABlasterCharacter::ServerChangeOpticButtonPressed_Implementation()
+{
+	Combatt->CycleThroughOptics();
+	UE_LOG(LogTemp, Warning, TEXT("ServerC_O Im calling!"));
 }
 
 void ABlasterCharacter::SprintButtonPressed()

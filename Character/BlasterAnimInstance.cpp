@@ -17,14 +17,12 @@ void UBlasterAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());//ref to chracter
-	bRelativeHandIsSet = false;
 }
 
 void UBlasterAnimInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UBlasterAnimInstance, bRelativeHandIsSet);
 }
 
 void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
@@ -141,7 +139,7 @@ void UBlasterAnimInstance::SetSightTransform()
 		FTransform FPSMeshTransfrom = BlasterCharacter->GetMesh()->GetComponentTransform();
 		FTransform CameraRelativeToArms = FollowCameraTransform.GetRelativeTransform(FPSMeshTransfrom);//make camera relative to arms
 		FVector SightForwardVector = CameraRelativeToArms.GetRotation().GetForwardVector();
-		FVector SightLocation = SightForwardVector * DistanceToSight + CameraRelativeToArms.GetLocation();//рассто€ние до прицела
+		FVector SightLocation = SightForwardVector * DistanceToSight + CameraRelativeToArms.GetLocation();
 		SightTransform.SetLocation(SightLocation);
 		SightTransform.SetRotation(CameraRelativeToArms.GetRotation());
 	}
@@ -160,14 +158,25 @@ void UBlasterAnimInstance::SetRelativeHandTransform()
 		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
 		UE_LOG(LogTemp, Error, TEXT("bRelativeHandIsSet is: %d"), bRelativeHandIsSet);
+		if(BlasterCharacter->HasAuthority())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Cyan, FString("SetRelativeHandTransform is calling on server"));
+		}
 	}
 }
 
 void UBlasterAnimInstance::SetFinalHandTransform()
 {
+	if(BlasterCharacter->GetCombatComponent() == nullptr || BlasterCharacter->GetCombatComponent()->GetCurrentScope() == nullptr || BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope() == nullptr)
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Some nullptr"));
+
 	FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 	FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 	FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
+	if (BlasterCharacter->HasAuthority())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString("SetFinalHandTransform is calling on server"));
+	}
 }
 
 void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
@@ -180,12 +189,19 @@ void UBlasterAnimInstance::InterpRelativeHand(float DeltaTime)
 	RelativeHandTransform = UKismetMathLibrary::TInterpTo(RelativeHandTransform, FinalHandTransform, DeltaTime, 10.f);
 	if (RelativeHandTransform.Equals(FinalHandTransform))
 	{
-		bInterpRelativeHand = false;//измен€ет значение bInterpRelativeHand в экземпл€ре CombatComponent, который находитс€ на стороне сервера
+		bInterpRelativeHand = false;
+		SetRelativeHandTransform();
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Here is a problem"));
 	}
+}
+
+void UBlasterAnimInstance::ChangeOptic()
+{
+	SetFinalHandTransform();
+	bInterpRelativeHand = true;
 }
 
 

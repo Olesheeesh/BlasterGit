@@ -69,7 +69,7 @@ protected:
 	virtual void Jump() override;
 	void FireButtonPressed();
 	void FireButtonReleased();
-	void ChangeOpticPressed();
+	void ChangeOpticButtonPressed();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
@@ -119,6 +119,9 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
+
+	UFUNCTION(Server, Reliable)
+	void ServerChangeOpticButtonPressed();
 
 	UPROPERTY(Replicated)
 	bool isSprinting;

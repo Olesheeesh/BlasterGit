@@ -43,10 +43,7 @@ protected:
 	void ServerSetAiming(bool bIsAiming);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetCurrentScope(AScope* CurrScope);
-
-	UFUNCTION(Server, Reliable)
-	void ServerSetOpticIndex(uint8 Index);
+	void ServerSetOpticIndex(uint8 CurrentIndex);
 
 	UFUNCTION()
 	void OnRep_EquippedWeapon();

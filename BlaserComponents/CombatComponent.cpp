@@ -61,9 +61,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(UCombatComponent, EquippedScope);//when changes, it will be reflected on all clients
-	DOREPLIFETIME(UCombatComponent, CurrentScope);//when changes, it will be reflected on all clients
-	DOREPLIFETIME(UCombatComponent, OpticIndex);//when changes, it will be reflected on all clients
-	DOREPLIFETIME(UCombatComponent, bAiming);
+	DOREPLIFETIME_CONDITION(UCombatComponent, OpticIndex, COND_SkipOwner);//when changes, it will be reflected on all clients
+	DOREPLIFETIME_CONDITION(UCombatComponent, bAiming, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
 }
@@ -119,20 +118,6 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	Character->bUseControllerRotationYaw = true;
 }
 
-
-void UCombatComponent::ServerSetCurrentScope_Implementation(AScope* CurrScope)
-{
-	CurrentScope = CurrScope;
-}
-
-void UCombatComponent::ServerSetOpticIndex_Implementation(uint8 Index)
-{
-	OpticIndex = Index;
-
-	AnimInstance->SetFinalHandTransform();
-	AnimInstance->bInterpRelativeHand = true;
-}
-
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
 	if (EquippedWeapon && Character)
@@ -163,40 +148,59 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 {
 	if (Character == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() >= 3) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	EquippedScope = ScopeToEquip;
 	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+	if (CurrentScope == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::White, FString("CurrentScope == nullptr"));
+		CurrentScope = EquippedScope;
+	}
 
 	Optics.AddUnique(EquippedScope);
-	CurrentScope = EquippedScope;
 
-	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
+	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
 
 	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
 
-	if(WeaponSightSocket)
+	if (WeaponSightSocket)
 	{
 		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 	}
 
-	EquippedScope->SetOwner(Character);
-
-	if(!Character->HasAuthority() && OpticIndex)
+	if (CurrentScope == nullptr)
 	{
-		ServerSetOpticIndex(OpticIndex);
+		AnimInstance->SetRelativeHandTransform();
 	}
+
+	if(EquippedScope->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			EquippedScope->EquipSound,
+			Character->GetActorLocation()
+		);
+	}
+
+	EquippedScope->SetOwner(Character);
 }
 
 void UCombatComponent::OnRep_EquippedScope()
 {
 	if (EquippedWeapon && EquippedScope && Character)
 	{
+		AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
+
 		EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
-		CurrentScope = EquippedScope;
+		if (CurrentScope == nullptr)
+		{
+			CurrentScope = EquippedScope;
+		}
 
 		Optics.AddUnique(EquippedScope);
 
-		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num()-1);
+		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
 
 		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
 
@@ -204,24 +208,22 @@ void UCombatComponent::OnRep_EquippedScope()
 		{
 			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 		}
+		if (CurrentScope == nullptr)
+		{
+			AnimInstance->SetRelativeHandTransform();
+		}
+
+		if (EquippedScope->EquipSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				EquippedScope->EquipSound,
+				Character->GetActorLocation()
+			);
+		}
 
 		EquippedScope->SetOwner(Character);
 	}
-}
-
-void UCombatComponent::OnRep_OpticIndex()
-{
-	if (Character == nullptr || EquippedScope == nullptr) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
-	if (++OpticIndex >= Optics.Num())
-	{
-		OpticIndex = 0;
-	}
-	CurrentScope = Optics[OpticIndex];
-
-	AnimInstance->SetFinalHandTransform();
-	AnimInstance->bInterpRelativeHand = true;
 }
 
 void UCombatComponent::CycleThroughOptics()
@@ -237,11 +239,43 @@ void UCombatComponent::CycleThroughOptics()
 		}
 		CurrentScope = Optics[OpticIndex];
 
-		if (!Character->HasAuthority()) ServerSetCurrentScope(CurrentScope);
+		if(!Character->HasAuthority())
+		{
+			ServerSetOpticIndex(OpticIndex);
+		}
+		AnimInstance->ChangeOptic();
 
-		AnimInstance->SetFinalHandTransform();
-		AnimInstance->bInterpRelativeHand = true;
 	}
+}
+
+void UCombatComponent::ServerSetOpticIndex_Implementation(uint8 CurrentIndex)
+{
+	OpticIndex = CurrentIndex;
+	CurrentScope = Optics[OpticIndex];
+
+	AnimInstance->ChangeOptic();
+
+
+	/*if (Character->HasAuthority())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Optics.Num() = %d"), Optics.Num()));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Optics[OpticIndex] = %d"), OpticIndex));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Current Scope = %s"), *CurrentScope->GetName()));
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Server problem"));
+	}*/
+}
+
+void UCombatComponent::OnRep_OpticIndex()
+{
+	if (Character == nullptr || EquippedScope == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	CurrentScope = Optics[OpticIndex];
+
+	AnimInstance->ChangeOptic();
 }
 
 void UCombatComponent::Reload()

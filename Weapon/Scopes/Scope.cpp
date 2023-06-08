@@ -100,6 +100,7 @@ void AScope::OnRep_ScopeState()
 		Scope->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Orange, FString::Printf(TEXT("Current State is: %hhd"), ScopeState));
 }
 
 void AScope::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

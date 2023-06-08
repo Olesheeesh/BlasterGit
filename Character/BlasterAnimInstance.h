@@ -120,14 +120,16 @@ public:
 
 	void InterpAiming(float DeltaTime, float Target);
 
-
 	void InterpRelativeHand(float DeltaTime);
+
+	void ChangeOptic();
+
 	UPROPERTY()
 	AScope* CurrentScope;
 
 	bool bInterpRelativeHand = false;
 
-	bool bRelativeHandIsSet;
+	bool bRelativeHandIsSet = false;
 
 
 //public:
