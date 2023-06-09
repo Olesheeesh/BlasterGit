@@ -195,7 +195,6 @@ private:
 	 * FPS TUTORIAL
 	 */
 
-
 protected:
 
 	UPROPERTY()
@@ -217,6 +216,7 @@ public:
 	FORCEINLINE AScope* GetEquippedScope() const { return EquippedScope; }
 	FORCEINLINE AScope* GetCurrentScope() const { return CurrentScope; }
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
+	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 };
 
 

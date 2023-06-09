@@ -154,7 +154,6 @@ void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
 	if (CurrentScope == nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::White, FString("CurrentScope == nullptr"));
 		CurrentScope = EquippedScope;
 	}
 
@@ -169,10 +168,7 @@ void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 	}
 
-	if (CurrentScope == nullptr)
-	{
-		AnimInstance->SetRelativeHandTransform();
-	}
+	AnimInstance->ChangeOptic();
 
 	if(EquippedScope->EquipSound)
 	{
@@ -208,10 +204,8 @@ void UCombatComponent::OnRep_EquippedScope()
 		{
 			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 		}
-		if (CurrentScope == nullptr)
-		{
-			AnimInstance->SetRelativeHandTransform();
-		}
+
+		AnimInstance->ChangeOptic();
 
 		if (EquippedScope->EquipSound)
 		{
@@ -228,7 +222,7 @@ void UCombatComponent::OnRep_EquippedScope()
 
 void UCombatComponent::CycleThroughOptics()
 {
-	if (Character == nullptr) return;
+	if (Character == nullptr || EquippedScope == nullptr) return;
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	if (AnimInstance && CurrentScope && EquippedScope && Character->GetMesh())
@@ -244,7 +238,6 @@ void UCombatComponent::CycleThroughOptics()
 			ServerSetOpticIndex(OpticIndex);
 		}
 		AnimInstance->ChangeOptic();
-
 	}
 }
 
@@ -254,18 +247,6 @@ void UCombatComponent::ServerSetOpticIndex_Implementation(uint8 CurrentIndex)
 	CurrentScope = Optics[OpticIndex];
 
 	AnimInstance->ChangeOptic();
-
-
-	/*if (Character->HasAuthority())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Optics.Num() = %d"), Optics.Num()));
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Optics[OpticIndex] = %d"), OpticIndex));
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Server Current Scope = %s"), *CurrentScope->GetName()));
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Server problem"));
-	}*/
 }
 
 void UCombatComponent::OnRep_OpticIndex()
@@ -285,6 +266,8 @@ void UCombatComponent::Reload()
 		HandleReload();
 		ServerReload();
 	}
+	FString ToDisplay = CombatState == ECombatState::ECS_Reloading ? "ReloadingState" : "Else";
+	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, FString(ToDisplay));
 }
 
 void UCombatComponent::ServerReload_Implementation()

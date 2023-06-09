@@ -19,7 +19,6 @@ class BLASTER_API UBlasterAnimInstance : public UAnimInstance
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -131,6 +130,9 @@ public:
 
 	bool bRelativeHandIsSet = false;
 
+	const USkeletalMeshSocket* SightSocket;
+
+	bool bScopeIsEquipped;
 
 //public:
 

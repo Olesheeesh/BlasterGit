@@ -366,7 +366,7 @@ void ABlasterCharacter::PlayElimMontage()
 
 void ABlasterCharacter::PlayHitReactMontage()
 {
-	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
+	if (Combatt == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();//обращается к текущему animinstance
 	if(AnimInstance && HitReactMontage)

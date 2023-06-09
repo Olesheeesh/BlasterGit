@@ -19,12 +19,6 @@ void UBlasterAnimInstance::NativeInitializeAnimation()
 	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());//ref to chracter
 }
 
-void UBlasterAnimInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-}
-
 void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 {
 	Super::NativeUpdateAnimation(DeltaTime);
@@ -61,9 +55,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	{
 		if (!bRelativeHandIsSet)
 		{
-			UE_LOG(LogTemp, Error, TEXT("BEFORE bRelativeHandIsSet is: %d"), bRelativeHandIsSet);//false
 			SetRelativeHandTransform();
-			UE_LOG(LogTemp, Error, TEXT("AFTER bRelativeHandIsSet is: %d"), bRelativeHandIsSet);//false
 		}
 		if (bAiming)
 		{
@@ -102,6 +94,8 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 		FVector OutPosition;
 		FRotator OutRotation;
 
+		//выполняет преобразование позиции LeftHandTransform.GetLocation() из мирового пространства в локальное пространство кости "hand_r" на меше персонажа BlasterCharacter->GetMesh(). Результат преобразования сохраняется в переменных OutPosition (локальная позиция) и OutRotation (локальный поворот).
+		//преобразуем в пространство hand_r потому, что оружие прикреплено к этой же кости и в таком случае, LeftHandSocket будет передвигаться вместе с оружием
 		BlasterCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
 		
 		LeftHandTransform.SetLocation(OutPosition);
@@ -147,36 +141,30 @@ void UBlasterAnimInstance::SetSightTransform()
 
 void UBlasterAnimInstance::SetRelativeHandTransform()
 {
-	if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() == nullptr) UE_LOG(LogTemp, Error, TEXT("Current scope is null:"));
-	if (EquippedScope == nullptr) UE_LOG(LogTemp, Error, TEXT("EquippedScope is null:"));
-	if (EquippedScope && BlasterCharacter->GetMesh() == nullptr) UE_LOG(LogTemp, Error, TEXT("Mesh is null:"));//not null
-
-	if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() && EquippedScope && BlasterCharacter->GetMesh())
+	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString("I am in"));
+	if(EquippedScope == nullptr)
+	{
+		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		RelativeHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
+		bRelativeHandIsSet = true;
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, FString("Scope is not set"));
+	}
+	else if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() && EquippedScope && BlasterCharacter->GetMesh())
 	{
 		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
-		UE_LOG(LogTemp, Error, TEXT("bRelativeHandIsSet is: %d"), bRelativeHandIsSet);
-		if(BlasterCharacter->HasAuthority())
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Cyan, FString("SetRelativeHandTransform is calling on server"));
-		}
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, FString("I should be called when pick up rifle"));
 	}
 }
 
 void UBlasterAnimInstance::SetFinalHandTransform()
 {
-	if(BlasterCharacter->GetCombatComponent() == nullptr || BlasterCharacter->GetCombatComponent()->GetCurrentScope() == nullptr || BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope() == nullptr)
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Some nullptr"));
-
 	FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 	FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 	FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
-	if (BlasterCharacter->HasAuthority())
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString("SetFinalHandTransform is calling on server"));
-	}
 }
 
 void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
