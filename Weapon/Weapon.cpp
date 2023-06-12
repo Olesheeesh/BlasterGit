@@ -6,9 +6,13 @@
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimationAsset.h"
 #include "Blaster/BlaserComponents/CombatComponent.h"
+#include "Blaster/Character/BlasterAnimInstance.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
+#include "Scopes/Scope.h"
+#include "Sound/SoundCue.h"
 
 AWeapon::AWeapon()
 {
@@ -33,6 +37,7 @@ AWeapon::AWeapon()
 	PickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
 	PickupWidget->SetupAttachment(RootComponent);
 }
+
 
 void AWeapon::BeginPlay()
 {
@@ -64,8 +69,9 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 
 	DOREPLIFETIME(AWeapon, WeaponState); //here we register variable that we want to replicate
 	DOREPLIFETIME(AWeapon, Ammo); //here we register variable that we want to replicate
+	DOREPLIFETIME(AWeapon, EquippedScope);//when changes, it will be reflected on all clients
+	DOREPLIFETIME_CONDITION(AWeapon, OpticIndex, COND_SkipOwner);
 }
-
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -261,3 +267,137 @@ void AWeapon::AddAmmo(int32 AmmoToAdd)
 	Ammo = FMath::Clamp(Ammo - AmmoToAdd, 0, MagCapacity);
 	SetHUDAmmo();
 }
+
+
+void AWeapon::EquipScope(AScope* ScopeToEquip)
+{
+	EquippedWeapon = BlasterOwnerCharacter->GetCombatComponent()->GetEquippedWeapon();
+
+	if (BlasterOwnerCharacter == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() >= 3) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	EquippedScope = ScopeToEquip;
+	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+	if (CurrentScope == nullptr)
+	{
+		CurrentScope = EquippedScope;
+	}
+
+	Optics.AddUnique(EquippedScope);
+
+	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
+
+	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+
+	if (WeaponSightSocket)
+	{
+		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+	}
+
+	if (AnimInstance && EquippedWeapon)
+	{
+		AnimInstance->SetRelativeHandTransform();
+		AnimInstance->ChangeOptic();
+	}
+
+	if (EquippedScope->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			EquippedScope->EquipSound,
+			BlasterOwnerCharacter->GetActorLocation()
+		);
+	}
+
+	EquippedScope->SetOwner(BlasterOwnerCharacter);
+}
+
+void AWeapon::OnRep_EquippedScope()
+{
+	EquippedWeapon = BlasterOwnerCharacter->GetCombatComponent()->GetEquippedWeapon();
+
+	if (EquippedWeapon && EquippedScope && BlasterOwnerCharacter)
+	{
+		AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+		EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
+		if (CurrentScope == nullptr)
+		{
+			CurrentScope = EquippedScope;
+		}
+
+		Optics.AddUnique(EquippedScope);
+
+		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
+
+		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+
+		if (WeaponSightSocket)
+		{
+			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+		}
+
+		if (AnimInstance && EquippedWeapon)
+		{
+			AnimInstance->SetRelativeHandTransform();
+			AnimInstance->ChangeOptic();
+		}
+
+		if (EquippedScope->EquipSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				EquippedScope->EquipSound,
+				BlasterOwnerCharacter->GetActorLocation()
+			);
+		}
+
+		EquippedScope->SetOwner(BlasterOwnerCharacter);
+	}
+}
+
+void AWeapon::CycleThroughOptics()
+{
+	if (BlasterOwnerCharacter == nullptr || EquippedScope == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	if (AnimInstance && CurrentScope && EquippedScope && BlasterOwnerCharacter->GetMesh())
+	{
+		if (++OpticIndex >= Optics.Num())
+		{
+			OpticIndex = 0;
+		}
+		CurrentScope = Optics[OpticIndex];
+
+		if (!BlasterOwnerCharacter->HasAuthority())
+		{
+			ServerSetOpticIndex(OpticIndex);
+		}
+		AnimInstance->ChangeOptic();
+	}
+}
+
+void AWeapon::ServerSetOpticIndex_Implementation(uint8 CurrentIndex)
+{
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	OpticIndex = CurrentIndex;
+	CurrentScope = Optics[OpticIndex];
+
+	AnimInstance->ChangeOptic();
+}
+
+void AWeapon::OnRep_OpticIndex()
+{
+	if (BlasterOwnerCharacter == nullptr || EquippedScope == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+
+	CurrentScope = Optics[OpticIndex];
+
+	AnimInstance->ChangeOptic();
+}
+
+
+
+
+

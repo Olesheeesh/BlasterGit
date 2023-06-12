@@ -112,9 +112,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetFinalHandTransform();
 
-	UPROPERTY(EditAnywhere)
-	float DistanceToSight = 30.f;
-
 	UPROPERTY(BlueprintReadOnly, Category = Aiming, meta = (AllowPrivateAccess = "true"))
 	float AimAlpha = 0.f;
 

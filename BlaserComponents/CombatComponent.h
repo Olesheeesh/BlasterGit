@@ -26,8 +26,6 @@ public:
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
 
-	void EquipScope(class AScope* ScopeToEquip);
-
 	void Reload();
 
 	UFUNCTION(BlueprintCallable)
@@ -42,20 +40,11 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
 
-	UFUNCTION(Server, Reliable)
-	void ServerSetOpticIndex(uint8 CurrentIndex);
-
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
-	UFUNCTION()
-	void OnRep_EquippedScope();
-
 	//UFUNCTION()
 	//void OnRep_CurrentScope();
-
-	UFUNCTION()
-	void OnRep_OpticIndex();
 
 	void Fire();
 
@@ -104,9 +93,6 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
 	AWeapon* EquippedWeapon; //variable to store currently equipped weapon
-
-	UPROPERTY(ReplicatedUsing = OnRep_EquippedScope)
-	AScope* EquippedScope;
 
 	UPROPERTY(Replicated)
 	bool bAiming = false;
@@ -200,21 +186,8 @@ protected:
 	UPROPERTY()
 	class UBlasterAnimInstance* AnimInstance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
-	TArray<AScope*> Optics;
-
-	UPROPERTY(Replicated)
-	AScope* CurrentScope;
-
-	UPROPERTY(ReplicatedUsing = OnRep_OpticIndex)
-	uint8 OpticIndex = 0;
-
-	void CycleThroughOptics();
-
 public:	
 	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
-	FORCEINLINE AScope* GetEquippedScope() const { return EquippedScope; }
-	FORCEINLINE AScope* GetCurrentScope() const { return CurrentScope; }
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 };

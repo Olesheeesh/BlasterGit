@@ -443,7 +443,7 @@ void ABlasterCharacter::EquipButtonPressed()
 	{
 		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
-			Combatt->EquipScope(OverlappingScope);
+			GetEquippedWeapon()->EquipScope(OverlappingScope);
 		}
 		else
 		{
@@ -457,7 +457,7 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 	if (Combatt)
 	{
 		Combatt->EquipWeapon(OverlappingWeapon);
-		Combatt->EquipScope(OverlappingScope);
+		GetEquippedWeapon()->EquipScope(OverlappingScope);
 	}
 }
 
@@ -527,13 +527,13 @@ void ABlasterCharacter::ChangeOpticButtonPressed()
 {
 	if (Combatt)
 	{
-		Combatt->CycleThroughOptics();
+		GetEquippedWeapon()->CycleThroughOptics();
 	}
 }
 
 void ABlasterCharacter::ServerChangeOpticButtonPressed_Implementation()
 {
-	Combatt->CycleThroughOptics();
+	GetEquippedWeapon()->CycleThroughOptics();
 	UE_LOG(LogTemp, Warning, TEXT("ServerC_O Im calling!"));
 }
 
@@ -860,7 +860,7 @@ AWeapon* ABlasterCharacter::GetEquippedWeapon()//return currently equipped weapo
 AScope* ABlasterCharacter::GetEquippedScope()
 {
 	if (Combatt == nullptr) return nullptr;
-	return Combatt->EquippedScope;
+	return Combatt->EquippedWeapon->EquippedScope;
 }
 
 FVector ABlasterCharacter::GetHitTarget() const

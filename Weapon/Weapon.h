@@ -72,6 +72,8 @@ public:
 
 	void AddAmmo(int32 AmmoToAdd);
 
+	void CycleThroughOptics();
+
 	UPROPERTY(EditAnywhere)
 	class USoundCue* EquipSound;
 
@@ -80,6 +82,12 @@ public:
 
 	UPROPERTY(EditAnywhere)//should be replicated
 	float AimInterpSpeed = 10.f;
+
+	/*
+	 * Scope
+	 */
+
+	void EquipScope(class AScope* ScopeToEquip);
 
 protected:
 	virtual void BeginPlay() override;
@@ -101,6 +109,33 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex
 	);
+
+	UPROPERTY(EditAnywhere)
+	float DistanceToSight = 30.f;
+
+	/*
+	 * Scope
+	 */
+	UFUNCTION()
+	void OnRep_EquippedScope();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetOpticIndex(uint8 CurrentIndex);
+
+	UFUNCTION()
+	void OnRep_OpticIndex();
+
+	UPROPERTY()
+	class UBlasterAnimInstance* AnimInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scope Properties")
+	TArray<AScope*> Optics;
+
+	UPROPERTY(Replicated)
+	AScope* CurrentScope;
+
+	UPROPERTY(ReplicatedUsing = OnRep_OpticIndex)
+	uint8 OpticIndex = 0;
 
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Weapon Properties")
@@ -136,13 +171,22 @@ private:
 
 	UPROPERTY()
 	class ABlasterCharacter* BlasterOwnerCharacter;
+
 	UPROPERTY()//на случай если не инициализирован, чтоб не крашнуло
 	class ABlasterPlayerController* BlasterOwnerController;
+
+	UPROPERTY()
+	class AWeapon* EquippedWeapon;
+
+	
 
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType;
 
-public:	
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedScope)
+	class AScope* EquippedScope;
+
 	void SetWeaponState(EWeaponState State);
 	FORCEINLINE USphereComponent* GetAreaSphere() const {  return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }//weapon mesh is private->need this getter
@@ -151,6 +195,8 @@ public:
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE AScope* GetCurrentScope() const { return CurrentScope; }
+	FORCEINLINE float GetDistanceToSight() const { return DistanceToSight; }
 };
 
 

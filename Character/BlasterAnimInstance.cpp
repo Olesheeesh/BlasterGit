@@ -48,7 +48,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 	bWeaponEquipped = BlasterCharacter->isWeaponEquipped();
 	EquippedWeapon = BlasterCharacter->GetEquippedWeapon();
-	EquippedScope = BlasterCharacter->GetEquippedScope();
+	if(EquippedWeapon)EquippedScope = EquippedWeapon->EquippedScope;
 	bIsCrouched = BlasterCharacter->bIsCrouched;
 	bAiming = BlasterCharacter->isAiming();
 	TurningInPlace = BlasterCharacter->GetTurningInPlace();
@@ -148,12 +148,12 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 
 void UBlasterAnimInstance::SetSightTransform()
 {
-	if (BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->GetMesh()) {
+	if (EquippedWeapon && BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->GetMesh()) {
 		FTransform FollowCameraTransform = BlasterCharacter->GetFollowCamera()->GetComponentTransform();
 		FTransform FPSMeshTransfrom = BlasterCharacter->GetMesh()->GetComponentTransform();
 		FTransform CameraRelativeToArms = FollowCameraTransform.GetRelativeTransform(FPSMeshTransfrom);//make camera relative to arms
 		FVector SightForwardVector = CameraRelativeToArms.GetRotation().GetForwardVector();
-		FVector SightLocation = SightForwardVector * DistanceToSight + CameraRelativeToArms.GetLocation();
+		FVector SightLocation = SightForwardVector * EquippedWeapon->GetDistanceToSight() + CameraRelativeToArms.GetLocation();
 		SightTransform.SetLocation(SightLocation);
 		SightTransform.SetRotation(CameraRelativeToArms.GetRotation());
 	}
@@ -170,9 +170,9 @@ void UBlasterAnimInstance::SetRelativeHandTransform()
 		if (EquippedScope == nullptr) UE_LOG(LogTemp, Warning, TEXT("Am I in?"));
 
 	}
-	else if (EquippedScope && EquippedWeapon && BlasterCharacter->GetCombatComponent()->GetCurrentScope())
+	else if (EquippedScope && EquippedWeapon && EquippedWeapon->GetCurrentScope())
 	{
-		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+		FTransform AimSocketTransform = EquippedWeapon->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
@@ -192,9 +192,9 @@ void UBlasterAnimInstance::SetFinalHandTransform()
 		FinalHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
 	}
-	else if(EquippedWeapon && EquippedScope && BlasterCharacter->GetCombatComponent()->GetCurrentScope())
+	else if(EquippedWeapon && EquippedScope && EquippedWeapon->GetCurrentScope())
 	{
-		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+		FTransform AimSocketTransform = EquippedWeapon->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 	}

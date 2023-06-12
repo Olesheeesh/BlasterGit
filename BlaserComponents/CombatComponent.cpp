@@ -60,8 +60,6 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
-	DOREPLIFETIME(UCombatComponent, EquippedScope);//when changes, it will be reflected on all clients
-	DOREPLIFETIME_CONDITION(UCombatComponent, OpticIndex, COND_SkipOwner);//when changes, it will be reflected on all clients
 	DOREPLIFETIME_CONDITION(UCombatComponent, bAiming, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
@@ -163,128 +161,6 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
-}
-
-void UCombatComponent::EquipScope(AScope* ScopeToEquip)
-{
-	if (Character == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() >= 3) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
-	EquippedScope = ScopeToEquip;
-	EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
-	if (CurrentScope == nullptr)
-	{
-		CurrentScope = EquippedScope;
-	}
-
-	Optics.AddUnique(EquippedScope);
-
-	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
-
-	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
-
-	if (WeaponSightSocket)
-	{
-		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
-	}
-
-	if (AnimInstance && EquippedWeapon)
-	{
-		AnimInstance->SetRelativeHandTransform();
-		AnimInstance->ChangeOptic();
-	}
-
-	if(EquippedScope->EquipSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			EquippedScope->EquipSound,
-			Character->GetActorLocation()
-		);
-	}
-
-	EquippedScope->SetOwner(Character);
-}
-
-void UCombatComponent::OnRep_EquippedScope()
-{
-	if (EquippedWeapon && EquippedScope && Character)
-	{
-		AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
-		EquippedScope->SetScopeState(EScopeState::ESS_Equipped);
-		if (CurrentScope == nullptr)
-		{
-			CurrentScope = EquippedScope;
-		}
-
-		Optics.AddUnique(EquippedScope);
-
-		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
-
-		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
-
-		if (WeaponSightSocket)
-		{
-			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
-		}
-
-		if (AnimInstance && EquippedWeapon)
-		{
-			AnimInstance->SetRelativeHandTransform();
-			AnimInstance->ChangeOptic();
-		}
-
-		if (EquippedScope->EquipSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(
-				this,
-				EquippedScope->EquipSound,
-				Character->GetActorLocation()
-			);
-		}
-
-		EquippedScope->SetOwner(Character);
-	}
-}
-
-void UCombatComponent::CycleThroughOptics()
-{
-	if (Character == nullptr || EquippedScope == nullptr) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
-	if (AnimInstance && CurrentScope && EquippedScope && Character->GetMesh())
-	{
-		if (++OpticIndex >= Optics.Num())
-		{
-			OpticIndex = 0;
-		}
-		CurrentScope = Optics[OpticIndex];
-
-		if(!Character->HasAuthority())
-		{
-			ServerSetOpticIndex(OpticIndex);
-		}
-		AnimInstance->ChangeOptic();
-	}
-}
-
-void UCombatComponent::ServerSetOpticIndex_Implementation(uint8 CurrentIndex)
-{
-	OpticIndex = CurrentIndex;
-	CurrentScope = Optics[OpticIndex];
-
-	AnimInstance->ChangeOptic();
-}
-
-void UCombatComponent::OnRep_OpticIndex()
-{
-	if (Character == nullptr || EquippedScope == nullptr) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
-	CurrentScope = Optics[OpticIndex];
-
-	AnimInstance->ChangeOptic();
 }
 
 void UCombatComponent::Reload()
