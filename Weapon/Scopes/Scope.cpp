@@ -69,18 +69,19 @@ void AScope::SetScopeState(EScopeState State)
 	{
 	case EScopeState::ESS_Equipped:
 		ShowPickupWidget(false);
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Scope->SetSimulatePhysics(false);
 		Scope->SetEnableGravity(false);
 		Scope->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EScopeState::ESS_Dropped:
 		ShowPickupWidget(true);
+		if(HasAuthority())AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		Scope->SetSimulatePhysics(true);
 		Scope->SetEnableGravity(true);
 		Scope->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Current State is: %hhd"), State));
 }
 
 void AScope::OnRep_ScopeState()

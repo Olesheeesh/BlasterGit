@@ -49,6 +49,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void SetupMesh_Implementation();
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -88,7 +89,7 @@ private:
 	bool currentbUseControllerRotationYaw = false;
 
 	UPROPERTY(VisibleAnywhere)
-	class USkeletalMeshComponent* FPSMesh;
+	class USkeletalMeshComponent* ClientMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Transformation")
 	TObjectPtr<USceneComponent> FPScene;
@@ -254,6 +255,7 @@ public:
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; } //getter AO_Yaw
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; } //getter AO_Pitch
 	FORCEINLINE float GetBaseSpeed() const { return BaseSpeed; } //use getter because BaseSpeed is a private variable 
+	FORCEINLINE float GetSprintSpeed() const { return SprintSpeed; } //use getter because BaseSpeed is a private variable 
 	AWeapon* GetEquippedWeapon();
 	AScope* GetEquippedScope();
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; } //returning what enum:: ETurnInPlace equals
@@ -266,7 +268,7 @@ public:
 	ECombatState GetCombatState() const;
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
-	FORCEINLINE USkeletalMeshComponent* GetFPSMesh() const { return FPSMesh; }
+	FORCEINLINE USkeletalMeshComponent* GetClientMesh() const { return ClientMesh; }
 	
 
 };

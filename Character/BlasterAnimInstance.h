@@ -19,6 +19,7 @@ class BLASTER_API UBlasterAnimInstance : public UAnimInstance
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
+	virtual void NativeBeginPlay() override;
 
 private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
@@ -134,6 +135,24 @@ public:
 
 	bool bScopeIsEquipped;
 
+	UPROPERTY(EditAnywhere)
+	class UCurveVector* MovingCurve;//curve
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform");
+	FVector SwayLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform")
+	float SwayInterpSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform")
+	FRotator TurnRotation;
+
+	FRotator OldRotation;
+
+	void UpdateMovingCurve(float DeltaTime);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform")
+	float DivideCurveMinRange;
 //public:
 
 	/*

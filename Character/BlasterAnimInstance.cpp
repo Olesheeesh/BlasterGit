@@ -10,6 +10,7 @@
 #include "Blaster/Weapon/Weapon.h"
 #include "Blaster/Weapon/Scopes/Scope.h"
 #include "Camera/CameraComponent.h"
+#include "Curves/CurveVector.h"
 #include "Net/UnrealNetwork.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
@@ -17,8 +18,18 @@ void UBlasterAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());//ref to chracter
+	
 }
 
+void UBlasterAnimInstance::NativeBeginPlay()
+{
+	Super::NativeBeginPlay();
+
+	if (BlasterCharacter)
+	{
+		OldRotation = BlasterCharacter->GetControlRotation();
+	}
+}
 void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 {
 	Super::NativeUpdateAnimation(DeltaTime);
@@ -43,7 +54,6 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	TurningInPlace = BlasterCharacter->GetTurningInPlace();
 	bRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
 	bElimmed = BlasterCharacter->isElimmed();
-
 	//CurrentScope = BlasterCharacter->GetCombatComponent()->GetCurrentScope();
 	//AimSpeed = EquippedWeapon->AimInterpSpeed;
 	/*
@@ -53,10 +63,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 
 	if (bWeaponEquipped)
 	{
-		if (!bRelativeHandIsSet)
-		{
-			SetRelativeHandTransform();
-		}
+		UpdateMovingCurve(DeltaTime);
 		if (bAiming)
 		{
 			InterpAiming(DeltaTime, 1.f);
@@ -70,6 +77,19 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 			InterpAiming(DeltaTime, 0.f);
 		}
 	}
+
+	/*
+	 * Curve
+	 */
+
+	
+
+	// FRotator CurrentRotation = BlasterCharacter->GetControlRotation();
+	// TurnRotation = UKismetMathLibrary::RInterpTo(TurnRotation, CurrentRotation - OldRotation, DeltaTime, 1.f);//10 - 6 = 4 == CurrentRotation - OldRotation = 4
+	// TurnRotation.Roll = TurnRotation.Pitch * -1.5f;
+	// OldRotation = CurrentRotation;
+	// UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Roll: %f"), TurnRotation.Roll);
+
 
 	//offset yaw for strafing
 	FRotator AimRotation = BlasterCharacter->GetBaseAimRotation();
@@ -141,30 +161,43 @@ void UBlasterAnimInstance::SetSightTransform()
 
 void UBlasterAnimInstance::SetRelativeHandTransform()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString("I am in"));
-	if(EquippedScope == nullptr)
+	if(EquippedWeapon && EquippedScope == nullptr)
 	{
 		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, FString("Scope is not set"));
+		if (EquippedScope == nullptr) UE_LOG(LogTemp, Warning, TEXT("Am I in?"));
+
 	}
-	else if (BlasterCharacter->GetCombatComponent()->GetCurrentScope() && EquippedScope && BlasterCharacter->GetMesh())
+	else if (EquippedScope && EquippedWeapon && BlasterCharacter->GetCombatComponent()->GetCurrentScope())
 	{
 		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Green, FString("I should be called when pick up rifle"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SRHT FUCK"));
 	}
 }
 
 void UBlasterAnimInstance::SetFinalHandTransform()
 {
-	FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
-	FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
-	FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
+	if (EquippedWeapon && EquippedScope == nullptr)
+	{
+		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FinalHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
+		bRelativeHandIsSet = true;
+	}
+	else if(EquippedWeapon && EquippedScope && BlasterCharacter->GetCombatComponent()->GetCurrentScope())
+	{
+		FTransform AimSocketTransform = BlasterCharacter->GetCombatComponent()->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
+	}
 }
 
 void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
@@ -180,10 +213,6 @@ void UBlasterAnimInstance::InterpRelativeHand(float DeltaTime)
 		bInterpRelativeHand = false;
 		SetRelativeHandTransform();
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Here is a problem"));
-	}
 }
 
 void UBlasterAnimInstance::ChangeOptic()
@@ -192,4 +221,18 @@ void UBlasterAnimInstance::ChangeOptic()
 	bInterpRelativeHand = true;
 }
 
+void UBlasterAnimInstance::UpdateMovingCurve(float DeltaTime)
+{
+	if(MovingCurve)
+	{
+		float MaxSpeed = BlasterCharacter->GetSprintSpeed();
+		Speed = UKismetMathLibrary::NormalizeToRange(Speed, (MaxSpeed / DivideCurveMinRange * -1.0f), MaxSpeed);//изначально NormilizedSpeed = 0, растёт до 1 вместе со скоростью
+		FVector NewVector = MovingCurve->GetVectorValue(BlasterCharacter->GetGameTimeSinceCreation());//получаем значение "key" из VectorCurve, исходя из времени
+		SwayLocation = UKismetMathLibrary::VInterpTo(SwayLocation, NewVector, DeltaTime, 1.8f);//сдвигаем SwayLocation к значению Curve
+		SwayLocation *= Speed;
 
+		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.X: %f"), SwayLocation.X);
+		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.Y: %f"), SwayLocation.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.Z: %f"), SwayLocation.Z);
+	}
+}

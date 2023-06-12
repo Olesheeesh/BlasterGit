@@ -70,6 +70,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	if (EquippedWeapon)//if is not null
 	{
@@ -79,13 +80,24 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("RightHandSocket");
+	USkeletalMeshComponent* MeshComponent = Character->IsLocallyControlled() ? Character->GetMesh() : Character->GetMesh();
+	const USkeletalMeshSocket* HandSocket = MeshComponent->GetSocketByName("RightHandSocket");
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		HandSocket->AttachActor(EquippedWeapon, MeshComponent);
 	}
 
 	EquippedWeapon->SetOwner(Character);
+
+	if (AnimInstance && EquippedWeapon)
+	{
+		AnimInstance->SetRelativeHandTransform();
+		AnimInstance->ChangeOptic();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("WTF"));
+	}
 	EquippedWeapon->SetHUDAmmo();
 
 	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
@@ -120,15 +132,23 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
+
 	if (EquippedWeapon && Character)
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-
+		USkeletalMeshComponent* MeshComponent = Character->IsLocallyControlled() ? Character->GetMesh() : Character->GetMesh();
+		const USkeletalMeshSocket* HandSocket = MeshComponent->GetSocketByName("RightHandSocket");
 		if (HandSocket)
 		{
-			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());//attaching weapon to a socket on GetMesh
+			HandSocket->AttachActor(EquippedWeapon, MeshComponent);
+		}
+
+		if(AnimInstance && EquippedWeapon)
+		{
+			AnimInstance->SetRelativeHandTransform();
+			AnimInstance->ChangeOptic();
 		}
 	}
 
@@ -168,7 +188,11 @@ void UCombatComponent::EquipScope(AScope* ScopeToEquip)
 		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 	}
 
-	AnimInstance->ChangeOptic();
+	if (AnimInstance && EquippedWeapon)
+	{
+		AnimInstance->SetRelativeHandTransform();
+		AnimInstance->ChangeOptic();
+	}
 
 	if(EquippedScope->EquipSound)
 	{
@@ -205,7 +229,11 @@ void UCombatComponent::OnRep_EquippedScope()
 			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
 		}
 
-		AnimInstance->ChangeOptic();
+		if (AnimInstance && EquippedWeapon)
+		{
+			AnimInstance->SetRelativeHandTransform();
+			AnimInstance->ChangeOptic();
+		}
 
 		if (EquippedScope->EquipSound)
 		{
@@ -266,8 +294,6 @@ void UCombatComponent::Reload()
 		HandleReload();
 		ServerReload();
 	}
-	FString ToDisplay = CombatState == ECombatState::ECS_Reloading ? "ReloadingState" : "Else";
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::White, FString(ToDisplay));
 }
 
 void UCombatComponent::ServerReload_Implementation()
@@ -547,7 +573,7 @@ void UCombatComponent::Fire()
 	{
 		PlayOutOfAmmoSound();
 	}
-
+	
 	if (CanFire())
 	{
 		ServerFire(HitTarget);
@@ -590,20 +616,22 @@ void UCombatComponent::FireTimerFinished()
 {
 	if (EquippedWeapon == nullptr || Character == nullptr) return;
 	bCanFire = true;
+	
 	if (bFireButtonPressed && EquippedWeapon->bAutomatic) //if weapon is automatic
 	{
 		Fire();
 	}
-	if(EquippedWeapon->IsEmpty())
+	if (EquippedWeapon->IsEmpty())
 	{
 		Reload();
 	}
+	
 }
 
 bool UCombatComponent::CanFire()
 {
 	if (EquippedWeapon == nullptr) return false;
-	return !EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied && !Character->GetIsSprinting();//если есть патроны - true
+	return !EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied && Character->GetIsSprinting() == false;//если есть патроны - true
 }
 
 void UCombatComponent::OnRep_CarriedAmmo()

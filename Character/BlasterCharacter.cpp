@@ -29,17 +29,17 @@ ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	FPSMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSMesh"));
-	FPSMesh->SetupAttachment(GetMesh());
+	ClientMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ClientMesh"));
+	ClientMesh->SetupAttachment(GetMesh());
 	AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("neck_01"));
-	FPSMesh->SetCollisionObjectType(ECC_SkeletalMesh);
-	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	FPSMesh->bOnlyOwnerSee = true;
+	ClientMesh->SetCollisionObjectType(ECC_SkeletalMesh);
+	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	ClientMesh->bOnlyOwnerSee = true;
 
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	PlayerCamera->AttachToComponent(FPSMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
+	PlayerCamera->AttachToComponent(ClientMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
 	PlayerCamera->bUsePawnControlRotation = true;
 	bUseControllerRotationYaw = true;
 
@@ -103,6 +103,23 @@ void ABlasterCharacter::BeginPlay()
 	{
 		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будет вызвана при возникновении события OnTakeAnyDamage
 	}
+}
+
+void ABlasterCharacter::SetupMesh_Implementation()
+{
+	
+	if (IsLocallyControlled())
+	{
+		GetMesh()->SetVisibility(false);
+		ClientMesh->SetSkeletalMesh(GetMesh()->SkeletalMesh);
+		ClientMesh->HideBoneByName(FName("neck_01"), PBO_None);
+	}
+	else
+	{
+		ClientMesh->DestroyComponent();
+		ClientMesh = nullptr;
+	}
+	
 }
 
 void ABlasterCharacter::Tick(float DeltaTime)
@@ -278,7 +295,7 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	FPSMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ClientMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//Spawn Elim bot
 	FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
@@ -530,6 +547,7 @@ void ABlasterCharacter::SprintButtonReleased()
 {
 	if (bDisableGameplay)return;
 	SetSprint(false);
+	if (Combatt->EquippedWeapon && Combatt->bFireButtonPressed)Combatt->Fire();
 }
 
 bool ABlasterCharacter::GetIsSprinting()
@@ -538,13 +556,9 @@ bool ABlasterCharacter::GetIsSprinting()
 	{
 		return false;
 	}
-	else if(GetVelocity().Length() > GetBaseSpeed())
+	else if(isSprinting)
 	{
 		return true;
-	}
-	else if(GetVelocity().Length() <= GetBaseSpeed())
-	{
-		return false;
 	}
 	else
 	{
