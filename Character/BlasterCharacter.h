@@ -10,6 +10,15 @@
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "BlasterCharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class ECollisionSettings : uint8
+{
+	ECS_CharacterDefault UMETA(DisplayName = "Character Default"), 
+	ECS_WeaponDefault UMETA(DisplayName = "Weapon Default"), 
+	ECS_CharacterGhost UMETA(DisplayName = "Character Ghost"), 
+	ECS_WeaponGhost UMETA(DisplayName = "Weapon Ghost")
+};
+
 UCLASS()
 class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
 {
@@ -19,6 +28,7 @@ public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
 	friend class UCombatComponent;
+	friend class UAbilityComponent;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;// Called to bind functionality to input
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -71,6 +81,7 @@ protected:
 	void FireButtonPressed();
 	void FireButtonReleased();
 	void ChangeOpticButtonPressed();
+	void ShiftAbilityButtonPressed();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
@@ -83,7 +94,10 @@ protected:
 	void PollInit();
 	void RotateInPlace(float DeltaTime);
 	bool GetIsSprinting();
+	void SetCollisionSettings(ECollisionSettings CurrentCollisionSetting);
+
 private:
+
 	float HighestSpeed = 0.f;
 
 	bool currentbUseControllerRotationYaw = false;
@@ -117,6 +131,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combatt;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UAbilityComponent* Abilities;
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();

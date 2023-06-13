@@ -13,6 +13,7 @@
 #include "Blaster/Blaster.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "TimerManager.h"
+#include "Blaster/BlaserComponents/AbilityComponent.h"
 #include "Blaster/DamageArea/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
@@ -55,6 +56,9 @@ ABlasterCharacter::ABlasterCharacter()
 
 	Combatt = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combatt->SetIsReplicated(true);
+
+	Abilities = CreateDefaultSubobject<UAbilityComponent>(TEXT("Abilities"));
+	Abilities->SetIsReplicated(true);
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -189,6 +193,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Pressed, this, &ABlasterCharacter::ShowScoreBoardPressed);
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardReleased);
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
+	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -197,6 +202,10 @@ void ABlasterCharacter::PostInitializeComponents()
 	if(Combatt)
 	{
 		Combatt->Character = this;
+	}
+	if(Abilities)
+	{
+		Abilities->Character = this;
 	}
 }
 
@@ -452,7 +461,10 @@ void ABlasterCharacter::EquipButtonPressed()
 	{
 		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
-			GetEquippedWeapon()->EquipScope(OverlappingScope);
+			if (Combatt->GetEquippedWeapon())
+			{
+				GetEquippedWeapon()->EquipScope(OverlappingScope);
+			}
 		}
 		else
 		{
@@ -466,7 +478,10 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 	if (Combatt)
 	{
 		Combatt->EquipWeapon(OverlappingWeapon);
-		GetEquippedWeapon()->EquipScope(OverlappingScope);
+		if (Combatt->GetEquippedWeapon())
+		{
+			GetEquippedWeapon()->EquipScope(OverlappingScope);
+		}
 	}
 }
 
@@ -534,9 +549,18 @@ void ABlasterCharacter::FireButtonReleased()
 
 void ABlasterCharacter::ChangeOpticButtonPressed()
 {
-	if (Combatt)
+	if (GetEquippedWeapon())
 	{
 		GetEquippedWeapon()->CycleThroughOptics();
+	}
+}
+
+void ABlasterCharacter::ShiftAbilityButtonPressed()
+{
+	if(Abilities)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Im pressed now"));
+		Abilities->ActicateShiftAbility();
 	}
 }
 
@@ -572,6 +596,35 @@ bool ABlasterCharacter::GetIsSprinting()
 	else
 	{
 		return false;
+	}
+}
+
+void ABlasterCharacter::SetCollisionSettings(ECollisionSettings CurrentCollisionSetting)
+{
+	switch(CurrentCollisionSetting)
+	{
+		case ECollisionSettings::ECS_CharacterDefault:
+			GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+			GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
+			GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+			GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+			GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+			break;
+		
+		case ECollisionSettings::ECS_WeaponDefault://нужно будет изменить на currentWeapon
+			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			break;
+
+		case ECollisionSettings::ECS_CharacterGhost:
+			GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+			break;
+
+		case ECollisionSettings::ECS_WeaponGhost:
+			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+			break;
 	}
 }
 

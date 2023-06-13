@@ -92,7 +92,7 @@ private:
 	class ABlasterHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
-	AWeapon* EquippedWeapon; //variable to store currently equipped weapon
+	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon
 
 	UPROPERTY(Replicated)
 	bool bAiming = false;

@@ -15,12 +15,40 @@ class BLASTER_API UAbilityComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UAbilityComponent();
+	void ActicateShiftAbility();
 
-protected:
+protected://функции
 	virtual void BeginPlay() override;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UPROPERTY()
+		class ABlasterCharacter* Character;
+private:
 
-		
+	UPROPERTY()
+	class AWeapon* EquippedWeapon;
+
+	UPROPERTY()
+	class ABlasterPlayerController* Controller;
+
+protected://переменные
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	bool bIsCollisionEnabled = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	FVector ShiftActivationLocation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	float ShiftDuration = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	float ShiftCooldown = 7.f;
+
+	bool CanShift = true;
+	FTimerHandle ShiftTimer;
+
+	void StartShiftTimer();
+	void ShiftTimerFinished();
 };

@@ -271,9 +271,7 @@ void AWeapon::AddAmmo(int32 AmmoToAdd)
 
 void AWeapon::EquipScope(AScope* ScopeToEquip)
 {
-	EquippedWeapon = BlasterOwnerCharacter->GetCombatComponent()->GetEquippedWeapon();
-
-	if (BlasterOwnerCharacter == nullptr || ScopeToEquip == nullptr || EquippedWeapon == nullptr || Optics.Num() >= 3) return;
+	if (BlasterOwnerCharacter == nullptr || ScopeToEquip == nullptr || Optics.Num() >= 3) return;
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	EquippedScope = ScopeToEquip;
@@ -287,14 +285,14 @@ void AWeapon::EquipScope(AScope* ScopeToEquip)
 
 	FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
 
-	const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+	const USkeletalMeshSocket* WeaponSightSocket = WeaponMesh->GetSocketByName(*SocketName);
 
 	if (WeaponSightSocket)
 	{
-		WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+		WeaponSightSocket->AttachActor(EquippedScope, WeaponMesh);
 	}
 
-	if (AnimInstance && EquippedWeapon)
+	if (AnimInstance)
 	{
 		AnimInstance->SetRelativeHandTransform();
 		AnimInstance->ChangeOptic();
@@ -314,9 +312,7 @@ void AWeapon::EquipScope(AScope* ScopeToEquip)
 
 void AWeapon::OnRep_EquippedScope()
 {
-	EquippedWeapon = BlasterOwnerCharacter->GetCombatComponent()->GetEquippedWeapon();
-
-	if (EquippedWeapon && EquippedScope && BlasterOwnerCharacter)
+	if (EquippedScope && BlasterOwnerCharacter)
 	{
 		AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
 
@@ -330,14 +326,14 @@ void AWeapon::OnRep_EquippedScope()
 
 		FString SocketName = FString::Printf(TEXT("WeaponSightSocket%d"), Optics.Num() - 1);
 
-		const USkeletalMeshSocket* WeaponSightSocket = EquippedWeapon->GetWeaponMesh()->GetSocketByName(*SocketName);
+		const USkeletalMeshSocket* WeaponSightSocket = WeaponMesh->GetSocketByName(*SocketName);
 
 		if (WeaponSightSocket)
 		{
-			WeaponSightSocket->AttachActor(EquippedScope, EquippedWeapon->GetWeaponMesh());
+			WeaponSightSocket->AttachActor(EquippedScope, WeaponMesh);
 		}
 
-		if (AnimInstance && EquippedWeapon)
+		if (AnimInstance)
 		{
 			AnimInstance->SetRelativeHandTransform();
 			AnimInstance->ChangeOptic();

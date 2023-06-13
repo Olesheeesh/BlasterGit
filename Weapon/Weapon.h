@@ -175,11 +175,6 @@ private:
 	UPROPERTY()//на случай если не инициализирован, чтоб не крашнуло
 	class ABlasterPlayerController* BlasterOwnerController;
 
-	UPROPERTY()
-	class AWeapon* EquippedWeapon;
-
-	
-
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType;
 

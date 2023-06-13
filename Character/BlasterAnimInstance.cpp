@@ -239,6 +239,6 @@ void UBlasterAnimInstance::UpdateTurningSway(float DeltaTime)
 	TurnRotation.Roll = FMath::Clamp(TurnRotation.Roll, -3.f, 3.f);
 
 	OldRotation = CurrentRotation;
-	UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Roll: %f"), TurnRotation.Roll);
-	UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Yaw: %f"), TurnRotation.Yaw);
+	//UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Roll: %f"), TurnRotation.Roll);
+	//UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Yaw: %f"), TurnRotation.Yaw);
 }
