@@ -148,6 +148,8 @@ public:
 
 	void UpdateMovingCurve(float DeltaTime);
 
+	void UpdateTurningSway(float DeltaTime);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IK | Transform")
 	float DivideCurveMinRange;
 //public:

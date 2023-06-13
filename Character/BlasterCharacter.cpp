@@ -139,8 +139,17 @@ void ABlasterCharacter::Tick(float DeltaTime)
 		UE_LOG(LogTemp, Error, TEXT("bUseControllerRotationYaw: %d"), bUseControllerRotationYaw);
 		currentbUseControllerRotationYaw = bUseControllerRotationYaw;
 	}*/
-	RotateInPlace(DeltaTime);
-
+	//RotateInPlace(DeltaTime);
+	
+	if (GetLocalRole() == ENetRole::ROLE_SimulatedProxy || HasAuthority())
+	{
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
+	}
 	//HideCharacterWhenCameraClose();
 }
 

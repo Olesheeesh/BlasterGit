@@ -25,7 +25,7 @@ void UBlasterAnimInstance::NativeBeginPlay()
 {
 	Super::NativeBeginPlay();
 
-	if (BlasterCharacter)
+	if (BlasterCharacter )
 	{
 		OldRotation = BlasterCharacter->GetControlRotation();
 	}
@@ -59,13 +59,14 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	/*
 	 * Youtube tutorial
 	 */
-	SetSightTransform();
 
 	if (bWeaponEquipped)
 	{
 		UpdateMovingCurve(DeltaTime);
+		UpdateTurningSway(DeltaTime);
 		if (bAiming)
 		{
+			SetSightTransform();
 			InterpAiming(DeltaTime, 1.f);
 			if (bInterpRelativeHand)
 			{
@@ -81,14 +82,6 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	/*
 	 * Curve
 	 */
-
-	
-
-	// FRotator CurrentRotation = BlasterCharacter->GetControlRotation();
-	// TurnRotation = UKismetMathLibrary::RInterpTo(TurnRotation, CurrentRotation - OldRotation, DeltaTime, 1.f);//10 - 6 = 4 == CurrentRotation - OldRotation = 4
-	// TurnRotation.Roll = TurnRotation.Pitch * -1.5f;
-	// OldRotation = CurrentRotation;
-	// UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Roll: %f"), TurnRotation.Roll);
 
 
 	//offset yaw for strafing
@@ -156,6 +149,9 @@ void UBlasterAnimInstance::SetSightTransform()
 		FVector SightLocation = SightForwardVector * EquippedWeapon->GetDistanceToSight() + CameraRelativeToArms.GetLocation();
 		SightTransform.SetLocation(SightLocation);
 		SightTransform.SetRotation(CameraRelativeToArms.GetRotation());
+		//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Red, FString::Printf(TEXT("SightLocation.X: %f"), SightLocation.X));
+		//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Red, FString::Printf(TEXT("SightLocation.Y: %f"), SightLocation.Y));
+		//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Red, FString::Printf(TEXT("SightLocation.Z: %f"), SightLocation.Z));
 	}
 }
 
@@ -230,9 +226,19 @@ void UBlasterAnimInstance::UpdateMovingCurve(float DeltaTime)
 		FVector NewVector = MovingCurve->GetVectorValue(BlasterCharacter->GetGameTimeSinceCreation());//получаем значение "key" из VectorCurve, исходя из времени
 		SwayLocation = UKismetMathLibrary::VInterpTo(SwayLocation, NewVector, DeltaTime, 1.8f);//сдвигаем SwayLocation к значению Curve
 		SwayLocation *= Speed;
-
-		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.X: %f"), SwayLocation.X);
-		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.Y: %f"), SwayLocation.Y);
-		//UE_LOG(LogTemp, Warning, TEXT("SwayLocation.Z: %f"), SwayLocation.Z);
 	}
+}
+
+void UBlasterAnimInstance::UpdateTurningSway(float DeltaTime)
+{
+	FRotator CurrentRotation = BlasterCharacter->GetControlRotation();
+	TurnRotation = UKismetMathLibrary::RInterpTo(TurnRotation, CurrentRotation - OldRotation, DeltaTime, 3.5f);//10 - 6 = 4 == CurrentRotation - OldRotation = 4
+	TurnRotation.Roll = TurnRotation.Pitch * -1.0f;
+
+	TurnRotation.Yaw = FMath::Clamp(TurnRotation.Yaw, -7.f, 7.f);
+	TurnRotation.Roll = FMath::Clamp(TurnRotation.Roll, -3.f, 3.f);
+
+	OldRotation = CurrentRotation;
+	UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Roll: %f"), TurnRotation.Roll);
+	UE_LOG(LogTemp, Warning, TEXT("TurnRotation.Yaw: %f"), TurnRotation.Yaw);
 }
