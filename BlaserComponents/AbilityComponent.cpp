@@ -7,6 +7,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Components/CapsuleComponent.h"
+#include "Net/UnrealNetwork.h"
 
 UAbilityComponent::UAbilityComponent()
 {
@@ -14,11 +15,17 @@ UAbilityComponent::UAbilityComponent()
 
 }
 
+void UAbilityComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	//DOREPLIFETIME()
+}
+
 void UAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
 }
 
 void UAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -32,7 +39,7 @@ void UAbilityComponent::ActicateShiftAbility()
 	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("Activate is calling"));
-	if(Character && CanShift)
+	if (Character && CanShift)
 	{
 		ShiftActivationLocation = Character->GetActorLocation();
 
@@ -43,6 +50,29 @@ void UAbilityComponent::ActicateShiftAbility()
 		UE_LOG(LogTemp, Error, TEXT("Collision: %d"), bIsCollisionEnabled)
 
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString("Im invincible now"));
+		StartShiftTimer();
+		CanShift = false;
+
+		ServerActivateShift();
+	}
+}
+
+void UAbilityComponent::ServerActivateShift_Implementation()
+{
+	MulticastActivateShift();
+}
+
+void UAbilityComponent::MulticastActivateShift_Implementation()
+{
+	if (Character && CanShift)
+	{
+		ShiftActivationLocation = Character->GetActorLocation();
+
+		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
+
+		bIsCollisionEnabled = false;
+
 		StartShiftTimer();
 		CanShift = false;
 	}

@@ -15,7 +15,15 @@ class BLASTER_API UAbilityComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UAbilityComponent();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	void ActicateShiftAbility();
+
+	UFUNCTION(Server, Reliable)
+	void ServerActivateShift();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastActivateShift();
 
 protected://функции
 	virtual void BeginPlay() override;
