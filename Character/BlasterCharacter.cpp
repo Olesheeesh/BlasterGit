@@ -10,6 +10,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "BlasterAnimInstance.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Blaster/Blaster.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "TimerManager.h"
@@ -44,10 +46,14 @@ ABlasterCharacter::ABlasterCharacter()
 	PlayerCamera->bUsePawnControlRotation = true;
 	bUseControllerRotationYaw = true;
 
-	/*CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(ArmsMesh);
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(GetMesh());
 	CameraBoom->TargetArmLength = 250.f;
-	CameraBoom->bUsePawnControlRotation = true;*/
+	CameraBoom->bUsePawnControlRotation = true;
+
+	TPCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TPCamera"));
+	TPCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	TPCamera->bUsePawnControlRotation = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	
@@ -74,6 +80,10 @@ ABlasterCharacter::ABlasterCharacter()
 	MinNetUpdateFrequency = 120.f;
 
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
+
+	AfterImageComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("AfterImageSystem"));
+	AfterImageComponent->SetupAttachment(GetCapsuleComponent());
+	AfterImageComponent->bAutoActivate = false;
 }
 
 void ABlasterCharacter::BeginPlay()
@@ -194,6 +204,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ShowScoreBoard", IE_Released, this, &ABlasterCharacter::ShowScoreBoardReleased);
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
+	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
 }
 
 void ABlasterCharacter::PostInitializeComponents()
@@ -559,8 +570,26 @@ void ABlasterCharacter::ShiftAbilityButtonPressed()
 {
 	if(Abilities)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Im pressed now"));
 		Abilities->ActicateShiftAbility();
+	}
+}
+
+void ABlasterCharacter::ChangeViewButtonPressed()//false
+{
+	if(PlayerCamera && TPCamera)
+	{
+
+		bChangeCamera = !bChangeCamera;
+		if(bChangeCamera)
+		{
+			TPCamera->SetActive(true);
+			PlayerCamera->SetActive(false);
+		}
+		else
+		{
+			PlayerCamera->SetActive(true);
+			TPCamera->SetActive(false);
+		}
 	}
 }
 

@@ -1,18 +1,19 @@
 #include "AbilityComponent.h"
 
 #include "CombatComponent.h"
+#include "NiagaraComponent.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "TimerManager.h"
 #include "Blaster/Blaster.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
 UAbilityComponent::UAbilityComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
-
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UAbilityComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -22,10 +23,11 @@ void UAbilityComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	//DOREPLIFETIME()
 }
 
+
 void UAbilityComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	OnAfterImageFinished = FOnAfterImageFinished();
 }
 
 void UAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -34,22 +36,45 @@ void UAbilityComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 }
 
+void UAbilityComponent::BlinkAbility()
+{
+	if (Character->GetCharacterMovement()->IsFalling()) return;
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Blink is calling"));
+	if (Character->GetVelocity().Size() > 0.f)
+	{
+		FVector LaunchDirection = Character->GetVelocity().GetSafeNormal();
+		Character->LaunchCharacter(LaunchDirection * ImpulseStrength, false, false);
+	}
+	else
+	{
+		FVector LaunchDirection = Character->GetActorForwardVector();
+		Character->LaunchCharacter(LaunchDirection * ImpulseStrength, false, false);
+	}
+}
+
+void UAbilityComponent::OnAfterImageSystemFinished(UNiagaraComponent* NiagaraComponent)
+{
+	UE_LOG(LogTemp, Warning, TEXT("AfterImageComponent System Finished"));
+	OnAfterImageFinished.Broadcast();
+	BlinkAbility();
+}
+
 void UAbilityComponent::ActicateShiftAbility()
 {
+	if (!CanShift) return;
 	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("Activate is calling"));
-	if (Character && CanShift)
+	if (Character && CanShift && Character->GetAfterImageComponent())
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("Activate is calling"));
+
 		ShiftActivationLocation = Character->GetActorLocation();
 
 		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
 
-		bIsCollisionEnabled = false;
-		UE_LOG(LogTemp, Error, TEXT("Collision: %d"), bIsCollisionEnabled)
+		Character->GetAfterImageComponent()->Activate();
+		Character->GetAfterImageComponent()->OnSystemFinished.AddDynamic(this, &UAbilityComponent::OnAfterImageSystemFinished);
 
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString("Im invincible now"));
 		StartShiftTimer();
 		CanShift = false;
 
@@ -64,14 +89,14 @@ void UAbilityComponent::ServerActivateShift_Implementation()
 
 void UAbilityComponent::MulticastActivateShift_Implementation()
 {
-	if (Character && CanShift)
+	if (Character && CanShift && Character->GetAfterImageComponent())
 	{
 		ShiftActivationLocation = Character->GetActorLocation();
 
 		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
 
-		bIsCollisionEnabled = false;
+		Character->GetAfterImageComponent()->Activate();
 
 		StartShiftTimer();
 		CanShift = false;
@@ -80,7 +105,6 @@ void UAbilityComponent::MulticastActivateShift_Implementation()
 
 void UAbilityComponent::StartShiftTimer()
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString("Start timer Is calling"));
 	Character->GetWorldTimerManager().SetTimer(
 		ShiftTimer,
 		this,
@@ -95,8 +119,7 @@ void UAbilityComponent::ShiftTimerFinished()
 	Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
-	bIsCollisionEnabled = true;
+	Character->GetAfterImageComponent()->Deactivate();
+
 	CanShift = true;
-	UE_LOG(LogTemp, Error, TEXT("Collision: %d"), bIsCollisionEnabled)
-	if(GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString("Im not invincible anymore"));
 }

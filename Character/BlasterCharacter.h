@@ -56,6 +56,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* PlayerCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	class UCameraComponent* TPCamera;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -82,6 +85,7 @@ protected:
 	void FireButtonReleased();
 	void ChangeOpticButtonPressed();
 	void ShiftAbilityButtonPressed();
+	void ChangeViewButtonPressed();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
@@ -110,6 +114,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
+
+	bool bChangeCamera = false;
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraComponent* AfterImageComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
@@ -286,6 +295,7 @@ public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 	FORCEINLINE USkeletalMeshComponent* GetClientMesh() const { return ClientMesh; }
+	FORCEINLINE UNiagaraComponent* GetAfterImageComponent() const { return AfterImageComponent; }
 	
 
 };

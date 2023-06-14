@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "AbilityComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAfterImageFinished);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BLASTER_API UAbilityComponent : public UActorComponent
@@ -25,13 +26,22 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastActivateShift();
 
+	UFUNCTION()
+	void BlinkAbility();
+
+	UFUNCTION()
+	void OnAfterImageSystemFinished(class UNiagaraComponent* NiagaraComponent);
+
 protected://функции
 	virtual void BeginPlay() override;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY()
-		class ABlasterCharacter* Character;
+	class ABlasterCharacter* Character;
+
+	UPROPERTY(BlueprintAssignable, Category = "Ability")
+	FOnAfterImageFinished OnAfterImageFinished;
 private:
 
 	UPROPERTY()
@@ -43,16 +53,13 @@ private:
 protected://переменные
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
-	bool bIsCollisionEnabled = false;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
 	FVector ShiftActivationLocation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
 	float ShiftDuration = 5.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
-	float ShiftCooldown = 7.f;
+	float ImpulseStrength = 250.f;
 
 	bool CanShift = true;
 	FTimerHandle ShiftTimer;
