@@ -564,7 +564,7 @@ void ABlasterPlayerController::FillScoreBoard()
 						NewPlayerScoreWidget->isDead->SetVisibility(BlasterCharacter->isElimmed() == true ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 						NewPlayerScoreWidget->Kills->SetText(FText::AsNumber(PlayerStat->GetScore()));
 						NewPlayerScoreWidget->Deaths->SetText(FText::AsNumber(PlayerStat->GetDefeats()));
-						NewPlayerScoreWidget->Ping->SetText(FText::AsNumber(PlayerStat->GetPing()));//deprecated
+						NewPlayerScoreWidget->Ping->SetText(FText::AsNumber(PlayerStat->GetPingInMilliseconds()));//deprecated
 						BlasterHUD->ScoreBoardWidget->PlayersS->AddChild(NewPlayerScoreWidget);
 					}
 				}

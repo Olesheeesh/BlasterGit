@@ -19,6 +19,10 @@
 #include "Blaster/DamageArea/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
+#include "Blaster/GAS/GASAttributeSet.h"
+#include "Blaster/GAS/GASComponent.h"
+#include "Blaster/GAS/GASGameplayAbility.h"
+#include <GameplayEffectTypes.h>
 #include "Blaster/HUD/OverheadWidget.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -63,6 +67,12 @@ ABlasterCharacter::ABlasterCharacter()
 	Combatt = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combatt->SetIsReplicated(true);
 
+	AbilitySystemComponent = CreateDefaultSubobject<UGASComponent>(TEXT("AbilitySystemComp"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	Attributes = CreateDefaultSubobject<UGASAttributeSet>(TEXT("Attributes"));
+
 	Abilities = CreateDefaultSubobject<UAbilityComponent>(TEXT("Abilities"));
 	Abilities->SetIsReplicated(true);
 
@@ -84,6 +94,63 @@ ABlasterCharacter::ABlasterCharacter()
 	AfterImageComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("AfterImageSystem"));
 	AfterImageComponent->SetupAttachment(GetCapsuleComponent());
 	AfterImageComponent->bAutoActivate = false;
+}
+
+UAbilitySystemComponent* ABlasterCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+void ABlasterCharacter::InitializeAttributes()
+{
+	if(AbilitySystemComponent && DefaultAttributeEffect)//applying effects to a character
+	{
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1, EffectContext);
+
+		if(SpecHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle GEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+}
+
+void ABlasterCharacter::GiveAbilities()
+{
+	if(HasAuthority() && AbilitySystemComponent)
+	{
+		for(TSubclassOf<UGASGameplayAbility>& StartupAbility : DefaultAbilities)
+		{
+			AbilitySystemComponent->GiveAbility(
+				FGameplayAbilitySpec(StartupAbility, 1, static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID), this));
+
+		}
+	}
+}
+
+void ABlasterCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	//server GAS init
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);//tells abilitysystem who the owner is
+
+	InitializeAttributes();
+	GiveAbilities();
+}
+
+void ABlasterCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);//tells abilitysystem who the owner is
+	InitializeAttributes();
+	if(AbilitySystemComponent && InputComponent)
+	{
+		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "EGASAbilityInputID", static_cast<int32>(EGASAbilityInputID::Confirm), static_cast<int32>(EGASAbilityInputID::Cancel));
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
+	}
 }
 
 void ABlasterCharacter::BeginPlay()
@@ -117,23 +184,6 @@ void ABlasterCharacter::BeginPlay()
 	{
 		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будет вызвана при возникновении события OnTakeAnyDamage
 	}
-}
-
-void ABlasterCharacter::SetupMesh_Implementation()
-{
-	
-	if (IsLocallyControlled())
-	{
-		GetMesh()->SetVisibility(false);
-		ClientMesh->SetSkeletalMesh(GetMesh()->SkeletalMesh);
-		ClientMesh->HideBoneByName(FName("neck_01"), PBO_None);
-	}
-	else
-	{
-		ClientMesh->DestroyComponent();
-		ClientMesh = nullptr;
-	}
-	
 }
 
 void ABlasterCharacter::Tick(float DeltaTime)
@@ -205,6 +255,12 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
+
+	if (AbilitySystemComponent && InputComponent)
+	{
+		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "EGASAbilityInputID", static_cast<int32>(EGASAbilityInputID::Confirm), static_cast<int32>(EGASAbilityInputID::Cancel));
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
+	}
 }
 
 void ABlasterCharacter::PostInitializeComponents()

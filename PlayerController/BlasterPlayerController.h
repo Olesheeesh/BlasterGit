@@ -32,7 +32,7 @@ public:
 
 	virtual void ReceivedPlayer() override;//Synced with server clock as soon as possible
 
-	void OnMatchStateSet(FName State);//определяет кокой будет HUD при разных MatchState
+	void OnMatchStateSet(FName State);//определяет какой будет HUD при разных MatchState
 
 	void FillScoreBoard();
 

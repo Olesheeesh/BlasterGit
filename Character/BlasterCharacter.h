@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairsInterface.h"
+#include "AbilitySystemInterface.h"
+#include <GameplayEffectTypes.h>
 #include "Components/TimelineComponent.h"
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "BlasterCharacter.generated.h"
@@ -20,13 +22,31 @@ enum class ECollisionSettings : uint8
 };
 
 UCLASS()
-class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface
+class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCrosshairsInterface, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"));
+	class UGASComponent* AbilitySystemComponent;
+
+	UPROPERTY()
+	class UGASAttributeSet* Attributes;
 
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
+	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual void InitializeAttributes();//set default values to Attributes
+	virtual void GiveAbilities();
+	virtual void PossessedBy(AController* NewController) override;//calls on a server
+	virtual void OnRep_PlayerState() override;//calls on client
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS", meta = (allowPrivateAccess = "true"));
+	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS", meta = (allowPrivateAccess = "true"));
+	TArray<TSubclassOf<class UGASGameplayAbility>> DefaultAbilities;
+
 	friend class UCombatComponent;
 	friend class UAbilityComponent;
 	virtual void Tick(float DeltaTime) override;
@@ -62,7 +82,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void SetupMesh_Implementation();
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
