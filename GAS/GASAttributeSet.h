@@ -10,7 +10,7 @@
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
-	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName) 
+	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 	//GAMEPLAYATTRIBUTE_PROPERTY_GETTER -  генерирует функцию-геттер, которая возвращает объект атрибута с указанным именем свойства (PropertyName). Например, для атрибута Health будет сгенерирована функция GetHealthAttribute(), которая вернет объект атрибута Health.
 	//GAMEPLAYATTRIBUTE_VALUE_GETTER - енерирует функцию-геттер, которая возвращает только значение атрибута, без дополнительной информации. Например, для атрибута Health будет сгенерирована функция GetHealth(), которая вернет текущее значение атрибута Health.
 	//GAMEPLAYATTRIBUTE_VALUE_SETTER - генерирует функцию-сеттер, которая устанавливает новое значение атрибута. Например, для атрибута Health будет сгенерирована функция SetHealthAttribute(), которая позволит установить новое значение для атрибута Health.
@@ -49,4 +49,15 @@ public:
 	UFUNCTION()
 	virtual void OnRep_AttackPower(FGameplayAttributeData& OldAttackPower);
 
-};
+	/*
+	 * Uses
+	 */
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Uses, Category = "Attributes")
+	FGameplayAttributeData Uses;//defining uses attribute
+
+	ATTRIBUTE_ACCESSORS(UGASAttributeSet, Uses);//macro to add getter and setter
+
+	UFUNCTION()
+	virtual void OnRep_Uses(FGameplayAttributeData& OldAttackPower);
+}; 

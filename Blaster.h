@@ -6,6 +6,7 @@
 
 #define ECC_SkeletalMesh ECollisionChannel::ECC_GameTraceChannel1
 #define ECC_PermanentStaticMesh ECollisionChannel::ECC_GameTraceChannel2
+#define ECC_GrappleTarget ECollisionChannel::ECC_GameTraceChannel3
 
 UENUM(BlueprintType)
 enum class EGASAbilityInputID : uint8
@@ -14,5 +15,6 @@ enum class EGASAbilityInputID : uint8
 	Confirm,
 	Cancel,
 	Attack,
-	Shift
+	GhostDash
+
 };

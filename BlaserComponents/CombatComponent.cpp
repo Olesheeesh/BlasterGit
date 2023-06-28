@@ -438,6 +438,10 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 	if (bFireButtonPressed && EquippedWeapon)
 	{
 		Fire();
+		if(Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle && bAiming)
+		{
+			Character->AimButtonReleased();
+		}
 	}
 }
 

@@ -21,16 +21,13 @@ public:
 	void ActicateShiftAbility();
 
 	UFUNCTION(Server, Reliable)
-	void ServerActivateShift();
+	void ServerActivateShift(FVector Loc, FRotator Rot);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastActivateShift();
+	void MulticastActivateShift(FVector Loc, FRotator Rot);
 
 	UFUNCTION()
 	void BlinkAbility();
-
-	UFUNCTION()
-	void OnAfterImageSystemFinished(class UNiagaraComponent* NiagaraComponent);
 
 protected://функции
 	virtual void BeginPlay() override;
@@ -40,8 +37,6 @@ public:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
 
-	UPROPERTY(BlueprintAssignable, Category = "Ability")
-	FOnAfterImageFinished OnAfterImageFinished;
 private:
 
 	UPROPERTY()
@@ -50,20 +45,39 @@ private:
 	UPROPERTY()
 	class ABlasterPlayerController* Controller;
 
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* AfterImageSystem;
+
+	UPROPERTY()
+	class UNiagaraComponent* NiagaraComponent;
+
 protected://переменные
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	UPROPERTY(Replicated)
 	FVector ShiftActivationLocation;
+	UPROPERTY(Replicated)
+	FRotator ShiftActivationRotation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
-	float ShiftDuration = 5.f;
+	float ShiftDuration = 2.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
-	float ImpulseStrength = 250.f;
+	float ShiftAbilityDelay = 3.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	float ImpulseStrength = 3300.f;
+
+	FVector LaunchDirection;
+
+	UPROPERTY(Replicated)
 	bool CanShift = true;
-	FTimerHandle ShiftTimer;
+
+	FTimerHandle ShiftDurationTimer;
+	FTimerHandle ShiftDelayTimer;
 
 	void StartShiftTimer();
+	void StartShiftDelayTimer();
 	void ShiftTimerFinished();
+	void ShiftTimerDelayFinished();
+public:
+	FORCEINLINE UNiagaraComponent* GetNiagaraComp() const { return NiagaraComponent; }
 };

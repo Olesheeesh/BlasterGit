@@ -19,16 +19,18 @@
 #include "Blaster/DamageArea/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
-#include "Blaster/GAS/GASAttributeSet.h"
-#include "Blaster/GAS/GASComponent.h"
-#include "Blaster/GAS/GASGameplayAbility.h"
-#include <GameplayEffectTypes.h>
 #include "Blaster/HUD/OverheadWidget.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Blaster/Weapon/WeaponTypes.h"
 #include "Blaster/Weapon/Scopes/Scope.h"
+#include "Blaster/GAS/GASAttributeSet.h"
+#include "Blaster/GAS/GASComponent.h"
+#include "Blaster/GAS/GASGameplayAbility.h"
+#include <GameplayEffectTypes.h>
+
+#include "Blaster/BlaserComponents/GrappleComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
@@ -67,14 +69,20 @@ ABlasterCharacter::ABlasterCharacter()
 	Combatt = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combatt->SetIsReplicated(true);
 
+	Abilitiess = CreateDefaultSubobject<UAbilityComponent>(TEXT("AbilityComponent"));
+	Abilitiess->SetIsReplicated(true);
+
 	AbilitySystemComponent = CreateDefaultSubobject<UGASComponent>(TEXT("AbilitySystemComp"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	Attributes = CreateDefaultSubobject<UGASAttributeSet>(TEXT("Attributes"));
 
-	Abilities = CreateDefaultSubobject<UAbilityComponent>(TEXT("Abilities"));
-	Abilities->SetIsReplicated(true);
+	ShiftAbilitySystemComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("shiftniagarasyst"));
+	ShiftAbilitySystemComponent = Abilitiess->GetNiagaraComp();
+
+	GrappleComponentt = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
+	GrappleComponentt->SetIsReplicated(true);
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -90,10 +98,6 @@ ABlasterCharacter::ABlasterCharacter()
 	MinNetUpdateFrequency = 120.f;
 
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
-
-	AfterImageComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("AfterImageSystem"));
-	AfterImageComponent->SetupAttachment(GetCapsuleComponent());
-	AfterImageComponent->bAutoActivate = false;
 }
 
 UAbilitySystemComponent* ABlasterCharacter::GetAbilitySystemComponent() const
@@ -103,14 +107,14 @@ UAbilitySystemComponent* ABlasterCharacter::GetAbilitySystemComponent() const
 
 void ABlasterCharacter::InitializeAttributes()
 {
-	if(AbilitySystemComponent && DefaultAttributeEffect)//applying effects to a character
+	if (AbilitySystemComponent && DefaultAttributeEffect)//applying effects to a character
 	{
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
 
 		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1, EffectContext);
 
-		if(SpecHandle.IsValid())
+		if (SpecHandle.IsValid())
 		{
 			FActiveGameplayEffectHandle GEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
@@ -119,9 +123,9 @@ void ABlasterCharacter::InitializeAttributes()
 
 void ABlasterCharacter::GiveAbilities()
 {
-	if(HasAuthority() && AbilitySystemComponent)
+	if (HasAuthority() && AbilitySystemComponent)
 	{
-		for(TSubclassOf<UGASGameplayAbility>& StartupAbility : DefaultAbilities)
+		for (TSubclassOf<UGASGameplayAbility>& StartupAbility : DefaultGASAbilities)
 		{
 			AbilitySystemComponent->GiveAbility(
 				FGameplayAbilitySpec(StartupAbility, 1, static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID), this));
@@ -146,7 +150,7 @@ void ABlasterCharacter::OnRep_PlayerState()
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);//tells abilitysystem who the owner is
 	InitializeAttributes();
-	if(AbilitySystemComponent && InputComponent)
+	if (AbilitySystemComponent && InputComponent)
 	{
 		const FGameplayAbilityInputBinds Binds("Confirm", "Cancel", "EGASAbilityInputID", static_cast<int32>(EGASAbilityInputID::Confirm), static_cast<int32>(EGASAbilityInputID::Cancel));
 		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, Binds);
@@ -255,6 +259,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
+	PlayerInputComponent->BindAction("CallRetracterFoo", IE_Pressed, this, &ABlasterCharacter::CallRetracterFooPressed);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -270,9 +275,13 @@ void ABlasterCharacter::PostInitializeComponents()
 	{
 		Combatt->Character = this;
 	}
-	if(Abilities)
+	if(Abilitiess)
 	{
-		Abilities->Character = this;
+		Abilitiess->Character = this;
+	}
+	if(GrappleComponentt)
+	{
+		GrappleComponentt->Character = this;
 	}
 }
 
@@ -589,7 +598,7 @@ void ABlasterCharacter::AimButtonPressed()
 
 void ABlasterCharacter::AimButtonReleased()
 {
-	if (bDisableGameplay)return;
+	if (bDisableGameplay || !Combatt->bAiming)return;
 	if (Combatt)
 	{
 		Combatt->SetAiming(false);
@@ -624,9 +633,9 @@ void ABlasterCharacter::ChangeOpticButtonPressed()
 
 void ABlasterCharacter::ShiftAbilityButtonPressed()
 {
-	if(Abilities)
+	if(Abilitiess)
 	{
-		Abilities->ActicateShiftAbility();
+		Abilitiess->ActicateShiftAbility();
 	}
 }
 
@@ -646,6 +655,14 @@ void ABlasterCharacter::ChangeViewButtonPressed()//false
 			PlayerCamera->SetActive(true);
 			TPCamera->SetActive(false);
 		}
+	}
+}
+
+void ABlasterCharacter::CallRetracterFooPressed()
+{
+	if(GrappleComponentt)
+	{
+		GrappleComponentt->TickRetracted();
 	}
 }
 

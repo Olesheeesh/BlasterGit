@@ -6,18 +6,18 @@
 #include "GameFramework/Character.h"
 #include "Blaster/BlasterTypes/TurningInPlace.h"
 #include "Blaster/Interfaces/InteractWithCrosshairsInterface.h"
-#include "AbilitySystemInterface.h"
-#include <GameplayEffectTypes.h>
 #include "Components/TimelineComponent.h"
 #include "Blaster/BlasterTypes/CombatState.h"
+#include "AbilitySystemInterface.h"
+#include <GameplayEffectTypes.h>
 #include "BlasterCharacter.generated.h"
 
 UENUM(BlueprintType)
 enum class ECollisionSettings : uint8
 {
-	ECS_CharacterDefault UMETA(DisplayName = "Character Default"), 
-	ECS_WeaponDefault UMETA(DisplayName = "Weapon Default"), 
-	ECS_CharacterGhost UMETA(DisplayName = "Character Ghost"), 
+	ECS_CharacterDefault UMETA(DisplayName = "Character Default"),
+	ECS_WeaponDefault UMETA(DisplayName = "Weapon Default"),
+	ECS_CharacterGhost UMETA(DisplayName = "Character Ghost"),
 	ECS_WeaponGhost UMETA(DisplayName = "Weapon Ghost")
 };
 
@@ -26,15 +26,28 @@ class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCro
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"));
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
 	class UGASComponent* AbilitySystemComponent;
 
 	UPROPERTY()
 	class UGASAttributeSet* Attributes;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities", meta = (allowPrivateAccess = "true"))
+	TArray<TSubclassOf<class UAbilityComponent>> DefaultAbilities;
+
+	UPROPERTY(EditDefaultsOnly, Category = Abilities)
+	class UNiagaraComponent* ShiftAbilitySystemComponent;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	class USkeletalMeshComponent* ClientMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
+	class UGrappleComponent* GrappleComponentt;
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
+
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual void InitializeAttributes();//set default values to Attributes
 	virtual void GiveAbilities();
@@ -45,10 +58,11 @@ public:
 	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS", meta = (allowPrivateAccess = "true"));
-	TArray<TSubclassOf<class UGASGameplayAbility>> DefaultAbilities;
+	TArray<TSubclassOf<class UGASGameplayAbility>> DefaultGASAbilities;
 
 	friend class UCombatComponent;
 	friend class UAbilityComponent;
+	friend class UGrappleComponent;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;// Called to bind functionality to input
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -105,6 +119,7 @@ protected:
 	void ChangeOpticButtonPressed();
 	void ShiftAbilityButtonPressed();
 	void ChangeViewButtonPressed();
+	void CallRetracterFooPressed();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
@@ -125,9 +140,6 @@ private:
 
 	bool currentbUseControllerRotationYaw = false;
 
-	UPROPERTY(VisibleAnywhere)
-	class USkeletalMeshComponent* ClientMesh;
-
 	UPROPERTY(VisibleAnywhere, Category = "Transformation")
 	TObjectPtr<USceneComponent> FPScene;
 
@@ -135,9 +147,6 @@ private:
 	class USpringArmComponent* CameraBoom;
 
 	bool bChangeCamera = false;
-
-	UPROPERTY(EditAnywhere)
-	class UNiagaraComponent* AfterImageComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
@@ -161,7 +170,7 @@ private:
 	class UCombatComponent* Combatt;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UAbilityComponent* Abilities;
+	class UAbilityComponent* Abilitiess;
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
@@ -314,7 +323,6 @@ public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 	FORCEINLINE USkeletalMeshComponent* GetClientMesh() const { return ClientMesh; }
-	FORCEINLINE UNiagaraComponent* GetAfterImageComponent() const { return AfterImageComponent; }
 	
 
 };

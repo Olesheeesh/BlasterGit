@@ -7,9 +7,7 @@
 #include "Blaster/Blaster.h"
 #include "GASGameplayAbility.generated.h"
 
-/**
- * 
- */
+ 
 UCLASS()
 class BLASTER_API UGASGameplayAbility : public UGameplayAbility
 {
@@ -17,7 +15,7 @@ class BLASTER_API UGASGameplayAbility : public UGameplayAbility
 
 public:
 	UGASGameplayAbility();
-
+	
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability");
 	EGASAbilityInputID AbilityInputID = EGASAbilityInputID::None;
 };

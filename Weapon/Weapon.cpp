@@ -110,7 +110,7 @@ void AWeapon::SpendRound()//update for server
 {
 	Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
 	SetHUDAmmo();
-	if (WeaponType == EWeaponType::EWT_SniperRifle)
+	if (WeaponType == EWeaponType::EWT_SniperRifle && BlasterOwnerCharacter->GetCombatComponent()->GetIsAiming())
 	{
 		BlasterOwnerCharacter->GetCombatComponent()->SetAiming(false);
 		BlasterOwnerCharacter->ShowSniperScopeWidget(false);

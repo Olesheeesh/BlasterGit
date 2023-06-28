@@ -190,6 +190,7 @@ public:
 	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
+	FORCEINLINE bool GetIsAiming() const { return bAiming; }
 };
 
 

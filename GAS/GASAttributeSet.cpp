@@ -12,6 +12,7 @@ void UGASAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	//Health будет реплицироваться всегда, когда его значение изменяется, и будет вызываться репликационное уведомление GAMEPLAYATTRIBUTE_REPNOTIFY
 	DOREPLIFETIME_CONDITION_NOTIFY(UGASAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UGASAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGASAttributeSet, Uses, COND_None, REPNOTIFY_Always);
 }
 
 void UGASAttributeSet::OnRep_Health(FGameplayAttributeData& OldHealth)
@@ -22,4 +23,9 @@ void UGASAttributeSet::OnRep_Health(FGameplayAttributeData& OldHealth)
 void UGASAttributeSet::OnRep_AttackPower(FGameplayAttributeData& OldAttackPower)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UGASAttributeSet, AttackPower, OldAttackPower);
+}
+
+void UGASAttributeSet::OnRep_Uses(FGameplayAttributeData& OldUses)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UGASAttributeSet, Uses, OldUses);
 }
