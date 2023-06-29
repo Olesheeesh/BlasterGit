@@ -64,13 +64,23 @@ void UGrappleComponent::TickRetracted()
 		TArray<AActor*> OverlappingActors;
 		UKismetSystemLibrary::SphereOverlapActors(
 			GetWorld(),
-			Character->GetActorLocation(),
+			StartLocation,
 			MaxGrappleDistance,
 			ObjectTypes,
 			AGrappleTarget::StaticClass(),
 			TArray<AActor*>(),
 			OverlappingActors
 		);
+		if (!OverlappingActors.Contains(BestTarget) && BestTarget)
+		{
+			BestTarget->SetActive(false);
+			if(BestTarget == nullptr)
+			{
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Best target is null"));
+				BestTarget = nullptr;
+			}
+			return;
+		}
 
 		for (auto Target : OverlappingActors)
 		{
@@ -85,7 +95,6 @@ void UGrappleComponent::TickRetracted()
 					CurrentTarget->GetActorLocation(),
 					ECollisionChannel::ECC_Visibility
 				);
-
 				if (HitResult.bBlockingHit)
 				{
 					DrawDebugLine(
@@ -102,30 +111,19 @@ void UGrappleComponent::TickRetracted()
 
 					CurrentAngle = FMath::RadiansToDegrees(Angle);//current angle to the target
 
-					UE_LOG(LogTemp, Error, TEXT("Current angle: %f"), CurrentAngle);
+					//UE_LOG(LogTemp, Error, TEXT("Current angle: %f"), CurrentAngle);
 
 					if (CurrentAngle < BestAngle || BestTarget == nullptr)//if angle < then current angle - change target
 					{
-						if (BestTarget == nullptr) GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::Red, FString("BestTarget == nullptr"));
-						GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::Blue, FString("Im calling"));
-
 						BestTarget = CurrentTarget;
 						BestAngle = CurrentAngle;
 						
 					}
 					
-					UE_LOG(LogTemp, Warning, TEXT("Best angle: %f"), BestAngle);
+					//UE_LOG(LogTemp, Warning, TEXT("Best angle: %f"), BestAngle);
 					SetCurrentTarget(BestTarget);
 
 				}
-				/*else
-				{
-					CurrentTarget = nullptr;
-					BestTarget = nullptr;
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::Yellow, FString("Not blocking hit"));
-					SetCurrentTarget(BestTarget);
-
-				}*/
 			}
 		}
 	}
@@ -133,24 +131,19 @@ void UGrappleComponent::TickRetracted()
 
 void UGrappleComponent::SetCurrentTarget(class AGrappleTarget* NewTarget)
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::Green, FString("Im calling"));
-
 	if(NewTarget == CurrentTarget)
 	{
 		NewTarget->SetActive(true);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::Yellow, FString("Changing target..."));
 		BestAngle = CurrentAngle;
+		FVector StartLocation = Character->GetMesh()->GetSocketLocation(TEXT("hand_l"));
+		float Distance = FVector::Distance(CurrentTarget->GetActorLocation(), StartLocation);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Distance to Target: %f"), Distance));
 	}
 	else
 	{
 		CurrentTarget->SetActive(false);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, .25f, FColor::White, FString("Hiding target..."));
 	}
-	/*if (CurrentTarget == nullptr || BestTarget == nullptr)
-	{
-		CurrentTarget->SetActive(false);
-		NewTarget->SetActive(false);
-	}*/
+	
 }
 
 void UGrappleComponent::TickFiring()
