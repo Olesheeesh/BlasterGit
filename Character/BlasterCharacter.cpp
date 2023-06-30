@@ -259,7 +259,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
-	PlayerInputComponent->BindAction("CallRetracterFoo", IE_Pressed, this, &ABlasterCharacter::CallRetracterFooPressed);
+	PlayerInputComponent->BindAction("InitializeHook", IE_Pressed, this, &ABlasterCharacter::InitializeHook);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -658,11 +658,11 @@ void ABlasterCharacter::ChangeViewButtonPressed()//false
 	}
 }
 
-void ABlasterCharacter::CallRetracterFooPressed()
+void ABlasterCharacter::InitializeHook()
 {
 	if(GrappleComponentt)
 	{
-		GrappleComponentt->TickRetracted();
+		GrappleComponentt->UseHook();
 	}
 }
 

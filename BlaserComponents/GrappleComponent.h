@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -24,22 +22,29 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void TickRetracted();
-private://функции
-	UPROPERTY(Replicated)
-	EGrappleState GrappleState = EGrappleState::EGS_Retracted;
+	void UseHook();
 
-	
+private://функции
 	void TickFiring();
 	void TickNearingTarget();
 	void TickOnTarget();
 	void SetCurrentTarget(class AGrappleTarget* NewTarget);
 protected:
+	UPROPERTY(Replicated)
+	EGrappleState GrappleState = EGrappleState::EGS_Retracted;
 
 	UPROPERTY()
 	class AGrappleTarget* CurrentTarget;
 
 	UPROPERTY()
 	AGrappleTarget* BestTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Hook")
+	TSubclassOf<class AGrapplingRope> GrapplingRopeClass;
+
+	UPROPERTY(EditAnywhere, Category = "Hook")
+	class AGrapplingRope* GrapplingRope;
+
 private: //переменные
 	UPROPERTY(EditAnywhere, Category = "Hook")
 	float MaxGrappleDistance = 2200.f;
@@ -51,4 +56,6 @@ private: //переменные
 
 	float BestAngle = 0.f;
 	float CurrentAngle = 0.f;
+
+public:
 };

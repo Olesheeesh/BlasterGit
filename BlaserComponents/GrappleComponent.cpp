@@ -5,8 +5,11 @@
 #include "Blaster/Grappling/GrappleTarget.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Blaster/Blaster.h"
+#include "Blaster/Grappling/GrapplingRope.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SplineMeshComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Engine/SplineMeshActor.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
@@ -56,7 +59,6 @@ void UGrappleComponent::TickRetracted()
 		TraceHitResult = HitResult.ImpactPoint;
 
 		FVector StartLocation = Character->GetMesh()->GetSocketLocation(TEXT("hand_l"));
-		FVector EndLocation = StartLocation + Character->GetActorForwardVector() * MaxGrappleDistance + 500;
 
 		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel3));//находит только ECC_GrappleTarget
@@ -105,9 +107,9 @@ void UGrappleComponent::TickRetracted()
 						false,
 						.25f
 					);
-					FVector NormolizedDistanceToTarget = (CurrentTarget->GetActorLocation() - Character->GetActorLocation()).GetSafeNormal();
+					FVector NormalizedDistanceToTarget = (CurrentTarget->GetActorLocation() - Character->GetActorLocation()).GetSafeNormal();
 					FVector CameraFwdVector = Character->GetFollowCamera()->GetForwardVector();
-					float Angle = FMath::Acos(FVector::DotProduct(NormolizedDistanceToTarget, CameraFwdVector));
+					float Angle = FMath::Acos(FVector::DotProduct(NormalizedDistanceToTarget, CameraFwdVector));
 
 					CurrentAngle = FMath::RadiansToDegrees(Angle);//current angle to the target
 
@@ -116,7 +118,7 @@ void UGrappleComponent::TickRetracted()
 					if (CurrentAngle < BestAngle || BestTarget == nullptr)//if angle < then current angle - change target
 					{
 						BestTarget = CurrentTarget;
-						BestAngle = CurrentAngle;
+						BestAngle = CurrentAngle;//возможно не нужно
 						
 					}
 					
@@ -135,15 +137,42 @@ void UGrappleComponent::SetCurrentTarget(class AGrappleTarget* NewTarget)
 	{
 		NewTarget->SetActive(true);
 		BestAngle = CurrentAngle;
-		FVector StartLocation = Character->GetMesh()->GetSocketLocation(TEXT("hand_l"));
-		float Distance = FVector::Distance(CurrentTarget->GetActorLocation(), StartLocation);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Distance to Target: %f"), Distance));
+		
 	}
 	else
 	{
 		CurrentTarget->SetActive(false);
 	}
-	
+}
+
+void UGrappleComponent::UseHook()
+{
+	if (BestTarget == nullptr) return;
+	if (Character && BestTarget)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Im calling"));
+		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("GrappleSocket");
+		if (HandSocket == nullptr)
+		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Pizda naxyi"));
+			return;
+		}
+		if (HandSocket)
+		{
+			FTransform SocketTransform = HandSocket->GetSocketTransform(Character->GetMesh());
+
+			FVector StartLocation = SocketTransform.GetLocation();
+			FVector TargetLocation = BestTarget->GetActorLocation();
+			FVector StartTangent(0.f, 0.f, 0.f);// FVector::ZeroVector;
+			FVector EndTangent(0.f, 0.f, 0.f);
+
+			DrawDebugSphere(GetWorld(), StartLocation, 30.f, 15, FColor::Purple, false, 3.f);
+			GrapplingRope = GetWorld()->SpawnActor<AGrapplingRope>(GrapplingRopeClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
+			//GrapplingRope->AttachToActor(Character, FAttachmentTransformRules::KeepWorldTransform);
+
+			GrapplingRope->SetPoints(TargetLocation, StartLocation, StartTangent, EndTangent);
+		}
+	}
 }
 
 void UGrappleComponent::TickFiring()

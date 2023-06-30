@@ -119,7 +119,7 @@ protected:
 	void ChangeOpticButtonPressed();
 	void ShiftAbilityButtonPressed();
 	void ChangeViewButtonPressed();
-	void CallRetracterFooPressed();
+	void InitializeHook();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
