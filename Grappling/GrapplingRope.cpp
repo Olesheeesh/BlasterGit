@@ -9,3 +9,4 @@ void AGrapplingRope::SetPoints(FVector EndPoint, FVector StartPoint, FVector Sta
 	FVector EndPos = ActorTransform.InverseTransformPosition(EndPoint);
 	GetSplineMeshComponent()->SetStartAndEnd(StartPos, StartTangent, EndPos, EndTangent);
 }
+

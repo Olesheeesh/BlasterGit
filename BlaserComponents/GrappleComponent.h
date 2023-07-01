@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blaster/BlasterTypes/GrappleState.h"
 #include "Components/ActorComponent.h"
+#include "Components/TimelineComponent.h"
 #include "GrappleComponent.generated.h"
 
 
@@ -21,14 +22,21 @@ public:
 	UGrappleComponent();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 	void TickRetracted();
-	void UseHook();
+	void StartHook();
+	void StartGrappling();
+	UFUNCTION()
+	void TimelineFinishedCallback();
 
 private://функции
 	void TickFiring();
 	void TickNearingTarget();
 	void TickOnTarget();
 	void SetCurrentTarget(class AGrappleTarget* NewTarget);
+
+	UFUNCTION()
+	void UpdateMovement(float Alpha);
 protected:
 	UPROPERTY(Replicated)
 	EGrappleState GrappleState = EGrappleState::EGS_Retracted;
@@ -57,5 +65,28 @@ private: //переменные
 	float BestAngle = 0.f;
 	float CurrentAngle = 0.f;
 
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* GrappleRopeCurve;
+
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* GrappleRopeTimeline;
+
+	FOnTimelineFloat GrappleRopeTrack;
+
+	bool bShouldLookForTarget = true;
+	bool bRopeIsSpawned = false;
+
+	FOnTimelineEventStatic OnTimelineFinishedCallback;
+
+	TArray<AActor*> IgnoreActors;
+
+	UPROPERTY(EditAnywhere)
+	float MaxTargetScanAngle = 30.f;
+	// UPROPERTY(EditAnywhere)
+	// FVector StartTangent = FVector::ZeroVector;
+	// UPROPERTY(EditAnywhere)
+	// FVector EndTangent = FVector::ZeroVector;
 public:
 };
+
+

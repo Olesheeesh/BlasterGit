@@ -93,6 +93,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* TPCamera;
 
+	UPROPERTY(EditAnywhere)
+	class UChildActorComponent* ChildActor;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AGrappleTarget> GrappleTarget;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -171,6 +176,8 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UAbilityComponent* Abilitiess;
+
+	
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();

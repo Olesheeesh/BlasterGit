@@ -23,15 +23,18 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(VisibleAnyWhere, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
+	class USphereComponent* AreaSphere;
 
-private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
 	class UBillboardComponent* Billboard;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* WidgetComponent;
 
-	UPROPERTY(VisibleAnyWhere, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-	class USphereComponent* AreaSphere;
+private:
+	
+
+	
 
 };

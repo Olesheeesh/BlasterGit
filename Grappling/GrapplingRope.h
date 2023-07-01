@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/TimelineComponent.h"
 #include "Engine/SplineMeshActor.h"
 #include "GrapplingRope.generated.h"
 
@@ -11,5 +12,6 @@ class BLASTER_API AGrapplingRope : public ASplineMeshActor
 
 public:
 	void SetPoints(FVector EndPoint, FVector StartPoint, FVector StartTangent, FVector EndTanget);
-
+private:
+	
 };

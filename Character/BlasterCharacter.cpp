@@ -29,8 +29,8 @@
 #include "Blaster/GAS/GASComponent.h"
 #include "Blaster/GAS/GASGameplayAbility.h"
 #include <GameplayEffectTypes.h>
-
 #include "Blaster/BlaserComponents/GrappleComponent.h"
+#include "Blaster/Grappling/GrappleTarget.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
@@ -84,6 +84,9 @@ ABlasterCharacter::ABlasterCharacter()
 	GrappleComponentt = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
 	GrappleComponentt->SetIsReplicated(true);
 
+	ChildActor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
+	ChildActor->SetupAttachment(GetMesh());
+	
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -139,6 +142,9 @@ void ABlasterCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 	//server GAS init
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);//tells abilitysystem who the owner is
+	AGrappleTarget* ChildrenActor = Cast<AGrappleTarget>(ChildActor->GetChildActor());
+	UWidgetComponent* TargetWidget = ChildrenActor->WidgetComponent;
+	if (IsLocallyControlled()) TargetWidget->SetHiddenInGame(true);
 
 	InitializeAttributes();
 	GiveAbilities();
@@ -662,7 +668,7 @@ void ABlasterCharacter::InitializeHook()
 {
 	if(GrappleComponentt)
 	{
-		GrappleComponentt->UseHook();
+		GrappleComponentt->StartHook();
 	}
 }
 
