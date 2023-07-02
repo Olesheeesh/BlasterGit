@@ -95,7 +95,7 @@ void UGrappleComponent::TickRetracted()
 			return;
 		}*/
 
-		for (auto Target : OverlappingActors)
+		for (auto Target : OverlappingActors)	
 		{
 			CurrentTarget = Cast<AGrappleTarget>(Target);
 
@@ -130,24 +130,19 @@ void UGrappleComponent::TickRetracted()
 					{
 						BestTarget = CurrentTarget;
 						BestAngle = CurrentAngle;//возможно не нужно
-						
 					}
 					
 					UE_LOG(LogTemp, Warning, TEXT("Best angle: %f"), BestAngle);
 					SetCurrentTarget(BestTarget);
 					if (BestTarget == nullptr)
 					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Best target is null"));
+						//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Best target is null"));
 					}
 				}
 			}
 		}
 	}
-	else
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Pizda naxyi2"));
-		return;
-	}
+	
 }
 
 void UGrappleComponent::SetCurrentTarget(class AGrappleTarget* NewTarget)
@@ -175,7 +170,7 @@ void UGrappleComponent::StartHook()
 	if (BestTarget == nullptr) return;
 	if (Character && BestTarget)
 	{
-		if (BestTarget == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Target is null"));
+		//if (BestTarget == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Target is null"));
 		if(GrapplingRope)
 		{
 			GrapplingRope->Destroy();
@@ -197,8 +192,8 @@ void UGrappleComponent::StartHook()
 
 			FVector StartLocation = SocketTransform.GetLocation();
 			FVector TargetLocation = BestTarget->GetActorLocation();
-			FVector StartTangent(0,0,0);
-			FVector EndTangent(0,0,0);
+			FVector StartTangent(0,1,0);
+			FVector EndTangent(0,1,0);
 
 			DrawDebugSphere(GetWorld(), StartLocation, 30.f, 15, FColor::Purple, false, 1.f);
 			GrapplingRope = GetWorld()->SpawnActor<AGrapplingRope>(GrapplingRopeClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
@@ -227,6 +222,8 @@ void UGrappleComponent::UpdateMovement(float Alpha)
 {
 	if (Character && BestTarget)
 	{
+		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("GrappleSocket");
+
 		FVector CharacterLocation = Character->GetActorLocation();
 		FVector TargetLocation = BestTarget->GetActorLocation();
 		//TargetLocation.Z -= 134.f;
@@ -234,13 +231,25 @@ void UGrappleComponent::UpdateMovement(float Alpha)
 		FVector NewLocation = FMath::Lerp(CharacterLocation, TargetLocation, Alpha);
 
 		Character->SetActorLocation(NewLocation);
+		if(GrapplingRope && HandSocket)
+		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString("Im calling"));
+			FTransform SocketTransform = HandSocket->GetSocketTransform(Character->GetMesh());
+			FVector StartLocation = SocketTransform.GetLocation();
+
+			FVector NewRopeLocation = FMath::Lerp(StartLocation, TargetLocation, Alpha);
+			GrapplingRope->SetPoints(TargetLocation, NewLocation, FVector::ZeroVector, FVector::ZeroVector);
+		}
 	}
 }
 
 void UGrappleComponent::TimelineFinishedCallback()
 {
+	GrapplingRope->Destroy();
+	GrapplingRope = nullptr;
 	Character->GetCharacterMovement()->StopMovementImmediately();
 	bShouldLookForTarget = true;
+	if (GrapplingRope == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Grappling rope is null"));
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("bShouldLookForTarget: %d"), bShouldLookForTarget));
 }
 
