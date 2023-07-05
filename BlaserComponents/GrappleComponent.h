@@ -6,6 +6,23 @@
 #include "Components/TimelineComponent.h"
 #include "GrappleComponent.generated.h"
 
+DECLARE_DELEGATE_ThreeParams(FUpdateMovementDelegate, UCurveFloat*, FVector, FVector);
+
+USTRUCT(BlueprintType)
+struct FGrappleData
+{
+	GENERATED_BODY()
+
+	FVector TargetLocation;
+
+	FVector StartLocation;
+
+	FVector StartTangent;
+
+	FVector EndTangent;
+
+	FRotator StartRotation;
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BLASTER_API UGrappleComponent : public UActorComponent
@@ -25,26 +42,35 @@ public:
 
 	void TickRetracted();
 	void StartHook();
+
+	UFUNCTION(Server, Reliable)
+	void ServerStartHook(FVector InStartLoc, FVector InTargetLoc, FVector InStartTarngent, FVector InEndTangent, FRotator InStartRotationy);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStartHook(FVector InStartLoc, FVector InTargetLoc, FVector InStartTarngent, FVector InEndTangent, FRotator InStartRotation);
+
 	void StartGrappling();
 	UFUNCTION()
+
 	void TimelineFinishedCallback();
 
+	UFUNCTION()
+	void UpdateMovement(float Alpha);
 private://функции
 	void TickFiring();
 	void TickNearingTarget();
 	void TickOnTarget();
 	void SetCurrentTarget(class AGrappleTarget* NewTarget);
-
-	UFUNCTION()
-	void UpdateMovement(float Alpha);
+	UFUNCTION(Server, Reliable)
+	void ServerSetBestTarget(class AGrappleTarget* NewTarget);
+	
 protected:
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	EGrappleState GrappleState = EGrappleState::EGS_Retracted;
 
-	UPROPERTY()
 	class AGrappleTarget* CurrentTarget;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	AGrappleTarget* BestTarget;
 
 	UPROPERTY(EditAnywhere, Category = "Hook")
@@ -59,7 +85,6 @@ private: //переменные
 
 	FVector TraceHitResult;
 
-	UPROPERTY()
 	TArray<AActor*> GrappleTargets;
 
 	float BestAngle = 0.f;
@@ -71,10 +96,10 @@ private: //переменные
 	UPROPERTY(VisibleAnywhere)
 	UTimelineComponent* GrappleRopeTimeline;
 
+	FUpdateMovementDelegate UpdateMovementDelegate;
 	FOnTimelineFloat GrappleRopeTrack;
 
 	bool bShouldLookForTarget = true;
-	bool bRopeIsSpawned = false;
 
 	FOnTimelineEventStatic OnTimelineFinishedCallback;
 
@@ -82,11 +107,22 @@ private: //переменные
 
 	UPROPERTY(EditAnywhere)
 	float MaxTargetScanAngle = 30.f;
+
+
+	UPROPERTY(Replicated)
+	FVector CharacterLocation;
+
+	FGrappleData GrappleData;
+	/*
+	 * FVectors
+	 */
+
 	// UPROPERTY(EditAnywhere)
 	// FVector StartTangent = FVector::ZeroVector;
 	// UPROPERTY(EditAnywhere)
 	// FVector EndTangent = FVector::ZeroVector;
 public:
+
 };
 
 

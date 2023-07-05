@@ -265,7 +265,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ChangeOptic", IE_Pressed, this, &ABlasterCharacter::ChangeOpticButtonPressed);
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
-	PlayerInputComponent->BindAction("InitializeHook", IE_Pressed, this, &ABlasterCharacter::InitializeHook);
+	PlayerInputComponent->BindAction("InitializeHook", IE_Pressed, this, &ABlasterCharacter::InitializeHookButtonPressed);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -319,7 +319,6 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 	Super::OnRep_ReplicatedMovement();
 
 	SimProxiesTurn();
-
 	TimeSinceLastMovementReplication = 0.f;
 }
 
@@ -559,8 +558,11 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
 	if (Combatt)
 	{
-		Combatt->EquipWeapon(OverlappingWeapon);
-		if (Combatt->GetEquippedWeapon())
+		if (Combatt->GetEquippedWeapon() == nullptr)
+		{
+			Combatt->EquipWeapon(OverlappingWeapon);
+		}
+		else
 		{
 			GetEquippedWeapon()->EquipScope(OverlappingScope);
 		}
@@ -649,7 +651,6 @@ void ABlasterCharacter::ChangeViewButtonPressed()//false
 {
 	if(PlayerCamera && TPCamera)
 	{
-
 		bChangeCamera = !bChangeCamera;
 		if(bChangeCamera)
 		{
@@ -664,13 +665,14 @@ void ABlasterCharacter::ChangeViewButtonPressed()//false
 	}
 }
 
-void ABlasterCharacter::InitializeHook()
+void ABlasterCharacter::InitializeHookButtonPressed()
 {
-	if(GrappleComponentt)
+	if (GrappleComponentt)
 	{
 		GrappleComponentt->StartHook();
 	}
 }
+
 
 void ABlasterCharacter::ServerChangeOpticButtonPressed_Implementation()
 {

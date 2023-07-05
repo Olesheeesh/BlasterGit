@@ -124,7 +124,7 @@ protected:
 	void ChangeOpticButtonPressed();
 	void ShiftAbilityButtonPressed();
 	void ChangeViewButtonPressed();
-	void InitializeHook();
+	void InitializeHookButtonPressed();
 
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
@@ -176,8 +176,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UAbilityComponent* Abilitiess;
-
-	
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
