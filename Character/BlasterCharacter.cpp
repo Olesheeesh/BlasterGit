@@ -81,8 +81,8 @@ ABlasterCharacter::ABlasterCharacter()
 	ShiftAbilitySystemComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("shiftniagarasyst"));
 	ShiftAbilitySystemComponent = Abilitiess->GetNiagaraComp();
 
-	GrappleComponentt = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
-	GrappleComponentt->SetIsReplicated(true);
+	GrappleComponent = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
+	GrappleComponent->SetIsReplicated(true);
 
 	ChildActor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
 	ChildActor->SetupAttachment(GetMesh());
@@ -285,9 +285,9 @@ void ABlasterCharacter::PostInitializeComponents()
 	{
 		Abilitiess->Character = this;
 	}
-	if(GrappleComponentt)
+	if(GrappleComponent)
 	{
-		GrappleComponentt->Character = this;
+		GrappleComponent->Character = this;
 	}
 }
 
@@ -667,9 +667,9 @@ void ABlasterCharacter::ChangeViewButtonPressed()//false
 
 void ABlasterCharacter::InitializeHookButtonPressed()
 {
-	if (GrappleComponentt)
+	if (GrappleComponent)
 	{
-		GrappleComponentt->StartHook();
+		GrappleComponent->StartHook();
 	}
 }
 

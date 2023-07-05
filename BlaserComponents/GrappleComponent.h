@@ -32,6 +32,9 @@ public:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
 
+	UPROPERTY()
+	class AWeapon* EquippedGrapple;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -90,7 +93,7 @@ private: //переменные
 	float BestAngle = 0.f;
 	float CurrentAngle = 0.f;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Hook")
 	UCurveFloat* GrappleRopeCurve;
 
 	UPROPERTY(VisibleAnywhere)
@@ -105,14 +108,19 @@ private: //переменные
 
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Grapple Component")
 	float MaxTargetScanAngle = 30.f;
-
 
 	UPROPERTY(Replicated)
 	FVector CharacterLocation;
 
+	UPROPERTY(Replicated)
+	FVector GrappleSocketLocation;
+
 	FGrappleData GrappleData;
+
+	UPROPERTY(EditAnywhere, Category = "Hook")
+	float CapsuleRadius = -34.f;
 	/*
 	 * FVectors
 	 */

@@ -1,11 +1,13 @@
 
 #include "GrappleComponent.h"
 
+#include "CombatComponent.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/Grappling/GrappleTarget.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Blaster/Blaster.h"
 #include "Blaster/Grappling/GrapplingRope.h"
+#include "Blaster/Weapon/Weapon.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -28,6 +30,7 @@ void UGrappleComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	//DOREPLIFETIME(UGrappleComponent, GrappleState); будет OnRep
 	DOREPLIFETIME(UGrappleComponent, BestTarget);
 	DOREPLIFETIME_CONDITION(UGrappleComponent, CharacterLocation, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(UGrappleComponent, GrappleSocketLocation, COND_SkipOwner);
 }
 
 void UGrappleComponent::BeginPlay()
@@ -71,76 +74,82 @@ void UGrappleComponent::TickRetracted()
 		FHitResult HitResult;
 		TraceHitResult = HitResult.ImpactPoint;
 
-		FVector StartLocation = Character->GetMesh()->GetSocketLocation(TEXT("hand_l"));
-
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel3));//находить только ECC_GrappleTarget
-
-		TArray<AActor*> OverlappingActors;
-
-		UKismetSystemLibrary::SphereOverlapActors(
-			GetWorld(),
-			StartLocation,
-			MaxGrappleDistance,
-			ObjectTypes,
-			AGrappleTarget::StaticClass(),
-			IgnoreActors,
-			OverlappingActors
-		);
-
-		for (auto Target : OverlappingActors)	
+		if (Character->GetEquippedWeapon() && Character->GetEquippedWeapon()->GetWeaponMesh() && Character->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_GrapplingHook)
 		{
-			CurrentTarget = Cast<AGrappleTarget>(Target);
+			USkeletalMeshComponent* GrappleWeaponMesh = Character->GetEquippedWeapon()->GetWeaponMesh();
 
-			GrappleTargets.Add(CurrentTarget);
-			if (CurrentTarget)
+			FVector StartLocation = GrappleWeaponMesh->GetSocketLocation(TEXT("GrappleSocket"));
+
+			TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+			ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_GameTraceChannel3));//находить только ECC_GrappleTarget
+
+			TArray<AActor*> OverlappingActors;
+
+			UKismetSystemLibrary::SphereOverlapActors(
+				GetWorld(),
+				StartLocation,
+				MaxGrappleDistance,
+				ObjectTypes,
+				AGrappleTarget::StaticClass(),
+				IgnoreActors,
+				OverlappingActors
+			);
+
+			for (auto Target : OverlappingActors)
 			{
-				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Check #1"));
+				CurrentTarget = Cast<AGrappleTarget>(Target);
 
-				GetWorld()->LineTraceSingleByChannel(
-					HitResult,
-					StartLocation,
-					CurrentTarget->GetActorLocation(),
-					ECollisionChannel::ECC_Visibility
-				);
-				if (HitResult.bBlockingHit)
+				GrappleTargets.Add(CurrentTarget);
+				if (CurrentTarget)
 				{
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Check #2"));
-					/*DrawDebugLine(
-						GetWorld(),
+
+					GetWorld()->LineTraceSingleByChannel(
+						HitResult,
 						StartLocation,
 						CurrentTarget->GetActorLocation(),
-						FColor::Red,
-						false,
-						.25f
-					);*/
-					FVector NormalizedDistanceToTarget = (CurrentTarget->GetActorLocation() - Character->GetActorLocation()).GetSafeNormal();
-					FVector CameraFwdVector = Character->GetFollowCamera()->GetForwardVector();
-					float Angle = FMath::Acos(FVector::DotProduct(NormalizedDistanceToTarget, CameraFwdVector));
-
-					CurrentAngle = FMath::RadiansToDegrees(Angle);//current angle to the target
-
-					//UE_LOG(LogTemp, Error, TEXT("Current angle: %f"), CurrentAngle);
-
-					if (CurrentAngle < BestAngle || BestTarget == nullptr)//if angle < then current angle - change target
+						ECollisionChannel::ECC_Visibility
+					);
+					if (HitResult.bBlockingHit)
 					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Check #3"));
-						BestTarget = CurrentTarget;
-						//BestAngle = CurrentAngle;//скорее всего не нужно
-						if(!Character->HasAuthority())
+						/*DrawDebugLine(
+							GetWorld(),
+							StartLocation,
+							CurrentTarget->GetActorLocation(),
+							FColor::Red,
+							false,
+							.25f
+						);*/
+						FVector NormalizedDistanceToTarget = (CurrentTarget->GetActorLocation() - Character->GetActorLocation()).GetSafeNormal();
+						FVector CameraFwdVector = Character->GetFollowCamera()->GetForwardVector();
+						float Angle = FMath::Acos(FVector::DotProduct(NormalizedDistanceToTarget, CameraFwdVector));
+
+						CurrentAngle = FMath::RadiansToDegrees(Angle);//current angle to the target
+
+						//UE_LOG(LogTemp, Error, TEXT("Current angle: %f"), CurrentAngle);
+
+						if (CurrentAngle < BestAngle || BestTarget == nullptr)//if angle < then current angle - change target
 						{
-							ServerSetBestTarget(BestTarget);
+							BestTarget = CurrentTarget;
+							//BestAngle = CurrentAngle;//скорее всего не нужно
+							if (!Character->HasAuthority())
+							{
+								ServerSetBestTarget(BestTarget);
+							}
 						}
-					}
-					
-					UE_LOG(LogTemp, Warning, TEXT("Best angle: %f"), BestAngle);
-					SetCurrentTarget(BestTarget);
-					if (BestTarget == nullptr)
-					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Best target is null"));
+
+						UE_LOG(LogTemp, Warning, TEXT("Best angle: %f"), BestAngle);
+						SetCurrentTarget(BestTarget);
+						if (BestTarget == nullptr)
+						{
+							//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Best target is null"));
+						}
 					}
 				}
 			}
+		}
+		else
+		{
+			return;
 		}
 	}
 }
@@ -190,32 +199,39 @@ void UGrappleComponent::StartHook()
 		//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Orange, FString::Printf(TEXT("bShouldLookForTarget: %d"), bShouldLookForTarget));
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("StartHook is calling"));
 
-		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("GrappleSocket");
-		if (HandSocket == nullptr || BestTarget == nullptr)
+		if (Character->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_GrapplingHook && Character->GetEquippedWeapon() && Character->GetEquippedWeapon()->GetWeaponMesh())
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Pizda naxyi"));
-			return;
-		}
-		if (HandSocket && BestTarget)
-		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Server2 is calling"));
-			FTransform SocketTransform = HandSocket->GetSocketTransform(Character->GetMesh());
+			USkeletalMeshComponent* GrappleWeaponMesh = Character->GetEquippedWeapon()->GetWeaponMesh();
+			const USkeletalMeshSocket* GrappleWeaponSocket = GrappleWeaponMesh->GetSocketByName("GrappleSocket");
 
-			FRotator StartRotation = SocketTransform.GetRotation().Rotator();
+			if (GrappleWeaponSocket == nullptr || BestTarget == nullptr)
+			{
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Pizda naxyi"));
+				return;
+			}
 
-			FVector StartLocation = SocketTransform.GetLocation();
-			FVector TargetLocation = BestTarget->GetActorLocation();
-			FVector StartTangent = FVector(0, 1, 0);
-			FVector EndTangent = FVector(0, 1, 0);
+			if (GrappleWeaponSocket && BestTarget)
+			{
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Server2 is calling"));
+				FTransform GrappleSocketTransform = GrappleWeaponSocket->GetSocketTransform(GrappleWeaponMesh);
 
-			DrawDebugSphere(GetWorld(), StartLocation, 30.f, 15, FColor::Purple, false, 1.f);
-			GrapplingRope = GetWorld()->SpawnActor<AGrapplingRope>(GrapplingRopeClass, StartLocation, StartRotation);
-			//GrapplingRope->AttachToActor(Character, FAttachmentTransformRules::KeepWorldTransform);
+				FVector StartLocation = GrappleSocketTransform.GetLocation();
+				FVector TargetLocation = BestTarget->GetActorLocation();
+				FVector StartTangent = FVector(0, 1, 0);
+				FVector EndTangent = FVector(0, 1, 0);
+				FRotator StartRotation = GrappleSocketTransform.GetRotation().Rotator();
 
-			GrapplingRope->SetPoints(TargetLocation, StartLocation, StartTangent, EndTangent);
+				FVector FwdVector = Character->GetActorForwardVector() * (CapsuleRadius);
 
-			StartGrappling();
-			ServerStartHook(StartLocation, TargetLocation, StartTangent, EndTangent, StartRotation);
+				DrawDebugSphere(GetWorld(), StartLocation, 30.f, 15, FColor::Purple, false, 1.f);
+				GrapplingRope = GetWorld()->SpawnActor<AGrapplingRope>(GrapplingRopeClass, StartLocation, StartRotation);
+				//GrapplingRope->AttachToActor(Character, FAttachmentTransformRules::KeepWorldTransform);
+
+				GrapplingRope->SetPoints(TargetLocation, StartLocation, StartTangent, EndTangent);
+
+				StartGrappling();
+				ServerStartHook(StartLocation, TargetLocation, StartTangent, EndTangent, StartRotation);
+			}
 		}
 	}
 }
@@ -242,8 +258,11 @@ void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FV
 
 		GrapplingRope->SetPoints(InTargetLoc, InStartLoc, InStartTarngent, InEndTangent);
 
+		FVector FwdVector = Character->GetActorForwardVector() * (CapsuleRadius);
+		FVector FinalTargetLocation = InTargetLoc + FwdVector;
+
 		GrappleData.StartLocation = InStartLoc;
-		GrappleData.TargetLocation = InTargetLoc;
+		GrappleData.TargetLocation = FinalTargetLocation;
 		GrappleData.StartTangent = InStartTarngent;
 		GrappleData.EndTangent = InEndTangent;
 		GrappleData.StartRotation = InStartRotation;
@@ -269,18 +288,24 @@ void UGrappleComponent::UpdateMovement(float Alpha)
 	if (Character && BestTarget)
 	{
 		CharacterLocation = Character->GetActorLocation();
-		//if (CharacterLocation == GrappleMovementData.TargetLocation) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Emerald, FString("Im here"));
-		FVector NewLocation = FMath::Lerp(CharacterLocation, GrappleData.TargetLocation, Alpha);
+
+		FVector NewLocation = FMath::Lerp(CharacterLocation, GrappleData.TargetLocation, Alpha * 0.3);
 
 		Character->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
 
-		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName("GrappleSocket");
-		if(GrapplingRope && HandSocket)
+		if (Character->GetEquippedWeapon() && Character->GetEquippedWeapon()->GetWeaponMesh())
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("Check #4"));
+			USkeletalMeshComponent* GrappleWeaponMesh = Character->GetEquippedWeapon()->GetWeaponMesh();
+			const USkeletalMeshSocket* GrappleWeaponSocket = GrappleWeaponMesh->GetSocketByName("GrappleSocket");
+			if (GrapplingRope && GrappleWeaponSocket)
+			{
+				FTransform GrappleSocketTransform = GrappleWeaponSocket->GetSocketTransform(GrappleWeaponMesh);
+				GrappleSocketLocation = GrappleSocketTransform.GetLocation();
 
-			FVector NewRopeLocation = FMath::Lerp(GrappleData.StartLocation, GrappleData.TargetLocation, Alpha);
-			GrapplingRope->SetPoints(GrappleData.TargetLocation, NewLocation, FVector::ZeroVector, FVector::ZeroVector);
+				FVector NewRopeLocation = FMath::Lerp(GrappleSocketLocation, GrappleData.TargetLocation, Alpha * 0.3);
+
+				GrapplingRope->SetPoints(GrappleData.TargetLocation, NewRopeLocation, FVector::ZeroVector, FVector::ZeroVector);
+			}
 		}
 	}
 }

@@ -43,7 +43,7 @@ public:
 	class USkeletalMeshComponent* ClientMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
-	class UGrappleComponent* GrappleComponentt;
+	class UGrappleComponent* GrappleComponent;
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();

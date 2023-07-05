@@ -435,7 +435,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult) //tracin
 void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
-	if (bFireButtonPressed && EquippedWeapon)
+	if (bFireButtonPressed && EquippedWeapon && EquippedWeapon->GetWeaponType() != EWeaponType::EWT_GrapplingHook)
 	{
 		Fire();
 		if(Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle && bAiming)
