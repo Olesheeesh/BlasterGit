@@ -78,11 +78,10 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-	USkeletalMeshComponent* MeshComponent = Character->IsLocallyControlled() ? Character->GetMesh() : Character->GetMesh();
-	const USkeletalMeshSocket* HandSocket = MeshComponent->GetSocketByName("RightHandSocket");
+	const USkeletalMeshSocket* HandSocket = GetWeaponSocket();
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(EquippedWeapon, MeshComponent);
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
 
 	EquippedWeapon->SetOwner(Character);
@@ -136,11 +135,10 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-		USkeletalMeshComponent* MeshComponent = Character->IsLocallyControlled() ? Character->GetMesh() : Character->GetMesh();
-		const USkeletalMeshSocket* HandSocket = MeshComponent->GetSocketByName("RightHandSocket");
+		const USkeletalMeshSocket* HandSocket = GetWeaponSocket();
 		if (HandSocket)
 		{
-			HandSocket->AttachActor(EquippedWeapon, MeshComponent);
+			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 		}
 
 		if(AnimInstance && EquippedWeapon)
@@ -161,6 +159,36 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
+}
+
+const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket()
+{
+	if (EquippedWeapon && Character && Character->GetMesh())
+	{
+		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_SilverWeapon)
+		{
+			const USkeletalMeshSocket* SilverWeaponSocket = Character->GetMesh()->GetSocketByName("RightHandSocket");
+			return SilverWeaponSocket;
+		}
+		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_SciFiWeapon)
+		{
+			const USkeletalMeshSocket* SciFiWeaponSocket = Character->GetMesh()->GetSocketByName("RightHandSciFiSocket");
+			return SciFiWeaponSocket;
+		}
+		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_Custom)
+		{
+			const USkeletalMeshSocket* MeshSocket;
+			switch (EquippedWeapon->GetWeaponType())
+			{
+			case EWeaponType::EWT_SF_Pistol:
+				return MeshSocket = Character->GetMesh()->GetSocketByName("RightHandSciFiSocket");//pistol socket
+			case EWeaponType::EWT_SF_ShotGun:
+				return MeshSocket = Character->GetMesh()->GetSocketByName("SciFi_ShotGunSocket");//pistol socket
+			}
+		}
+	}
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("You forgot to select EWST"));
+	return nullptr;
 }
 
 void UCombatComponent::Reload()

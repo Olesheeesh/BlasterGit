@@ -14,6 +14,7 @@ struct FGrappleData
 	GENERATED_BODY()
 
 	FVector TargetLocation;
+	FVector FinalTargetLocation;
 
 	FVector StartLocation;
 
@@ -88,6 +89,7 @@ private: //переменные
 
 	FVector TraceHitResult;
 
+	UPROPERTY()
 	TArray<AActor*> GrappleTargets;
 
 	float BestAngle = 0.f;
@@ -106,9 +108,10 @@ private: //переменные
 
 	FOnTimelineEventStatic OnTimelineFinishedCallback;
 
+	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(EditAnywhere, Category = "Grapple Component")
+	UPROPERTY(EditAnywhere, Category = "Hook")
 	float MaxTargetScanAngle = 30.f;
 
 	UPROPERTY(Replicated)

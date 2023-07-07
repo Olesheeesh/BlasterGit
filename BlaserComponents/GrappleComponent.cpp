@@ -262,7 +262,8 @@ void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FV
 		FVector FinalTargetLocation = InTargetLoc + FwdVector;
 
 		GrappleData.StartLocation = InStartLoc;
-		GrappleData.TargetLocation = FinalTargetLocation;
+		GrappleData.TargetLocation = InTargetLoc;
+		GrappleData.FinalTargetLocation = FinalTargetLocation;
 		GrappleData.StartTangent = InStartTarngent;
 		GrappleData.EndTangent = InEndTangent;
 		GrappleData.StartRotation = InStartRotation;
@@ -289,7 +290,7 @@ void UGrappleComponent::UpdateMovement(float Alpha)
 	{
 		CharacterLocation = Character->GetActorLocation();
 
-		FVector NewLocation = FMath::Lerp(CharacterLocation, GrappleData.TargetLocation, Alpha * 0.3);
+		FVector NewLocation = FMath::Lerp(CharacterLocation, GrappleData.FinalTargetLocation, Alpha * 0.3);
 
 		Character->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
 

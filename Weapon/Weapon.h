@@ -74,6 +74,7 @@ public:
 
 	void CycleThroughOptics();
 
+
 	UPROPERTY(EditAnywhere)
 	class USoundCue* EquipSound;
 
@@ -175,8 +176,11 @@ private:
 	UPROPERTY()//на случай если не инициализирован, чтоб не крашнуло
 	class ABlasterPlayerController* BlasterOwnerController;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Mesh")
 	EWeaponType WeaponType;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	EWeaponSocketType WeaponSocketType = EWeaponSocketType::EWST_Custom;
 
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedScope)
@@ -192,6 +196,7 @@ public:
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE AScope* GetCurrentScope() const { return CurrentScope; }
 	FORCEINLINE float GetDistanceToSight() const { return DistanceToSight; }
+	FORCEINLINE EWeaponSocketType GetWeaponSocketType() const { return WeaponSocketType; }
 };
 
 
