@@ -12,14 +12,17 @@ class BLASTER_API AProjectile : public AActor
 	GENERATED_BODY()
 
 public:
+	AProjectile();
+
 	virtual void Tick(float DeltaTime) override;
 	virtual void Destroyed() override;
 
-public:	
-	AProjectile();
-
 protected:
 	virtual void BeginPlay() override;
+	void StartDestroyTimer();
+	void DestroyTimerFinished();
+	void SpawnTrailSystem();
+	void ApplyExplodeDamage();
 
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);//collision box, actor being hit, comp that was hit, Impuls
@@ -37,8 +40,22 @@ protected:
 	class USoundCue* ImpactSound;
 
 	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* TrailSystem;
+
+	UPROPERTY()
+	class UNiagaraComponent* TrailSystemComponent;
+
+	UPROPERTY(EditAnywhere)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* ProjectileMesh;
 private:
+
+	FTimerHandle DestroyTimer;
+
+	UPROPERTY(EditAnywhere)
+	float DestroyTime = 3.f;
 
 	UPROPERTY(EditAnywhere)
 	class UParticleSystem* Tracer;
@@ -48,6 +65,12 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	UMaterialInterface* ImpactHitMaterial;
+
+	UPROPERTY(EditAnywhere)
+	float DamageInnerRadius = 200.f;
+
+	UPROPERTY(EditAnywhere)
+	float DamageOuterRadius = 500.f;
 
 };
 

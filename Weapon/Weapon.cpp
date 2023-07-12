@@ -29,6 +29,10 @@ AWeapon::AWeapon()
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);
+	WeaponMesh->MarkRenderStateDirty();//This ensures that the changes will be displayed correctly the next time the scene is rendered.
+	EnableCustomDepth(true);
+
 	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
 	AreaSphere->SetupAttachment(RootComponent);
 	AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -153,6 +157,7 @@ void AWeapon::SetWeaponState(EWeaponState State)
 			WeaponMesh->SetEnableGravity(true);
 			WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		}
+		EnableCustomDepth(false);
 		break;
 	case EWeaponState::EWS_Dropped:
 		ShowPickupWidget(false);
@@ -169,6 +174,10 @@ void AWeapon::SetWeaponState(EWeaponState State)
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		}
+		WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);
+		WeaponMesh->MarkRenderStateDirty();//This ensures that the changes will be displayed correctly the next time the scene is rendered.
+		EnableCustomDepth(true);
+
 		break;
 	}
 }
@@ -188,6 +197,7 @@ void AWeapon::OnRep_WeaponState()//for client
 			WeaponMesh->SetEnableGravity(true);
 			WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		}
+		EnableCustomDepth(false);
 		break;
 	case EWeaponState::EWS_Dropped:
 		ShowPickupWidget(false);
@@ -200,6 +210,10 @@ void AWeapon::OnRep_WeaponState()//for client
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		}
+		WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);
+		WeaponMesh->MarkRenderStateDirty();//This ensures that the changes will be displayed correctly the next time the scene is rendered.
+		EnableCustomDepth(true);
+
 		break;
 	};
 }
@@ -308,6 +322,14 @@ void AWeapon::EquipScope(AScope* ScopeToEquip)
 	}
 
 	EquippedScope->SetOwner(BlasterOwnerCharacter);
+}
+
+void AWeapon::EnableCustomDepth(bool bEnable)
+{
+	if(WeaponMesh)
+	{
+		WeaponMesh->SetRenderCustomDepth(bEnable);
+	}
 }
 
 void AWeapon::OnRep_EquippedScope()

@@ -33,6 +33,7 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 					TargetRotation,
 					SpawnParams
 				);
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Iam firing"));
 			}
 		}
 	}

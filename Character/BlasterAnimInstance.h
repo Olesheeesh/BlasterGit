@@ -94,6 +94,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	bool bTransfromRightHand;
 
+	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	bool bUseProceduralAiming;
+
 public:
 	/*
 	 * True Fps Tutorial

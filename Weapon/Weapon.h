@@ -90,6 +90,12 @@ public:
 
 	void EquipScope(class AScope* ScopeToEquip);
 
+	/*
+	 * Enable/Disable custom Depth
+	 */
+
+	void EnableCustomDepth(bool bEnable);
+
 protected:
 	virtual void BeginPlay() override;
 

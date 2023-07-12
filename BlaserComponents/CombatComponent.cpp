@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "CombatComponent.h"
 #include "Components/SphereComponent.h"
 #include "Blaster/Character/BlasterCharacter.h"
@@ -68,7 +65,6 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	if (EquippedWeapon)//if is not null
 	{
@@ -76,15 +72,16 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	}
 
 	EquippedWeapon = WeaponToEquip;
+	EquippedWeapon->SetOwner(Character);
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-	const USkeletalMeshSocket* HandSocket = GetWeaponSocket();
+	const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
 
-	EquippedWeapon->SetOwner(Character);
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	if (AnimInstance && EquippedWeapon)
 	{
@@ -135,10 +132,11 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-		const USkeletalMeshSocket* HandSocket = GetWeaponSocket();
+		const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
 		if (HandSocket)
 		{
 			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("OnRep is calling"));
 		}
 
 		if(AnimInstance && EquippedWeapon)
@@ -161,18 +159,18 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	Character->bUseControllerRotationYaw = true;
 }
 
-const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket()
+const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh)
 {
-	if (EquippedWeapon && Character && Character->GetMesh())
+	if (EquippedWeapon && Character && SkeletalMesh)
 	{
 		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_SilverWeapon)
 		{
-			const USkeletalMeshSocket* SilverWeaponSocket = Character->GetMesh()->GetSocketByName("RightHandSocket");
+			const USkeletalMeshSocket* SilverWeaponSocket = SkeletalMesh->GetSocketByName("RightHandSocket");
 			return SilverWeaponSocket;
 		}
 		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_SciFiWeapon)
 		{
-			const USkeletalMeshSocket* SciFiWeaponSocket = Character->GetMesh()->GetSocketByName("RightHandSciFiSocket");
+			const USkeletalMeshSocket* SciFiWeaponSocket = SkeletalMesh->GetSocketByName("RightHandSciFiSocket");
 			return SciFiWeaponSocket;
 		}
 		if (EquippedWeapon->GetWeaponSocketType() == EWeaponSocketType::EWST_Custom)
@@ -181,9 +179,9 @@ const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket()
 			switch (EquippedWeapon->GetWeaponType())
 			{
 			case EWeaponType::EWT_SF_Pistol:
-				return MeshSocket = Character->GetMesh()->GetSocketByName("RightHandSciFiSocket");//pistol socket
+				return MeshSocket = SkeletalMesh->GetSocketByName("RightHandSciFiSocket");//pistol socket
 			case EWeaponType::EWT_SF_ShotGun:
-				return MeshSocket = Character->GetMesh()->GetSocketByName("SciFi_ShotGunSocket");//pistol socket
+				return MeshSocket = SkeletalMesh->GetSocketByName("SciFi_ShotGunSocket");
 			}
 		}
 	}
@@ -313,6 +311,7 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
 	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (GetEquippedWeapon()->GetWeaponSocketType() != EWeaponSocketType::EWST_SilverWeapon) return;
 
 	bAiming = bIsAiming;//для тебя в аиме
 	if (!Character->HasAuthority())
@@ -327,10 +326,6 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 	if (Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
 	{
 		Character->ShowSniperScopeWidget(bIsAiming);
-	}
-	if(Character->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_GrenadeLauncher)
-	{
-		Character->ShowGrenadeLauncherScopeWidget(bIsAiming);
 	}
 }
 

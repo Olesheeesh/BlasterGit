@@ -64,7 +64,7 @@ protected:
 
 	int32 AmountToReload();
 
-	const USkeletalMeshSocket* GetWeaponSocket();
+	const USkeletalMeshSocket* GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh);
 	/*
 	 * Aiming and FOV
 	 */

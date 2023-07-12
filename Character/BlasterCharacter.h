@@ -39,8 +39,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Abilities)
 	class UNiagaraComponent* ShiftAbilitySystemComponent;
 
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	class USkeletalMeshComponent* ClientMesh;
+	UPROPERTY(EditAnywhere)
+	class USkeletalMeshComponent* TPMesh;
+
+	UPROPERTY(EditAnywhere)
+	USkeletalMeshComponent* FPSMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
 	class UGrappleComponent* GrappleComponent;
@@ -72,6 +75,7 @@ public:
 	virtual void OnRep_ReplicatedMovement() override;
 	virtual void Destroyed() override;
 	void Elim();
+	USkeletalMeshComponent* GetNeededMesh();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
@@ -92,6 +96,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* TPCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	class UCameraComponent* FirstPersonCamera;
 
 	UPROPERTY(EditAnywhere)
 	class UChildActorComponent* ChildActor;
@@ -138,7 +145,6 @@ protected:
 	void RotateInPlace(float DeltaTime);
 	bool GetIsSprinting();
 	void SetCollisionSettings(ECollisionSettings CurrentCollisionSetting);
-
 private:
 
 	float HighestSpeed = 0.f;
@@ -327,9 +333,6 @@ public:
 	ECombatState GetCombatState() const;
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
-	FORCEINLINE USkeletalMeshComponent* GetClientMesh() const { return ClientMesh; }
-	
-
 };
 
 //tî replicate:

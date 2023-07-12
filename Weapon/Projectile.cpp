@@ -2,6 +2,9 @@
 
 
 #include "Projectile.h"
+
+#include "NiagaraFunctionLibrary.h"
+#include "ProjectileRocket.h"
 #include "Components/BoxComponent.h"
 #include "Components/DecalComponent.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -49,6 +52,22 @@ void AProjectile::BeginPlay()
 	}
 }
 
+void AProjectile::StartDestroyTimer()
+{
+	GetWorldTimerManager().SetTimer(
+		DestroyTimer,
+		this,
+		&AProjectile::DestroyTimerFinished,
+		DestroyTime,
+		false
+	);
+}
+
+void AProjectile::DestroyTimerFinished()
+{
+	Destroy();
+}
+
 void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -60,6 +79,47 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	UDecalComponent* DecalComponent = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), ImpactHitMaterial, FVector(10.0f), Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), 5.0f);
 	
 	Destroy();
+}
+
+void AProjectile::SpawnTrailSystem()
+{
+	if (TrailSystem)
+	{
+		TrailSystemComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailSystem,
+			GetRootComponent(),
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false
+		);
+	}
+}
+
+void AProjectile::ApplyExplodeDamage()
+{
+	APawn* FiringPawn = GetInstigator();
+	if (FiringPawn && HasAuthority())
+	{
+		AController* FiringControler = FiringPawn->GetController();
+		if (FiringControler)
+		{
+			UGameplayStatics::ApplyRadialDamageWithFalloff(
+				this, //world context object
+				Damage, //base damage
+				10.f, //min damage
+				GetActorLocation(), //origin(center of radius)
+				DamageInnerRadius,
+				DamageOuterRadius,
+				1.f, //damage will decrease steadily for actors, the farther away they are from InnerRadius and that damage decrease will be linear
+				UDamageType::StaticClass(), //DamageTypeClass
+				TArray<AActor*>(),//can add actors to ignore
+				this,
+				FiringControler //instigator controller
+			);
+		}
+	}
 }
 
 void AProjectile::Destroyed()

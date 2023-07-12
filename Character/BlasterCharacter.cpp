@@ -38,17 +38,8 @@ ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	ClientMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ClientMesh"));
-	ClientMesh->SetupAttachment(GetMesh());
-	AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("neck_01"));
-	ClientMesh->SetCollisionObjectType(ECC_SkeletalMesh);
-	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	ClientMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	ClientMesh->bOnlyOwnerSee = true;
-
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	PlayerCamera->AttachToComponent(ClientMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
+	PlayerCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
 	PlayerCamera->bUsePawnControlRotation = true;
 	bUseControllerRotationYaw = true;
 
@@ -60,9 +51,8 @@ ABlasterCharacter::ABlasterCharacter()
 	TPCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TPCamera"));
 	TPCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	TPCamera->bUsePawnControlRotation = false;
-
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	
+
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
@@ -86,20 +76,22 @@ ABlasterCharacter::ABlasterCharacter()
 
 	ChildActor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
 	ChildActor->SetupAttachment(GetMesh());
-	
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	GetMesh()->bOwnerNoSee = false;
+
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 	NetUpdateFrequency = 120.f;
 	MinNetUpdateFrequency = 120.f;
-
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
 
@@ -394,7 +386,6 @@ void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/ef
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ClientMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//Spawn Elim bot
 	FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
@@ -546,6 +537,7 @@ void ABlasterCharacter::EquipButtonPressed()
 			{
 				GetEquippedWeapon()->EquipScope(OverlappingScope);
 			}
+			
 		}
 		else
 		{

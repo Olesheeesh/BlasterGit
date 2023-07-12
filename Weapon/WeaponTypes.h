@@ -1,5 +1,8 @@
 #pragma once
 #define TRACE_LENGTH 80000.f //macro
+#define CUSTOM_DEPTH_PURPLE 250
+#define CUSTOM_DEPTH_BLUE 251
+#define CUSTOM_DEPTH_TAN 252
 
 UENUM(BlueprintType)//создали не в weapon class'е, чтоб при использовании в других классах, не включать весь класс weapon
 enum class EWeaponType : uint8
