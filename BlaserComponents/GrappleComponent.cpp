@@ -13,8 +13,10 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Engine/SplineMeshActor.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundCue.h"
 
 UGrappleComponent::UGrappleComponent()
 {
@@ -185,8 +187,18 @@ void UGrappleComponent::StartHook()
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("BestTarget is null"));
 		return;
 	}
-	if (Character && BestTarget)
+	if (RopeSound)
 	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			RopeSound,
+			CharacterLocation
+		);
+	}
+	if (Character && BestTarget && bCanGrapple)
+	{
+		bCanGrapple = false;
+
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("StartHook bShouldLookForTarget: %d"), bShouldLookForTarget));
 		if (BestTarget == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Target is null"));
 		if (GrapplingRope)
@@ -195,7 +207,7 @@ void UGrappleComponent::StartHook()
 			GrapplingRope = nullptr;
 		}
 		bShouldLookForTarget = false;
-
+		
 		//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Orange, FString::Printf(TEXT("bShouldLookForTarget: %d"), bShouldLookForTarget));
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("StartHook is calling"));
 
@@ -231,6 +243,13 @@ void UGrappleComponent::StartHook()
 
 				StartGrappling();
 				ServerStartHook(StartLocation, TargetLocation, StartTangent, EndTangent, StartRotation);
+
+				Character->GetWorldTimerManager().SetTimer(
+					GrapplingTimer,
+					this,
+					&UGrappleComponent::GrapplingTimerFinished,
+					GrapplingDelay
+				);
 			}
 		}
 	}
@@ -243,6 +262,15 @@ void UGrappleComponent::ServerStartHook_Implementation(FVector InStartLoc, FVect
 
 void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FVector InTargetLoc, FVector InStartTarngent, FVector InEndTangent, FRotator InStartRotation)
 {
+	if (RopeSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			RopeSound,
+			InStartLoc
+		);
+	}
+
 	if (Character && BestTarget)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("multicast is calling"));
@@ -252,7 +280,7 @@ void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FV
 			GrapplingRope = nullptr;
 		}
 
-		DrawDebugSphere(GetWorld(), InStartLoc, 30.f, 15, FColor::Purple, false, 1.f);
+		//DrawDebugSphere(GetWorld(), InStartLoc, 30.f, 15, FColor::Purple, false, 1.f);
 		GrapplingRope = GetWorld()->SpawnActor<AGrapplingRope>(GrapplingRopeClass, InStartLoc, InStartRotation);
 		//GrapplingRope->AttachToActor(Character, FAttachmentTransformRules::KeepWorldTransform);
 
@@ -281,6 +309,7 @@ void UGrappleComponent::StartGrappling()
 		OnTimelineFinishedCallback.BindUFunction(this, FName(TEXT("TimelineFinishedCallback")));
 		GrappleRopeTimeline->SetTimelineFinishedFunc(OnTimelineFinishedCallback);
 		GrappleRopeTimeline->PlayFromStart();
+		
 	}
 }
 
@@ -311,14 +340,29 @@ void UGrappleComponent::UpdateMovement(float Alpha)
 	}
 }
 
+void UGrappleComponent::GrapplingTimerFinished()
+{
+	bCanGrapple = true;
+}
+
 void UGrappleComponent::TimelineFinishedCallback()
 {
 	if (GrapplingRope == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("GrapplingRope is null1"));
+	if (GrapplingSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			GrapplingSound,
+			CharacterLocation
+		);
+	}
 	if (Character && GrapplingRope)
 	{
 		GrapplingRope->Destroy();
 		Character->GetCharacterMovement()->StopMovementImmediately();
 		bShouldLookForTarget = true;
+
+		
 		if (GrapplingRope == nullptr) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("Grappling rope is null2"));
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString::Printf(TEXT("bShouldLookForTarget: %d"), bShouldLookForTarget));
 	}

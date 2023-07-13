@@ -84,6 +84,13 @@ protected:
 	class AGrapplingRope* GrapplingRope;
 
 private: //переменные
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* RopeSound;
+
+	UPROPERTY(EditAnywhere)
+	class USoundCue* GrapplingSound;
+
 	UPROPERTY(EditAnywhere, Category = "Hook")
 	float MaxGrappleDistance = 2200.f;
 
@@ -124,14 +131,19 @@ private: //переменные
 
 	UPROPERTY(EditAnywhere, Category = "Hook")
 	float CapsuleRadius = -34.f;
+
 	/*
-	 * FVectors
+	 * Timer
 	 */
 
-	// UPROPERTY(EditAnywhere)
-	// FVector StartTangent = FVector::ZeroVector;
-	// UPROPERTY(EditAnywhere)
-	// FVector EndTangent = FVector::ZeroVector;
+	FTimerHandle GrapplingTimer;
+
+	UPROPERTY(EditDefaultsOnly)
+	float GrapplingDelay = 3.0f;//1.9f
+
+	bool bCanGrapple = true;
+
+	void GrapplingTimerFinished();
 public:
 
 };
