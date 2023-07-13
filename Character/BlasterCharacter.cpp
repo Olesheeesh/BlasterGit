@@ -30,7 +30,9 @@
 #include "Blaster/GAS/GASGameplayAbility.h"
 #include <GameplayEffectTypes.h>
 #include "Blaster/BlaserComponents/GrappleComponent.h"
+#include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/Grappling/GrappleTarget.h"
+#include "Blaster/InventorySystem/Items/Item.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
@@ -73,6 +75,9 @@ ABlasterCharacter::ABlasterCharacter()
 
 	GrappleComponent = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
 	GrappleComponent->SetIsReplicated(true);
+
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("GrappleComponent"));
+	InventoryComponent->SetIsReplicated(true);
 
 	ChildActor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
 	ChildActor->SetupAttachment(GetMesh());
@@ -354,6 +359,15 @@ void ABlasterCharacter::Elim()
 		ElimDelay
 	);
 	UE_LOG(LogTemp, Warning, TEXT("ElimTimer started"));
+}
+
+void ABlasterCharacter::UseItem(UItem* Item)
+{
+	if (Item)
+	{
+		Item->Use(this);
+		Item->OnUse(this);
+	}
 }
 
 void ABlasterCharacter::MulticastElim_Implementation()//destroy/respawn/anims/effects

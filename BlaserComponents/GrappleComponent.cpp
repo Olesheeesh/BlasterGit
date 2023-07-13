@@ -180,20 +180,13 @@ void UGrappleComponent::SetCurrentTarget(class AGrappleTarget* NewTarget)//локал
 	}
 }
 
+
 void UGrappleComponent::StartHook()
 {
 	if (BestTarget == nullptr)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString("BestTarget is null"));
 		return;
-	}
-	if (RopeSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			RopeSound,
-			CharacterLocation
-		);
 	}
 	if (Character && BestTarget && bCanGrapple)
 	{
@@ -262,15 +255,6 @@ void UGrappleComponent::ServerStartHook_Implementation(FVector InStartLoc, FVect
 
 void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FVector InTargetLoc, FVector InStartTarngent, FVector InEndTangent, FRotator InStartRotation)
 {
-	if (RopeSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			RopeSound,
-			InStartLoc
-		);
-	}
-
 	if (Character && BestTarget)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("multicast is calling"));
@@ -278,6 +262,15 @@ void UGrappleComponent::MulticastStartHook_Implementation(FVector InStartLoc, FV
 		{
 			GrapplingRope->Destroy();
 			GrapplingRope = nullptr;
+		}
+
+		if (RopeSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				RopeSound,
+				InStartLoc
+			);
 		}
 
 		//DrawDebugSphere(GetWorld(), InStartLoc, 30.f, 15, FColor::Purple, false, 1.f);

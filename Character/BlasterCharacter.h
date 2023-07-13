@@ -47,6 +47,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
 	class UGrappleComponent* GrappleComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
+	class UInventoryComponent* InventoryComponent;
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
@@ -75,6 +78,10 @@ public:
 	virtual void OnRep_ReplicatedMovement() override;
 	virtual void Destroyed() override;
 	void Elim();
+
+	UFUNCTION(BlueprintCallable, Category = "Items")
+	void UseItem(class UItem* Item);
+
 	USkeletalMeshComponent* GetNeededMesh();
 
 	UFUNCTION(NetMulticast, Reliable)
