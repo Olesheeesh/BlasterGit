@@ -133,6 +133,14 @@ protected:
 	void ChangeViewButtonPressed();
 	void InitializeHookButtonPressed();
 
+	void EquipFirstWeaponButtonPressed();
+	UFUNCTION(Server, Reliable)
+	void ServerEquipFirstWeaponButtonPressed();
+
+	void EquipSecondWeaponButtonPressed();
+	UFUNCTION(Server, Reliable)
+	void ServerEquipSecondWeaponButtonPressed();
+
 	void PlayHitReactMontage();
 	void SimProxiesTurn();
 	UFUNCTION(Server, Reliable)

@@ -26,6 +26,12 @@ public:
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
 
+	void EquipPrimaryWeapon(AWeapon* WeaponToEquip);
+
+	void EquipSecondaryWeapon(AWeapon* WeaponToEquip);
+
+	void AttachWeaponToSocket(AWeapon* WeaponToEquip);
+
 	void Reload();
 
 	UFUNCTION(BlueprintCallable)
@@ -34,6 +40,9 @@ public:
 	void FireButtonPressed(bool bPressed);
 
 	void SetAiming(bool bIsAiming);
+
+	void ChoosePrimaryWeapon();
+	void ChooseSecondaryWeapon();
 protected:
 	virtual void BeginPlay() override;
 
@@ -94,6 +103,15 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
 	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon
+
+	UPROPERTY(Replicated) 
+	class AWeapon* PrimaryWeapon;
+
+	UPROPERTY(Replicated) 
+	class AWeapon* SecondaryWeapon;
+
+	UPROPERTY()
+	class AWeapon* AbilityWeapon;
 
 	UPROPERTY(Replicated)
 	bool bAiming = false;

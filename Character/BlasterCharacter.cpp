@@ -258,6 +258,8 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("Shift", IE_Pressed, this, &ABlasterCharacter::ShiftAbilityButtonPressed);
 	PlayerInputComponent->BindAction("ChangeView", IE_Pressed, this, &ABlasterCharacter::ChangeViewButtonPressed);
 	PlayerInputComponent->BindAction("InitializeHook", IE_Pressed, this, &ABlasterCharacter::InitializeHookButtonPressed);
+	PlayerInputComponent->BindAction("EquipFirstWeapon", IE_Pressed, this, &ABlasterCharacter::EquipFirstWeaponButtonPressed);
+	PlayerInputComponent->BindAction("EquipSecondWeapon", IE_Pressed, this, &ABlasterCharacter::EquipSecondWeaponButtonPressed);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -533,7 +535,7 @@ void ABlasterCharacter::EquipButtonPressed()
 	{
 		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
-			if (Combatt->GetEquippedWeapon())
+			if (Combatt->GetEquippedWeapon() && Combatt->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_AssaultRifle)
 			{
 				GetEquippedWeapon()->EquipScope(OverlappingScope);
 			}
@@ -550,11 +552,9 @@ void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
 	if (Combatt)
 	{
-		if (Combatt->GetEquippedWeapon() == nullptr)
-		{
-			Combatt->EquipWeapon(OverlappingWeapon);
-		}
-		else
+		Combatt->EquipWeapon(OverlappingWeapon);
+		
+		if(Combatt->GetEquippedWeapon() && Combatt->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_AssaultRifle)
 		{
 			GetEquippedWeapon()->EquipScope(OverlappingScope);
 		}
@@ -665,6 +665,57 @@ void ABlasterCharacter::InitializeHookButtonPressed()
 	}
 }
 
+void ABlasterCharacter::EquipFirstWeaponButtonPressed()
+{
+	if(HasAuthority())
+	{
+		if (Combatt && Combatt->GetEquippedWeapon())
+		{
+			Combatt->ChoosePrimaryWeapon();
+		}
+	}
+	else
+	{
+		ServerEquipFirstWeaponButtonPressed();
+	}
+}
+
+void ABlasterCharacter::ServerEquipFirstWeaponButtonPressed_Implementation()
+{
+	if(Combatt)
+	{
+		if (Combatt->GetEquippedWeapon())
+		{
+			Combatt->ChoosePrimaryWeapon();
+		}
+	}
+}
+
+void ABlasterCharacter::EquipSecondWeaponButtonPressed()
+{
+	if (HasAuthority())
+	{
+		if (Combatt && Combatt->GetEquippedWeapon())
+		{
+			Combatt->ChooseSecondaryWeapon();
+		}
+	}
+	else
+	{
+		ServerEquipSecondWeaponButtonPressed();
+	}
+}
+
+void ABlasterCharacter::ServerEquipSecondWeaponButtonPressed_Implementation()
+{
+	if (Combatt)
+	{
+		if (Combatt->GetEquippedWeapon())
+		{
+			Combatt->ChooseSecondaryWeapon();
+		}
+	}
+}
 
 void ABlasterCharacter::ServerChangeOpticButtonPressed_Implementation()
 {

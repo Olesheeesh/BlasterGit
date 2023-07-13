@@ -13,6 +13,7 @@ enum class EWeaponState : uint8
 	EWS_Initial UMETA(DisplayName = "Initial State"),
 	EWS_Equipped UMETA(DisplayName = "Equipped"),
 	EWS_Dropped UMETA(DisplayName = "Dropped"),
+	EWS_Active UMETA(DisplayName = "Active"),
 
 	EWS_MAX  UMETA(DisplayName = "DefaultMax")
 };
@@ -31,6 +32,8 @@ public:
 	virtual void ShowPickupWidget(bool bShowWidget);
 	virtual void Fire(const FVector& HitTarget);
 	void Dropped();
+	void Deactivate();
+	void Activate(class ABlasterCharacter* Character);
 	//Textures for the weapon crosshairs
 
 	UPROPERTY(EditAnywhere, Category = "Crosshairs")
@@ -193,6 +196,7 @@ public:
 	class AScope* EquippedScope;
 
 	void SetWeaponState(EWeaponState State);
+	FORCEINLINE EWeaponState GetWeaponState() const {  return WeaponState; }
 	FORCEINLINE USphereComponent* GetAreaSphere() const {  return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }//weapon mesh is private->need this getter
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }

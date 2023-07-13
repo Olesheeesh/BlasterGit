@@ -38,11 +38,11 @@ void UGrappleComponent::BeginPlay()
 	Super::BeginPlay();
 	if (Character && Character->ChildActor)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Character Target: %s"), *Character->ChildActor->GetChildActor()->GetName()));
+		//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Character Target: %s"), *Character->ChildActor->GetChildActor()->GetName()));
 		IgnoreActors.Add(Character->ChildActor->GetChildActor());
 		for (AActor* IgnoreTarget : IgnoreActors)
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Ignore Targets: %s"), *IgnoreTarget->GetName()));
+			//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Ignore Targets: %s"), *IgnoreTarget->GetName()));
 			BestTarget = nullptr;
 		}
 	}

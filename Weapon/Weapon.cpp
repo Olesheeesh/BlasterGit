@@ -197,7 +197,7 @@ void AWeapon::OnRep_WeaponState()//for client
 			WeaponMesh->SetEnableGravity(true);
 			WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		}
-		EnableCustomDepth(false);
+		EnableCustomDepth(false);//turn off weapon outline
 		break;
 	case EWeaponState::EWS_Dropped:
 		ShowPickupWidget(false);
@@ -210,9 +210,9 @@ void AWeapon::OnRep_WeaponState()//for client
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 			WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		}
-		WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);
+		WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_PURPLE);//choose weapon outline color
 		WeaponMesh->MarkRenderStateDirty();//This ensures that the changes will be displayed correctly the next time the scene is rendered.
-		EnableCustomDepth(true);
+		EnableCustomDepth(true);//turn on weapon outline
 
 		break;
 	};
@@ -264,6 +264,24 @@ void AWeapon::Dropped()//detach
 	SetOwner(nullptr);
 	BlasterOwnerCharacter = nullptr;
 	BlasterOwnerController = nullptr;//to not change the hudd for last owner character
+}
+
+void AWeapon::Deactivate()
+{
+	if (WeaponMesh)
+	{
+		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepRelative, true);
+		WeaponMesh->DetachFromComponent(DetachRules);
+		//WeaponMesh->SetVisibility(false);
+	}
+}
+
+void AWeapon::Activate(ABlasterCharacter* Character)
+{
+	if (WeaponMesh)
+	{
+		WeaponMesh->SetVisibility(true);
+	}
 }
 
 bool AWeapon::IsEmpty()

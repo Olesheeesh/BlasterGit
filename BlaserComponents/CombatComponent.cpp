@@ -57,6 +57,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, PrimaryWeapon);
+	DOREPLIFETIME(UCombatComponent, SecondaryWeapon);
 	DOREPLIFETIME_CONDITION(UCombatComponent, bAiming, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
@@ -66,20 +68,26 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
 
-	if (EquippedWeapon)//if is not null
+	if (PrimaryWeapon && SecondaryWeapon)
 	{
 		EquippedWeapon->Dropped();
+		EquippedWeapon = WeaponToEquip;
+
+		//всё норм
+		AttachWeaponToSocket(EquippedWeapon);
 	}
 
-	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetOwner(Character);
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-
-	const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
-	if (HandSocket)
+	if (EquippedWeapon == nullptr)
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		EquipPrimaryWeapon(WeaponToEquip);
 	}
+	else
+	{
+		EquipSecondaryWeapon(WeaponToEquip);
+	}
+
+	EquippedWeapon->SetOwner(Character);
+	
 
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
@@ -111,8 +119,7 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 		UGameplayStatics::PlaySoundAtLocation(
 			this,
 			EquippedWeapon->EquipSound,
-			Character->GetActorLocation()
-		);
+			Character->GetActorLocation());
 	}
 
 	if (EquippedWeapon->IsEmpty())
@@ -127,19 +134,15 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
-
+	
 	if (EquippedWeapon && Character)
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-		const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
-		if (HandSocket)
-		{
-			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("OnRep is calling"));
-		}
+		AttachWeaponToSocket(EquippedWeapon);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("OnRep is calling"));
 
-		if(AnimInstance && EquippedWeapon)
+		if (AnimInstance && EquippedWeapon)
 		{
 			AnimInstance->SetRelativeHandTransform();
 			AnimInstance->ChangeOptic();
@@ -157,6 +160,92 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
+{
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
+	PrimaryWeapon = WeaponToEquip;
+	EquippedWeapon = PrimaryWeapon;
+
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("EquipPrimaryWeapon is calling"));
+	AttachWeaponToSocket(EquippedWeapon);
+}
+
+void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
+{
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
+	SecondaryWeapon = WeaponToEquip;
+
+	SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
+	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+	//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("EquipSecondaryWeapon is calling"));
+}
+
+void UCombatComponent::AttachWeaponToSocket(AWeapon* WeaponToEquip)
+{
+	const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
+	if (HandSocket)
+	{
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+	}
+}
+
+void UCombatComponent::ChoosePrimaryWeapon()
+{
+	if (EquippedWeapon && PrimaryWeapon && SecondaryWeapon && EquippedWeapon != PrimaryWeapon && Character)
+	{
+		PrimaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
+
+		EquippedWeapon->Deactivate();
+		EquippedWeapon = PrimaryWeapon;
+		EquippedWeapon->Activate(Character);
+
+		AttachWeaponToSocket(EquippedWeapon);
+	}
+	if(PrimaryWeapon == nullptr)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("PrimaryWeapon == nullptr"));
+	}
+	else if(SecondaryWeapon == nullptr)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("SecondaryWeapon == nullptr"));
+	}
+	else
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("Choose 1 Weapon warning"));
+	}
+}
+
+void UCombatComponent::ChooseSecondaryWeapon()
+{
+	if (EquippedWeapon && PrimaryWeapon && SecondaryWeapon && EquippedWeapon != SecondaryWeapon && Character)
+	{
+		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
+
+		EquippedWeapon->Deactivate();
+		EquippedWeapon = SecondaryWeapon;
+		EquippedWeapon->Activate(Character);
+
+		AttachWeaponToSocket(EquippedWeapon);
+	}
+	if (PrimaryWeapon == nullptr)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("PrimaryWeapon == nullptr"));
+	}
+	else if (SecondaryWeapon == nullptr)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("SecondaryWeapon == nullptr"));
+	}
+	else
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("Choose 2 Weapon warning"));
+	}
 }
 
 const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh)
