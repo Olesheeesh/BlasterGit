@@ -49,7 +49,7 @@ public:
 	class UGrappleComponent* GrappleComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
-	class UInventoryComponent* InventoryComponent;
+	class UInventoryComponent* Inventory;
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
@@ -80,7 +80,7 @@ public:
 	void Elim();
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
-	void UseItem(class UItem* Item);
+	void DropItem(class UItem* Item);
 
 	USkeletalMeshComponent* GetNeededMesh();
 

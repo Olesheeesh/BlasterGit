@@ -76,8 +76,8 @@ ABlasterCharacter::ABlasterCharacter()
 	GrappleComponent = CreateDefaultSubobject<UGrappleComponent>(TEXT("GrappleComponent"));
 	GrappleComponent->SetIsReplicated(true);
 
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("GrappleComponent"));
-	InventoryComponent->SetIsReplicated(true);
+	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	Inventory->SetIsReplicated(true);
 
 	ChildActor = CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
 	ChildActor->SetupAttachment(GetMesh());
@@ -288,6 +288,10 @@ void ABlasterCharacter::PostInitializeComponents()
 	{
 		GrappleComponent->Character = this;
 	}
+	if(Inventory)
+	{
+		Inventory->OwningCharacter = this;
+	}
 }
 
 void ABlasterCharacter::RotateInPlace(float DeltaTime)
@@ -361,12 +365,12 @@ void ABlasterCharacter::Elim()
 	UE_LOG(LogTemp, Warning, TEXT("ElimTimer started"));
 }
 
-void ABlasterCharacter::UseItem(UItem* Item)
+void ABlasterCharacter::DropItem(class UItem* Item)
 {
 	if (Item)
 	{
-		Item->Use(this);
-		Item->OnUse(this);
+		Item->Drop(this);
+		Item->OnDrop(this);
 	}
 }
 

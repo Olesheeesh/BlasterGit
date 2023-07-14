@@ -16,10 +16,10 @@ class BLASTER_API UItem : public UObject
 
 public:
 	UItem();
-	virtual void Use(class ABlasterCharacter* Character) PURE_VIRTUAL(UItem, );
+	virtual void Drop(class ABlasterCharacter* Character);
 
 	UFUNCTION(BlueprintImplementableEvent)//bp version
-	void OnUse(class ABlasterCharacter* Character);
+	void OnDrop(class ABlasterCharacter* Character);
 
 	class UWorld* World;
 
@@ -39,6 +39,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (MultiLine = true))
 	FText ItemDescription;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	FText ItemQuantity;
 
 	UPROPERTY()
 	class UInventoryComponent* OwningInventory;

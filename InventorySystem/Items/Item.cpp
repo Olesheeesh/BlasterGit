@@ -6,3 +6,8 @@ UItem::UItem()
 	UseActionText = FText::FromString("Use");
 }
 
+void UItem::Drop(class ABlasterCharacter* Character)
+{
+}
+
+ 

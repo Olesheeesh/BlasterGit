@@ -35,4 +35,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
+
+	UPROPERTY()
+	class ABlasterCharacter* OwningCharacter;
 };
