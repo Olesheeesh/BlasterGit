@@ -70,39 +70,29 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 
 	if (PrimaryWeapon && SecondaryWeapon)
 	{
-		EquippedWeapon->Dropped();
 		if(EquippedWeapon == PrimaryWeapon)//в руках PrimaryWeapon
 		{
+			EquippedWeapon->Dropped();
 			EquipPrimaryWeapon(WeaponToEquip);
 		}
 		else if(EquippedWeapon == SecondaryWeapon)//в руках SecondaryWeapon
 		{
+			EquippedWeapon->Dropped();
 			EquipSecondaryWeapon(WeaponToEquip);
 		}
-		//всё норм
-		if (GEngine && EquippedWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-		if (GEngine && PrimaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, FString::Printf(TEXT("PrimaryWeapon = %s"), *PrimaryWeapon->GetName()));
-		if (GEngine && SecondaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, FString::Printf(TEXT("SecondaryWeapon = %s"), *SecondaryWeapon->GetName()));
 	}
 
 	if (EquippedWeapon == nullptr)
 	{
 		EquipPrimaryWeapon(WeaponToEquip);
-		if (GEngine && EquippedWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Blue, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-		if (GEngine && PrimaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Blue, FString::Printf(TEXT("PrimaryWeapon = %s"), *PrimaryWeapon->GetName()));
-		if (GEngine && SecondaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Blue, FString::Printf(TEXT("SecondaryWeapon = %s"), *SecondaryWeapon->GetName()));
 	}
 	else if(EquippedWeapon && SecondaryWeapon == nullptr)
 	{
 		bShouldHideWhenPickedUp = true;
 		EquipSecondaryWeapon(WeaponToEquip);
-		if (GEngine && EquippedWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Yellow, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-		if (GEngine && PrimaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Yellow, FString::Printf(TEXT("PrimaryWeapon = %s"), *PrimaryWeapon->GetName()));
-		if (GEngine && SecondaryWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Yellow, FString::Printf(TEXT("SecondaryWeapon = %s"), *SecondaryWeapon->GetName()));
 	}
 
 	EquippedWeapon->SetOwner(Character);
-	
 
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
@@ -155,7 +145,6 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
 		AttachWeaponToSocket(EquippedWeapon);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, FString("OnRep is calling"));
 
 		if (AnimInstance && EquippedWeapon)
 		{
@@ -185,27 +174,69 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 	EquippedWeapon = PrimaryWeapon;
 
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	PrimaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
 
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("EquipPrimaryWeapon is calling"));
 	AttachWeaponToSocket(EquippedWeapon);
+	switch (PrimaryWeapon->GetWeaponState())
+	{
+	case EWeaponState::EWS_Initial:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Initial"));
+		break;
+	case EWeaponState::EWS_Equipped:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Equipped"));
+		break;
+	case EWeaponState::EWS_Dropped:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Dropped"));
+		break;
+	case EWeaponState::EWS_Active:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Green, FString("EWS_Active"));
+		break;
+	case EWeaponState::EWS_MAX:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_MAX"));
+		break;
+	}
 }
 
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
 
-	if (EquippedWeapon == SecondaryWeapon)
+	if (SecondaryWeapon)
 	{
-		EquippedWeapon = WeaponToEquip;
-		AttachWeaponToSocket(EquippedWeapon);
-		bShouldHideWhenPickedUp = false;
+		if (EquippedWeapon == SecondaryWeapon)
+		{
+			SecondaryWeapon = WeaponToEquip;
+			EquippedWeapon = SecondaryWeapon;
+			EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+			bShouldHideWhenPickedUp = false;
+			AttachWeaponToSocket(EquippedWeapon);
+		}
+		switch(SecondaryWeapon->GetWeaponState())
+		{
+		case EWeaponState::EWS_Initial:
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Initial"));
+			break;
+		case EWeaponState::EWS_Equipped:
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Equipped"));
+			break;
+		case EWeaponState::EWS_Dropped:
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Dropped"));
+			break;
+		case EWeaponState::EWS_Active:
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Green, FString("EWS_Active"));
+			break;
+		case EWeaponState::EWS_MAX:
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_MAX"));
+			break;
+		}
 	}
-	SecondaryWeapon = WeaponToEquip;
-	
-	if(bShouldHideWhenPickedUp)SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
-	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	else
+	{
+		SecondaryWeapon = WeaponToEquip;
 
-	//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("EquipSecondaryWeapon is calling"));
+		if (bShouldHideWhenPickedUp)SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
+		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	}
 }
 
 void UCombatComponent::AttachWeaponToSocket(AWeapon* WeaponToEquip)
@@ -213,7 +244,7 @@ void UCombatComponent::AttachWeaponToSocket(AWeapon* WeaponToEquip)
 	const USkeletalMeshSocket* HandSocket = GetWeaponSocket(Character->GetMesh());
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		HandSocket->AttachActor(WeaponToEquip, Character->GetMesh());
 	}
 }
 
@@ -225,21 +256,9 @@ void UCombatComponent::ChoosePrimaryWeapon()
 
 		EquippedWeapon->Deactivate();
 		EquippedWeapon = PrimaryWeapon;
-		PrimaryWeapon->Activate(Character);
+		EquippedWeapon->Activate(Character);
 
 		AttachWeaponToSocket(EquippedWeapon);
-	}
-	if(PrimaryWeapon == nullptr)
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("PrimaryWeapon == nullptr"));
-	}
-	else if(SecondaryWeapon == nullptr)
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("SecondaryWeapon == nullptr"));
-	}
-	else
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("Choose 1 Weapon warning"));
 	}
 }
 
@@ -251,22 +270,9 @@ void UCombatComponent::ChooseSecondaryWeapon()
 
 		EquippedWeapon->Deactivate();
 		EquippedWeapon = SecondaryWeapon;
-		SecondaryWeapon->Activate(Character);
+		EquippedWeapon->Activate(Character);
 
 		AttachWeaponToSocket(EquippedWeapon);
-		if (GEngine && EquippedWeapon)GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Purple, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-	}
-	if (PrimaryWeapon == nullptr)
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("PrimaryWeapon == nullptr"));
-	}
-	else if (SecondaryWeapon == nullptr)
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("SecondaryWeapon == nullptr"));
-	}
-	else
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Yellow, FString("Choose 2 Weapon warning"));
 	}
 }
 
