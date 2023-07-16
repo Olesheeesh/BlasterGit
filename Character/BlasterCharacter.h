@@ -50,6 +50,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
 	class UInventoryComponent* Inventory;
+
+	UPROPERTY()
+	class ABlasterPlayerController* BlasterPlayerController;
 public:
 	// Sets default values for this character's properties
 	ABlasterCharacter();
@@ -187,8 +190,7 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingScope)
 	class AScope* OverlappingScope;
 
-	UPROPERTY()
-	class ABlasterPlayerController* BlasterPlayerController;
+	
 
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;

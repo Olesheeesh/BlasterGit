@@ -14,16 +14,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	//virtual void InitializeComponent() override;
+	virtual void InitializeComponent() override;
 public:	
-
-	//bool AddItem(class UItem* Item);
-	//bool RemoveItem(class UItem* Item);
-	//void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity);
-	//void IncreaseSlotNumberByOne();
-
-	//UFUNCTION(BlueprintCallable)
-	//void DropItem();
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
 	TArray<class UInventorySlot*> DefaultItems;
@@ -31,8 +23,11 @@ public:
 	UPROPERTY()
 	class ABlasterCharacter* OwningCharacter;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
-	class UInventorySlot* JustRemovedSlot;
+	UPROPERTY()
+	class ABlasterHUD* BlasterHUD;
+
+	UPROPERTY()
+	class UInventoryWidget* InventoryWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UTexture2D* HeavyAmmoImage;
@@ -41,7 +36,7 @@ public:
 	class UTexture2D* LightAmmoImage;
 
 	UPROPERTY(EditAnywhere)
-	class UTexture2D* ShtgunAmmoImage;
+	class UTexture2D* ShotgunAmmoImage;
 
 	UPROPERTY(EditAnywhere)
 	class UTexture2D* SniperAmmoImage;

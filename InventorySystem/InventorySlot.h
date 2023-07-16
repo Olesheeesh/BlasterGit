@@ -5,6 +5,14 @@
 #include "Components/Button.h"
 #include "InventorySlot.generated.h"
 
+UENUM(BlueprintType)
+enum class ESlotState : uint8
+{
+	ESS_Empty UMETA(DisplayName = "Empty"),
+	ESS_Filled UMETA(DisplayName = "Empty")
+
+};
+
 UCLASS()
 class BLASTER_API UInventorySlot : public UUserWidget
 {
@@ -20,11 +28,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClearSlot();
 
-	UPROPERTY()
-	class ABlasterCharacter* Character;
+	void TransferDataTo(class UInventorySlot* OtherSlot);
+
+	void SetSlotState(ESlotState State);
 
 	UPROPERTY()
 	class UInventoryComponent* InventoryComponent;
+
+	UPROPERTY()
+	class ABlasterHUD* BlasterHUD;
+
+	UPROPERTY()
+	class UInventoryWidget* InventoryWidget;
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* DropButton;
@@ -38,5 +53,13 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* SlotQuantity;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 SlotIndex;
 
+	ESlotState SlotState;
+
+	UPROPERTY()
+	UTexture2D* ItemTexture;
+
+	int32 ItemQuantity = 0;
 };

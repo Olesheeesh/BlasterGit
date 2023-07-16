@@ -808,7 +808,18 @@ void ABlasterCharacter::OpenInventory()//temporary foo
 	{
 		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(BlasterPlayerController->GetHUD()) : BlasterHUD;
 
-		if(BlasterHUD) BlasterHUD->AddInventoryWidget();
+		if (BlasterHUD)
+		{
+			if (!BlasterHUD->bInventoryIsAdded)
+			{
+				BlasterHUD->AddInventoryWidget();
+			}
+			else
+			{
+				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+				BlasterHUD->SetUIOnlyInputMode();
+			}
+		}
 	}
 }
 

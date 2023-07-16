@@ -17,6 +17,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity);
 	void RemoveItemFromInventory(class UInventorySlot* SlotToRemove);
+	void RefreshInventory();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	int32 Capacity = 10;
@@ -29,6 +30,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
 	class UInventorySlot* CurrentSlot;
+
+	UPROPERTY()
+	class UInventorySlot* JustRemovedSlot;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<class UInventorySlot*> InventorySlots;
