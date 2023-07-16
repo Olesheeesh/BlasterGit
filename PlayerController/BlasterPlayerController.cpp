@@ -15,8 +15,10 @@
 #include "Components/Image.h"
 #include "Components/VerticalBox.h"
 #include "TimerManager.h"
+#include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Camera/CameraComponent.h"
+#include "Components/WrapBox.h"
 #include "Kismet/GameplayStatics.h"
 
 void ABlasterPlayerController::BeginPlay()
@@ -66,6 +68,9 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
 	{
 		SetHUDHealth(BlasterCharacter->GetCurrentHealth(), BlasterCharacter->GetMaxHealth());
 	}
+
+	InventoryComponent = BlasterCharacter->FindComponentByClass<UInventoryComponent>();
+	InventoryWidget = BlasterHUD->InventoryWidget;
 }
 
 void ABlasterPlayerController::SetHUDWeaponAmmo(int32 Ammo)

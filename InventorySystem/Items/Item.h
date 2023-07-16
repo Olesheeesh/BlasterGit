@@ -6,9 +6,17 @@
 #include "UObject/NoExportTypes.h"
 #include "Item.generated.h"
 
-/**
- * 
- */
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	EIT_HeavyAmmo UMETA(DisplayName = "Heavy Ammo"),
+	EIT_ShotgunAmmo UMETA(DisplayName = "Shotgun Ammo"),
+	EIT_SniperAmmo UMETA(DisplayName = "Sniper Ammo"),
+	EIT_EnergyAmmo UMETA(DisplayName = "Energy Ammo"),
+	EIT_Hook UMETA(DisplayName = "Grapple Charge"),
+	EIT_Grenade UMETA(DisplayName = "Grenade")
+};
+
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class BLASTER_API UItem : public UObject
 {
@@ -46,4 +54,5 @@ public:
 	UPROPERTY()
 	class UInventoryComponent* OwningInventory;
 
+	EItemType ItemType;
 };

@@ -1,12 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BLASTER_API UInventoryComponent : public UActorComponent
@@ -18,24 +14,41 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	//virtual void InitializeComponent() override;
 public:	
 
-	bool AddItem(class UItem* Item);
-	bool RemoveItem(class UItem* Item);
+	//bool AddItem(class UItem* Item);
+	//bool RemoveItem(class UItem* Item);
+	//void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity);
+	//void IncreaseSlotNumberByOne();
+
+	//UFUNCTION(BlueprintCallable)
+	//void DropItem();
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
-	TArray<class UItem*> DefaultItems;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
-	TArray<class UItem*> Items;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-	int32 Capacity = 8;
-
-	UPROPERTY(BlueprintAssignable, Category = "Inventory")
-	FOnInventoryUpdated OnInventoryUpdated;
+	TArray<class UInventorySlot*> DefaultItems;
 
 	UPROPERTY()
 	class ABlasterCharacter* OwningCharacter;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Inventory")
+	class UInventorySlot* JustRemovedSlot;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	class UTexture2D* HeavyAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* LightAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* ShtgunAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* SniperAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* EnergyAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* GrappleChargeImage;
 };

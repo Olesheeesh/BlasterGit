@@ -32,6 +32,7 @@
 #include "Blaster/BlaserComponents/GrappleComponent.h"
 #include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/Grappling/GrappleTarget.h"
+#include "Blaster/HUD/InventoryWidget.h"
 #include "Blaster/InventorySystem/Items/Item.h"
 #include "Engine/SkeletalMeshSocket.h"
 
@@ -265,6 +266,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("InitializeHook", IE_Pressed, this, &ABlasterCharacter::InitializeHookButtonPressed);
 	PlayerInputComponent->BindAction("EquipFirstWeapon", IE_Pressed, this, &ABlasterCharacter::EquipFirstWeaponButtonPressed);
 	PlayerInputComponent->BindAction("EquipSecondWeapon", IE_Pressed, this, &ABlasterCharacter::EquipSecondWeaponButtonPressed);
+	PlayerInputComponent->BindAction("OpenInventory", IE_Pressed, this, &ABlasterCharacter::OpenInventory);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -796,6 +798,17 @@ void ABlasterCharacter::SetCollisionSettings(ECollisionSettings CurrentCollision
 		case ECollisionSettings::ECS_WeaponGhost:
 			GetEquippedWeapon()->GetWeaponMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 			break;
+	}
+}
+
+void ABlasterCharacter::OpenInventory()//temporary foo
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if(BlasterPlayerController)
+	{
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(BlasterPlayerController->GetHUD()) : BlasterHUD;
+
+		if(BlasterHUD) BlasterHUD->AddInventoryWidget();
 	}
 }
 

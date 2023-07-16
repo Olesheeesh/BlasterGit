@@ -107,6 +107,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* FirstPersonCamera;
 
+	UPROPERTY(BlueprintReadWrite)
+	class UInventoryWidget* InventoryWidget;
+
 	UPROPERTY(EditAnywhere)
 	class UChildActorComponent* ChildActor;
 
@@ -160,6 +163,7 @@ protected:
 	void RotateInPlace(float DeltaTime);
 	bool GetIsSprinting();
 	void SetCollisionSettings(ECollisionSettings CurrentCollisionSetting);
+	void OpenInventory();
 private:
 
 	float HighestSpeed = 0.f;
@@ -185,6 +189,9 @@ private:
 
 	UPROPERTY()
 	class ABlasterPlayerController* BlasterPlayerController;
+
+	UPROPERTY()
+	class ABlasterHUD* BlasterHUD;
 
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);

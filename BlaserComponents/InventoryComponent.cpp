@@ -1,6 +1,12 @@
 #include "InventoryComponent.h"
 
+#include "Blaster/Character/BlasterCharacter.h"
+#include "Blaster/HUD/BlasterHUD.h"
+#include "Blaster/HUD/InventoryWidget.h"
+#include "Blaster/InventorySystem/InventorySlot.h"
 #include "Blaster/InventorySystem/Items/Item.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "Components/WrapBox.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -13,12 +19,13 @@ void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for(auto& Item : DefaultItems)
-	{
-		AddItem(Item);
-	}
+	//for(auto& Item : DefaultItems)
+	//{
+		//AddItem(Item);
+	//}
 }
 
+/*
 bool UInventoryComponent::AddItem(UItem* Item)
 {
 	if (Items.Num() >= Capacity || !Item) return false;
@@ -48,5 +55,5 @@ bool UInventoryComponent::RemoveItem(UItem* Item)
 		return true;//succesfuly added
 	}
 	return false;//couldn't remove
-}
+}*/
 

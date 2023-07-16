@@ -3,6 +3,7 @@
 #include "Announcement.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterOverlay.h"
+#include "InventoryWidget.h"
 #include "PlayerScore.h"
 #include "ScoreBoardWidget.h"
 
@@ -50,6 +51,28 @@ void ABlasterHUD::AddPlayerScoreWidget()
 		PlayerScoreWidget = CreateWidget<UPlayerScore>(PlayerController, PlayerScoreClass);
 		PlayerScoreWidget->AddToViewport();
 	}
+}
+
+void ABlasterHUD::AddInventoryWidget()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if(PlayerController && InventoryWidgetClass)
+	{
+		InventoryWidget = CreateWidget<UInventoryWidget>(PlayerController, InventoryWidgetClass);
+		InventoryWidget->AddToViewport();
+		SetUIOnlyInputMode();
+	}
+}
+
+void ABlasterHUD::SetUIOnlyInputMode()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
+	InputMode.SetHideCursorDuringCapture(true);
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->bShowMouseCursor = true;
 }
 
 void ABlasterHUD::DrawHUD()

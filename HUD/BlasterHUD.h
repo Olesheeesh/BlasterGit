@@ -45,6 +45,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "PlayerScore");
 	TSubclassOf<class UUserWidget> PlayerScoreClass;
 
+	UPROPERTY(EditAnywhere, Category = "PlayerScore");
+	TSubclassOf<class UUserWidget> InventoryWidgetClass;
+
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;//reference to an instance of the UCharacterOverlay class
 
@@ -57,11 +60,16 @@ public:
 	UPROPERTY()
 	UPlayerScore* PlayerScoreWidget;
 
+	UPROPERTY(BlueprintReadOnly)
+	class UInventoryWidget* InventoryWidget;	
+
 	void AddCharacterOverlay();
 	void AddAnnouncementWidget();
 	void AddScoreBoardWidget();
 	void AddPlayerScoreWidget();
+	void AddInventoryWidget();
 
+	void SetUIOnlyInputMode();
 protected:
 	virtual void BeginPlay() override;
 

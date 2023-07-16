@@ -44,6 +44,7 @@ public:
 	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
 
 	void HideSniperScope();
+
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
@@ -98,6 +99,9 @@ private:
 	UPROPERTY()
 	class ABlasterGameState* BlasterGameState;
 
+	UPROPERTY()
+	class UInventoryComponent* InventoryComponent;
+
 	float LevelStartingTime = 0.f;
 	float MatchTime = 0.f;
 	float WarmupTime = 0.f;
@@ -118,6 +122,9 @@ private:
 	// Score Board
 	UPROPERTY()
 	class UScoreBoardWidget* ScoreBoardWidget;
+
+	UPROPERTY()
+	class UInventoryWidget* InventoryWidget;
 
 	bool CooldownIsHandled = false;
 

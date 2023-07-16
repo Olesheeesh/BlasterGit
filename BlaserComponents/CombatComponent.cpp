@@ -70,14 +70,14 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 
 	if (PrimaryWeapon && SecondaryWeapon)
 	{
+		EquippedWeapon->Dropped();
+
 		if(EquippedWeapon == PrimaryWeapon)//в руках PrimaryWeapon
 		{
-			EquippedWeapon->Dropped();
 			EquipPrimaryWeapon(WeaponToEquip);
 		}
 		else if(EquippedWeapon == SecondaryWeapon)//в руках SecondaryWeapon
 		{
-			EquippedWeapon->Dropped();
 			EquipSecondaryWeapon(WeaponToEquip);
 		}
 	}
@@ -85,11 +85,12 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	if (EquippedWeapon == nullptr)
 	{
 		EquipPrimaryWeapon(WeaponToEquip);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Orange, FString("Should be called only once1"));
 	}
 	else if(EquippedWeapon && SecondaryWeapon == nullptr)
 	{
-		bShouldHideWhenPickedUp = true;
 		EquipSecondaryWeapon(WeaponToEquip);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Orange, FString("Should be called only once2"));
 	}
 
 	EquippedWeapon->SetOwner(Character);
@@ -177,24 +178,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 	PrimaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
 
 	AttachWeaponToSocket(EquippedWeapon);
-	switch (PrimaryWeapon->GetWeaponState())
-	{
-	case EWeaponState::EWS_Initial:
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Initial"));
-		break;
-	case EWeaponState::EWS_Equipped:
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Equipped"));
-		break;
-	case EWeaponState::EWS_Dropped:
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Dropped"));
-		break;
-	case EWeaponState::EWS_Active:
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Green, FString("EWS_Active"));
-		break;
-	case EWeaponState::EWS_MAX:
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_MAX"));
-		break;
-	}
+	
 }
 
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
@@ -208,34 +192,17 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 			SecondaryWeapon = WeaponToEquip;
 			EquippedWeapon = SecondaryWeapon;
 			EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-			bShouldHideWhenPickedUp = false;
 			AttachWeaponToSocket(EquippedWeapon);
 		}
-		switch(SecondaryWeapon->GetWeaponState())
-		{
-		case EWeaponState::EWS_Initial:
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Initial"));
-			break;
-		case EWeaponState::EWS_Equipped:
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Equipped"));
-			break;
-		case EWeaponState::EWS_Dropped:
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_Dropped"));
-			break;
-		case EWeaponState::EWS_Active:
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Green, FString("EWS_Active"));
-			break;
-		case EWeaponState::EWS_MAX:
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Red, FString("EWS_MAX"));
-			break;
-		}
+		
 	}
 	else
 	{
 		SecondaryWeapon = WeaponToEquip;
 
-		if (bShouldHideWhenPickedUp)SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
+		SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
 		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		
 	}
 }
 

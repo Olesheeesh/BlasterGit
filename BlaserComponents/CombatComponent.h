@@ -124,8 +124,6 @@ private:
 
 	bool bFireButtonPressed;
 
-	bool bShouldHideWhenPickedUp = true;
-
 	FVector HitTarget;
 
 
