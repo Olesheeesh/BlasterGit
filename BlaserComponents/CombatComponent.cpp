@@ -93,8 +93,6 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Orange, FString("Should be called only once2"));
 	}
 
-	EquippedWeapon->SetOwner(Character);
-
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
 
 	if (AnimInstance && EquippedWeapon)
@@ -133,7 +131,11 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	
 	if (EquippedWeapon && Character)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
+
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+		UpdateCarriedAmmo();
 
 		AttachWeaponToSocket(EquippedWeapon);
 
@@ -163,9 +165,9 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 
 	PrimaryWeapon = WeaponToEquip;
 	EquippedWeapon = PrimaryWeapon;
+	EquippedWeapon->SetOwner(Character);
 
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-	PrimaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
 
 	AttachWeaponToSocket(EquippedWeapon);
 	
@@ -177,13 +179,12 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 
 	if (SecondaryWeapon)
 	{
-		if (EquippedWeapon == SecondaryWeapon)
-		{
-			SecondaryWeapon = WeaponToEquip;
-			EquippedWeapon = SecondaryWeapon;
-			EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-			AttachWeaponToSocket(EquippedWeapon);
-		}
+		SecondaryWeapon = WeaponToEquip;
+
+		EquippedWeapon = SecondaryWeapon;
+		EquippedWeapon->SetOwner(Character);
+		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		AttachWeaponToSocket(EquippedWeapon);
 		
 	}
 	else
@@ -192,7 +193,6 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 
 		SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
 		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-		
 	}
 }
 
@@ -209,14 +209,18 @@ void UCombatComponent::ChoosePrimaryWeapon()
 {
 	if (EquippedWeapon && PrimaryWeapon && SecondaryWeapon && EquippedWeapon != PrimaryWeapon && Character)
 	{
-		PrimaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
-
 		EquippedWeapon->Deactivate();
 		EquippedWeapon = PrimaryWeapon;
+		EquippedWeapon->SetOwner(Character);
 		EquippedWeapon->Activate(Character);
 
-		EquippedWeapon->SetHUDAmmo();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("EquippedWeapon = %s"), *PrimaryWeapon->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Weapon Ammo = %d"), EquippedWeapon->GetAmmo()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Carried Ammo = %d"), CarriedAmmo));
+
 		UpdateCarriedAmmo();
+		EquippedWeapon->SetHUDAmmo();
 
 		AttachWeaponToSocket(EquippedWeapon);
 	}
@@ -226,14 +230,18 @@ void UCombatComponent::ChooseSecondaryWeapon()
 {
 	if (EquippedWeapon && PrimaryWeapon && SecondaryWeapon && EquippedWeapon != SecondaryWeapon && Character)
 	{
-		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Active);
-
 		EquippedWeapon->Deactivate();
 		EquippedWeapon = SecondaryWeapon;
+		EquippedWeapon->SetOwner(Character);
 		EquippedWeapon->Activate(Character);
 
-		EquippedWeapon->SetHUDAmmo();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("SecondaryWeapon = %s"), *SecondaryWeapon->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Weapon Ammo = %d"), EquippedWeapon->GetAmmo()));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Carried Ammo = %d"), CarriedAmmo));
+
 		UpdateCarriedAmmo();
+		EquippedWeapon->SetHUDAmmo();
 
 		AttachWeaponToSocket(EquippedWeapon);
 	}
@@ -266,7 +274,6 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 		}
 	}
 }
-
 
 const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh)
 {

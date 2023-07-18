@@ -133,10 +133,13 @@ void AWeapon::OnRep_Owner()
 	{
 		BlasterOwnerCharacter = nullptr;
 		BlasterOwnerController = nullptr;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Owner is null"));
 	}
 	else
 	{
 		SetHUDAmmo();//if Owner != nullptr -> set HUD
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Owner"));
 	}
 }
 
@@ -270,6 +273,7 @@ void AWeapon::Deactivate()
 {
 	if (WeaponMesh)
 	{
+		SetOwner(nullptr);
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepRelative, true);
 		WeaponMesh->DetachFromComponent(DetachRules);
 		//WeaponMesh->SetVisibility(false);
