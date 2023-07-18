@@ -43,6 +43,8 @@ public:
 
 	void ChoosePrimaryWeapon();
 	void ChooseSecondaryWeapon();
+	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -92,6 +94,8 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void InterpFOV(float DeltaTime);
+
+	void UpdateCarriedAmmo();
 
 private:
 	UPROPERTY()
@@ -205,11 +209,13 @@ protected:
 	UPROPERTY()
 	class UBlasterAnimInstance* AnimInstance;
 
+
 public:	
 	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 	FORCEINLINE bool GetIsAiming() const { return bAiming; }
 };
+
 
 

@@ -47,10 +47,10 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UOverlay* Overlay;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UImage* Thumbnail;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* SlotQuantity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

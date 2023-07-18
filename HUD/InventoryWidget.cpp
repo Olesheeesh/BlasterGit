@@ -15,7 +15,7 @@ void UInventoryWidget::NativeConstruct()
 
 void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity)
 {
-	if (InventorySlots.Num() > 0)
+	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
 	{
 		CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));//GetChildAt() возвращает указатель на базовый класс UWidget
 		CurrentSlot->SetSlotData(SlotImage, Quantity);

@@ -19,4 +19,10 @@ public:
 	FText ItemDisplayAmmo;
 
 	void SetAmmoAmount(int32 AmmoAmount);
+
+	EItemType ItemType = EItemType::EIT_HeavyAmmo;
+
+	UTexture2D* AmmoImage;
+
+	int32 AmmoQuantity;
 };

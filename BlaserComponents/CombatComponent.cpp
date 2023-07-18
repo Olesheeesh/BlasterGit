@@ -108,17 +108,7 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	}
 	EquippedWeapon->SetHUDAmmo();
 
-	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
-	{
-		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
-	}
-
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-	if (Controller)
-	{
-		Controller->ShowAmmoHUD(true);
-		Controller->SetHUDCarriedAmmo(CarriedAmmo);
-	}
+	UpdateCarriedAmmo();
 
 	if (EquippedWeapon->EquipSound)
 	{
@@ -225,6 +215,9 @@ void UCombatComponent::ChoosePrimaryWeapon()
 		EquippedWeapon = PrimaryWeapon;
 		EquippedWeapon->Activate(Character);
 
+		EquippedWeapon->SetHUDAmmo();
+		UpdateCarriedAmmo();
+
 		AttachWeaponToSocket(EquippedWeapon);
 	}
 }
@@ -239,9 +232,41 @@ void UCombatComponent::ChooseSecondaryWeapon()
 		EquippedWeapon = SecondaryWeapon;
 		EquippedWeapon->Activate(Character);
 
+		EquippedWeapon->SetHUDAmmo();
+		UpdateCarriedAmmo();
+
 		AttachWeaponToSocket(EquippedWeapon);
 	}
 }
+
+void UCombatComponent::UpdateCarriedAmmo()
+{
+	if (EquippedWeapon == nullptr) return;
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
+	}
+	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->ShowAmmoHUD(true);
+		Controller->SetHUDCarriedAmmo(CarriedAmmo);//carriedAmmo это патроны equippedweapon
+	}
+}
+
+void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
+{
+	if(CarriedAmmoMap.Contains(WeaponType))
+	{
+		CarriedAmmoMap[WeaponType] += AmmoAmount;
+		UpdateCarriedAmmo();
+		if(EquippedWeapon && EquippedWeapon->IsEmpty() && EquippedWeapon->GetWeaponType() == WeaponType)
+		{
+			Reload();
+		}
+	}
+}
+
 
 const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh)
 {
