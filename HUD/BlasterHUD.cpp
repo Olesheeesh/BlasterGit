@@ -60,12 +60,10 @@ void ABlasterHUD::AddInventoryWidget()
 	{
 		InventoryWidget = CreateWidget<UInventoryWidget>(PlayerController, InventoryWidgetClass);
 		InventoryWidget->AddToViewport();
-		bInventoryIsAdded = true;
-		SetUIOnlyInputMode();
 	}
 }
 
-void ABlasterHUD::SetUIOnlyInputMode()
+void ABlasterHUD::SetGameAndUIInputMode()
 {
 	APlayerController* PlayerController = GetOwningPlayerController();
 	FInputModeGameAndUI InputMode;

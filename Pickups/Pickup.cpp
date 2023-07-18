@@ -5,6 +5,7 @@
 #include "Components/WidgetComponent.h"
 #include "Engine/StaticMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 APickup::APickup()
 {

@@ -60,7 +60,7 @@ public:
 	UPROPERTY()
 	UPlayerScore* PlayerScoreWidget;
 
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UInventoryWidget* InventoryWidget;	
 
 	void AddCharacterOverlay();
@@ -68,9 +68,8 @@ public:
 	void AddScoreBoardWidget();
 	void AddPlayerScoreWidget();
 	void AddInventoryWidget();
-	bool bInventoryIsAdded = false;
 
-	void SetUIOnlyInputMode();
+	void SetGameAndUIInputMode();
 protected:
 	virtual void BeginPlay() override;
 

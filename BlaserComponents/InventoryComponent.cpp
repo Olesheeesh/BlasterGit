@@ -15,11 +15,12 @@ UInventoryComponent::UInventoryComponent()
 
 }
 
-
+/*
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("?"));
 	if (OwningCharacter && OwningCharacter->BlasterPlayerController)
 	{
 		BlasterHUD = Cast<ABlasterHUD>(OwningCharacter->BlasterPlayerController->GetHUD());
@@ -33,18 +34,16 @@ void UInventoryComponent::BeginPlay()
 			}
 		}
 	}
+	if(OwningCharacter->HasAuthority())
+	{
+		InitializeItemsData();
+	}
 	//for(auto& Item : DefaultItems)
 	//{
 		//AddItem(Item);
 	//}
-}
+}*/
 
-void UInventoryComponent::InitializeComponent()
-{
-	Super::InitializeComponent();
-
-	
-}
 
 /*
 bool UInventoryComponent::AddItem(UItem* Item)

@@ -15,6 +15,7 @@
 #include "Components/Image.h"
 #include "Components/VerticalBox.h"
 #include "TimerManager.h"
+#include "Blaster/HUD/InventoryWidget.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Camera/CameraComponent.h"
 #include "Components/WrapBox.h"
@@ -66,6 +67,7 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
 	if(BlasterCharacter)
 	{
 		SetHUDHealth(BlasterCharacter->GetCurrentHealth(), BlasterCharacter->GetMaxHealth());
+		
 	}
 }
 
@@ -413,9 +415,16 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 	if (BlasterHUD)
 	{
 		if(BlasterHUD->CharacterOverlay == nullptr) BlasterHUD->AddCharacterOverlay();
-		if (BlasterHUD->AnnouncementWidget)
+		if (BlasterHUD->InventoryWidget == nullptr)
 		{
+			BlasterHUD->AddInventoryWidget();
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Check1"));
+		}
+		if (BlasterHUD->AnnouncementWidget && BlasterHUD->InventoryWidget)
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Check2"));
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }

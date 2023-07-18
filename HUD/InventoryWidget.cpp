@@ -33,8 +33,10 @@ void UInventoryWidget::RemoveItemFromInventory(UInventorySlot* SlotToRemove)
 
 void UInventoryWidget::RefreshInventory()
 {
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
 	if (JustRemovedSlot)
 	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
 		for (int i = JustRemovedSlot->SlotIndex; i < InventorySlots.Num(); ++i)
 		{
 			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("i = %d"), i));
@@ -68,6 +70,35 @@ void UInventoryWidget::RefreshInventory()
 		}
 	}
 	else { if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Bad")); }
+}
+
+UTexture2D* UInventoryWidget::SetContentForSlot(EWeaponType WeaponType)
+{
+	switch(WeaponType)
+	{
+	case EWeaponType::EWT_AssaultRifle:
+		return HeavyAmmoImage;
+	case EWeaponType::EWT_SniperRifle:
+		return SniperAmmoImage;
+	case EWeaponType::EWT_GrapplingHook:
+		return GrappleChargeImage;
+	case EWeaponType::EWT_GrenadeLauncher:
+		return GrenadeAmmoImage;
+	case EWeaponType::EWT_Pistol:
+		return LightAmmoImage;
+	case EWeaponType::EWT_RocketLauncher:
+		return RocketAmmoImage;
+	case EWeaponType::EWT_SF_Pistol:
+		return LightAmmoImage;
+	case EWeaponType::EWT_SF_ShotGun:
+		return ShotgunAmmoImage;
+	case EWeaponType::EWT_ShotGun:
+		return ShotgunAmmoImage;
+	case EWeaponType::EWT_SubmachineGun:
+		return LightAmmoImage;
+	}
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Badd"));
+	return nullptr;
 }
 
 

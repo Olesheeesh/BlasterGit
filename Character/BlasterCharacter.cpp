@@ -810,15 +810,8 @@ void ABlasterCharacter::OpenInventory()//temporary foo
 
 		if (BlasterHUD)
 		{
-			if (!BlasterHUD->bInventoryIsAdded)
-			{
-				BlasterHUD->AddInventoryWidget();
-			}
-			else
-			{
-				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-				BlasterHUD->SetUIOnlyInputMode();
-			}
+			BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->SetGameAndUIInputMode();
 		}
 	}
 }

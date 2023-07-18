@@ -43,8 +43,10 @@ public:
 	void CloseScoreBoard();
 	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
 
-	void HideSniperScope();
+	UPROPERTY()
+	class ABlasterHUD* BlasterHUD;
 
+	void HideSniperScope();
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
@@ -87,8 +89,7 @@ protected:
 	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float EndGame, float Cooldown);//informing client of the match state when it joins
 
 private:
-	UPROPERTY()
-	class ABlasterHUD* BlasterHUD;
+
 
 	UPROPERTY()
 	class ABlasterCharacter* BlasterCharacter;
@@ -98,9 +99,6 @@ private:
 
 	UPROPERTY()
 	class ABlasterGameState* BlasterGameState;
-
-	UPROPERTY()
-	class UInventoryComponent* InventoryComponent;
 
 	float LevelStartingTime = 0.f;
 	float MatchTime = 0.f;

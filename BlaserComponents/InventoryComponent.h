@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blaster/Weapon/WeaponTypes.h"
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
@@ -13,9 +14,10 @@ public:
 	UInventoryComponent();
 
 protected:
-	virtual void BeginPlay() override;
-	virtual void InitializeComponent() override;
-public:	
+	//virtual void BeginPlay() override;
+private:
+
+public:
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
 	TArray<class UInventorySlot*> DefaultItems;
@@ -29,21 +31,7 @@ public:
 	UPROPERTY()
 	class UInventoryWidget* InventoryWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	class UTexture2D* HeavyAmmoImage;
-
-	UPROPERTY(EditAnywhere)
-	class UTexture2D* LightAmmoImage;
-
-	UPROPERTY(EditAnywhere)
-	class UTexture2D* ShotgunAmmoImage;
-
-	UPROPERTY(EditAnywhere)
-	class UTexture2D* SniperAmmoImage;
-
-	UPROPERTY(EditAnywhere)
-	class UTexture2D* EnergyAmmoImage;
-
-	UPROPERTY(EditAnywhere)
-	class UTexture2D* GrappleChargeImage;
+	/*
+	 * Images
+	 */
 };

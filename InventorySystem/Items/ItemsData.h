@@ -11,7 +11,7 @@ struct FHeavyAmmoData
 	UPROPERTY(EditAnywhere, Category = "HeavyAmmoData")
 	class UTexture2D* ItemImage;
 
-	UPROPERTY(EditAnywhere, Category = "HeavyAmmoData")
+	UPROPERTY(EditAnywhere, Category = "HeavyAmmoData", meta = (ClampMax = 40.f));
 	int32 ItemQuantity = 0;
 };
 

@@ -187,6 +187,7 @@ private:
 	int32 StartingGrenadeLauncherAmmo = 0;
 
 	void InitializeCarriedAmmo();
+	
 
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
 	ECombatState CombatState = ECombatState::ECS_Unoccupied;
