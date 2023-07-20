@@ -42,8 +42,12 @@ public:
 	void SetAiming(bool bIsAiming);
 
 	void ChoosePrimaryWeapon();
+
 	void ChooseSecondaryWeapon();
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+
+	UFUNCTION(Client, Reliable)
+	void ClientAddItemToInventory(EWeaponType WeaponType, int32 AmmoAmount);
 
 protected:
 	virtual void BeginPlay() override;
@@ -101,8 +105,8 @@ private:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
 	UPROPERTY()
-	class ABlasterPlayerController* Controller;
-	UPROPERTY()
+	class ABlasterPlayerController* PlayerController;
+	UPROPERTY(Replicated)
 	class ABlasterHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first

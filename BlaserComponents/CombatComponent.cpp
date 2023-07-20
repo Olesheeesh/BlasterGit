@@ -14,7 +14,6 @@
 #include "TimerManager.h"
 #include "Blaster/Character/BlasterAnimInstance.h"
 #include "Blaster/HUD/InventoryWidget.h"
-#include "Blaster/Weapon/Scopes/Scope.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -86,12 +85,10 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	if (EquippedWeapon == nullptr)
 	{
 		EquipPrimaryWeapon(WeaponToEquip);
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Orange, FString("Should be called only once1"));
 	}
 	else if(EquippedWeapon && SecondaryWeapon == nullptr)
 	{
 		EquipSecondaryWeapon(WeaponToEquip);
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.0, FColor::Orange, FString("Should be called only once2"));
 	}
 
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->GetMesh()->GetAnimInstance()) : AnimInstance;
@@ -132,8 +129,6 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 	
 	if (EquippedWeapon && Character)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
 		UpdateCarriedAmmo();
@@ -191,7 +186,7 @@ void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 	else
 	{
 		SecondaryWeapon = WeaponToEquip;
-
+		SecondaryWeapon->bHideWeapon = true;
 		SecondaryWeapon->GetWeaponMesh()->SetVisibility(false);
 		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	}
@@ -215,11 +210,6 @@ void UCombatComponent::ChoosePrimaryWeapon()
 		EquippedWeapon->SetOwner(Character);
 		EquippedWeapon->Activate(Character);
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("EquippedWeapon = %s"), *PrimaryWeapon->GetName()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Weapon Ammo = %d"), EquippedWeapon->GetAmmo()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Carried Ammo = %d"), CarriedAmmo));
-
 		UpdateCarriedAmmo();
 		EquippedWeapon->SetHUDAmmo();
 
@@ -236,11 +226,6 @@ void UCombatComponent::ChooseSecondaryWeapon()
 		EquippedWeapon->SetOwner(Character);
 		EquippedWeapon->Activate(Character);
 
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("EquippedWeapon = %s"), *EquippedWeapon->GetName()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("SecondaryWeapon = %s"), *SecondaryWeapon->GetName()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Weapon Ammo = %d"), EquippedWeapon->GetAmmo()));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Carried Ammo = %d"), CarriedAmmo));
-
 		UpdateCarriedAmmo();
 		EquippedWeapon->SetHUDAmmo();
 
@@ -255,33 +240,47 @@ void UCombatComponent::UpdateCarriedAmmo()
 	{
 		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-	if (Controller)
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+	if (PlayerController)
 	{
-		Controller->ShowAmmoHUD(true);
-		Controller->SetHUDCarriedAmmo(CarriedAmmo);//carriedAmmo это патроны equippedweapon
+		PlayerController->ShowAmmoHUD(true);
+		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);//carriedAmmo это патроны equippedweapon
 	}
 }
 
 void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 {
-	if(CarriedAmmoMap.Contains(WeaponType))
+	if (CarriedAmmoMap.Contains(WeaponType))
 	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Good"));
 		CarriedAmmoMap[WeaponType] += AmmoAmount;
 		UpdateCarriedAmmo();
-		Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-		if(Controller)
+		ClientAddItemToInventory(WeaponType, AmmoAmount);
+	}
+	if(EquippedWeapon && EquippedWeapon->IsEmpty() && EquippedWeapon->GetWeaponType() == WeaponType)
+	{
+		Reload();
+	}
+}
+
+void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 AmmoAmount)
+{
+	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
+
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
+	if (PlayerController)//check if is valid
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check0"));
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
+		if (HUD == nullptr) if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("hud huesos"));
+		if (HUD)
 		{
-			class UInventoryWidget* InventoryWidget = Controller->BlasterHUD->InventoryWidget;
-			if(InventoryWidget)
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
+			class UInventoryWidget* InventoryWidget = HUD->InventoryWidget;
+			if (InventoryWidget)
 			{
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Good"));
 				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), AmmoAmount);
 			}
-		}
-		if(EquippedWeapon && EquippedWeapon->IsEmpty() && EquippedWeapon->GetWeaponType() == WeaponType)
-		{
-			Reload();
 		}
 	}
 }
@@ -357,11 +356,11 @@ void UCombatComponent::UpdateAmmoValues()
 		CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= ReloadAmount;
 		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-	if (Controller)
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+	if (PlayerController)
 	{
-		Controller->ShowAmmoHUD(true);
-		Controller->SetHUDCarriedAmmo(CarriedAmmo);
+		PlayerController->ShowAmmoHUD(true);
+		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);
 	}
 	EquippedWeapon->AddAmmo(-ReloadAmount);
 }
@@ -469,10 +468,10 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime, FHitResult& TraceHitRes
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
 
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller; //if Controller !null -> equel to itself
-	if (Controller)//check if is valid
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
+	if (PlayerController)//check if is valid
 	{
-		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
 		if (HUD)
 		{
 			if (EquippedWeapon)
@@ -666,10 +665,10 @@ bool UCombatComponent::CanFire()
 
 void UCombatComponent::OnRep_CarriedAmmo()
 {
-	Controller = Controller == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : Controller;
-	if (Controller)
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+	if (PlayerController)
 	{
-		Controller->SetHUDCarriedAmmo(CarriedAmmo);
+		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);
 	}
 }
 
@@ -686,8 +685,3 @@ void UCombatComponent::InitializeCarriedAmmo()
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, StartingGrenadeLauncherAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrapplingHook, StartingGrenadeLauncherAmmo);
 }
-
-
-
-
-

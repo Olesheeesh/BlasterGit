@@ -74,6 +74,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	DOREPLIFETIME(AWeapon, WeaponState); //here we register variable that we want to replicate
 	DOREPLIFETIME(AWeapon, Ammo); //here we register variable that we want to replicate
 	DOREPLIFETIME(AWeapon, EquippedScope);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(AWeapon, bHideWeapon);//when changes, it will be reflected on all clients
 	DOREPLIFETIME_CONDITION(AWeapon, OpticIndex, COND_SkipOwner);
 }
 
@@ -126,6 +127,18 @@ void AWeapon::OnRep_Ammo()//update for client
 	SetHUDAmmo();
 }
 
+void AWeapon::OnRep_HideWeapon()
+{
+	if (bHideWeapon)
+	{
+		WeaponMesh->SetVisibility(false);
+	}
+	else
+	{
+		WeaponMesh->SetVisibility(true);
+	}
+}
+
 void AWeapon::OnRep_Owner()
 {
 	Super::OnRep_Owner();
@@ -133,13 +146,10 @@ void AWeapon::OnRep_Owner()
 	{
 		BlasterOwnerCharacter = nullptr;
 		BlasterOwnerController = nullptr;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Owner is null"));
 	}
 	else
 	{
 		SetHUDAmmo();//if Owner != nullptr -> set HUD
-
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Owner"));
 	}
 }
 
@@ -284,6 +294,7 @@ void AWeapon::Activate(ABlasterCharacter* Character)
 {
 	if (WeaponMesh)
 	{
+		bHideWeapon = false;
 		WeaponMesh->SetVisibility(true);
 	}
 }

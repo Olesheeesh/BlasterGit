@@ -2,8 +2,6 @@
 
 #include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/InventorySystem/InventorySlot.h"
-#include "Components/Image.h"
-#include "Components/TextBlock.h"
 #include "Components/WrapBox.h"
 
 void UInventoryWidget::NativeConstruct()
@@ -17,6 +15,7 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity)
 {
 	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
 	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Am I here?"));
 		CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));//GetChildAt() возвращает указатель на базовый класс UWidget
 		CurrentSlot->SetSlotData(SlotImage, Quantity);
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
@@ -26,17 +25,25 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity)
 	}
 }
 
-void UInventoryWidget::RemoveItemFromInventory(UInventorySlot* SlotToRemove)
+void UInventoryWidget::ClientAddItemToInventory_Implementation(UTexture2D* SlotImage, int32 Quantity)
 {
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("InventorySlots.Num() = %d"), InventorySlots.Num()));
+	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Im calling"));
+		CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));//GetChildAt() возвращает указатель на базовый класс UWidget
+		CurrentSlot->SetSlotData(SlotImage, Quantity);
+		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
+		if (SlotNumber < InventorySlots.Num())
+			++SlotNumber;
+	}
 }
 
 void UInventoryWidget::RefreshInventory()
 {
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
 	if (JustRemovedSlot)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
 		for (int i = JustRemovedSlot->SlotIndex; i < InventorySlots.Num(); ++i)
 		{
 			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("i = %d"), i));

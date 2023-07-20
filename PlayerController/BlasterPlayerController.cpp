@@ -418,11 +418,9 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 		if (BlasterHUD->InventoryWidget == nullptr)
 		{
 			BlasterHUD->AddInventoryWidget();
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Check1"));
 		}
 		if (BlasterHUD->AnnouncementWidget && BlasterHUD->InventoryWidget)
 		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Check2"));
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
 		}

@@ -17,7 +17,10 @@ class BLASTER_API UInventoryWidget : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable)
 	void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity);
-	void RemoveItemFromInventory(class UInventorySlot* SlotToRemove);
+
+	UFUNCTION(Client, Reliable)
+	void ClientAddItemToInventory(UTexture2D* SlotImage, int32 Quantity);
+
 	void RefreshInventory();
 	UTexture2D* SetContentForSlot(EWeaponType WeaponType);
 

@@ -14,6 +14,26 @@ void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		if(Combat)
 		{
 			Combat->PickupAmmo(WeaponType, AmmoAmount);
+			FString RoleStr;
+			switch (GetLocalRole())
+			{
+			case ROLE_None:
+				RoleStr = TEXT("None");
+				break;
+			case ROLE_SimulatedProxy:
+				RoleStr = TEXT("SimulatedProxy");
+				break;
+			case ROLE_AutonomousProxy:
+				RoleStr = TEXT("AutonomousProxy");
+				break;
+			case ROLE_Authority:
+				RoleStr = TEXT("Authority");
+				break;
+			case ROLE_MAX:
+				RoleStr = TEXT("Unknown");
+				break;
+			}
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("NetRole = %s"), *RoleStr));
 			//здесь добавить логику на добавление Ammo в инвентарь если обойма полная
 		}
 	}

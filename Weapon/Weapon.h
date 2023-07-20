@@ -98,6 +98,11 @@ public:
 
 	void EnableCustomDepth(bool bEnable);
 
+	UPROPERTY(ReplicatedUsing = OnRep_HideWeapon)
+	bool bHideWeapon = false;
+
+	UFUNCTION()
+	void OnRep_HideWeapon();
 protected:
 	virtual void BeginPlay() override;
 
