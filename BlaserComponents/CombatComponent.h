@@ -47,7 +47,7 @@ public:
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
 
 	UFUNCTION(Client, Reliable)
-	void ClientAddItemToInventory(EWeaponType WeaponType, int32 AmmoAmount);
+	void ClientAddItemToInventory(EWeaponType WeaponType, int32 Quantity);
 
 protected:
 	virtual void BeginPlay() override;

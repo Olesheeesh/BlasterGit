@@ -9,6 +9,14 @@
 void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 {
 	Thumbnail->SetBrushFromTexture(SlotImage);
+	float AmmoPercent = Quantity / ProgressMagCapacity;
+	bMagIsFull = AmmoPercent > 1.f;
+
+	/*if (bMagIsFull)
+	{
+		AmmoPercent = 0.f;
+		Quantity = 
+	}*/
 	FString QuantityText = FString::Printf(TEXT("%d"), Quantity);
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 

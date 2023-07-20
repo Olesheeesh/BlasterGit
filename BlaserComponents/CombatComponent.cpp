@@ -14,6 +14,7 @@
 #include "TimerManager.h"
 #include "Blaster/Character/BlasterAnimInstance.h"
 #include "Blaster/HUD/InventoryWidget.h"
+#include "Blaster/InventorySystem/InventorySlot.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -252,7 +253,6 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 {
 	if (CarriedAmmoMap.Contains(WeaponType))
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Good"));
 		CarriedAmmoMap[WeaponType] += AmmoAmount;
 		UpdateCarriedAmmo();
 		ClientAddItemToInventory(WeaponType, AmmoAmount);
@@ -263,23 +263,35 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 	}
 }
 
-void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 AmmoAmount)
+void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 Quantity)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
 
 	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
 	if (PlayerController)//check if is valid
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check0"));
 		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
-		if (HUD == nullptr) if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("hud huesos"));
 		if (HUD)
 		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
 			class UInventoryWidget* InventoryWidget = HUD->InventoryWidget;
 			if (InventoryWidget)
 			{
-				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), AmmoAmount);
+				if (!InventoryWidget->ExistingItemTypesInInventory.Contains(WeaponType))
+				{
+					InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
+					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Should be calling"));
+				}
+				else
+				{
+					for(auto& Item : InventoryWidget->InventorySlots)
+					{
+						if(Item->SlotType == WeaponType)
+						{
+							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("SlotType = %d"), Item->SlotType));
+							Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), CarriedAmmoMap[WeaponType]);
+						}
+					}
+				}
 			}
 		}
 	}

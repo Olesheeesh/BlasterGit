@@ -8,6 +8,7 @@ UENUM(BlueprintType)//создали не в weapon class'е, чтоб при использовании в друг
 enum class EWeaponType : uint8
 {
 	//silver weapons pack
+	EWT_None UMETA(DisplayName = "None"),
 	EWT_AssaultRifle UMETA(DisplayName = "Assault Rifle"),
 	EWT_RocketLauncher UMETA(DisplayName = "Rocket Launcher"),
 	EWT_Pistol UMETA(DisplayName = "Pistol"),

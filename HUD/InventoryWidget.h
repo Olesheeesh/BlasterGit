@@ -16,10 +16,7 @@ class BLASTER_API UInventoryWidget : public UUserWidget
 	virtual void NativeConstruct() override;//толи это же что и UInventoryWidget()?
 public:
 	UFUNCTION(BlueprintCallable)
-	void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity);
-
-	UFUNCTION(Client, Reliable)
-	void ClientAddItemToInventory(UTexture2D* SlotImage, int32 Quantity);
+	void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type);
 
 	void RefreshInventory();
 	UTexture2D* SetContentForSlot(EWeaponType WeaponType);
@@ -41,6 +38,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<class UInventorySlot*> InventorySlots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TArray<EWeaponType> ExistingItemTypesInInventory;
 
 	UPROPERTY(VisibleAnywhere, Category = "Inventory")
 	int32 SlotNumber = 0;

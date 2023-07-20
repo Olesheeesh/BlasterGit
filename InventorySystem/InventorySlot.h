@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blaster/Weapon/WeaponTypes.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
 #include "InventorySlot.generated.h"
@@ -53,10 +54,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* SlotQuantity;
 
+	float ProgressMagCapacity = 30.f;
+	bool bMagIsFull = false;
+	int32 CurrentMag = 0;
+
+	UPROPERTY(meta = (BindWidget))
+	class UProgressBar* ProgressBar1;
+
+	UPROPERTY(meta = (BindWidget))
+	class UProgressBar* ProgressBar2;
+
+	UPROPERTY(meta = (BindWidget))
+	class UProgressBar* ProgressBar3;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SlotIndex;
 
 	ESlotState SlotState;
+
+	EWeaponType SlotType = EWeaponType::EWT_None;
 
 	UPROPERTY()
 	UTexture2D* ItemTexture;

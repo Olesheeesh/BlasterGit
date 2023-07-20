@@ -11,7 +11,7 @@ void UInventoryWidget::NativeConstruct()
 
 }
 
-void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity)
+void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity, EWeaponType Type)
 {
 	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
 	{
@@ -20,23 +20,11 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity)
 		CurrentSlot->SetSlotData(SlotImage, Quantity);
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
+		ExistingItemTypesInInventory.Add(Type);
+		CurrentSlot->SlotType = Type;
+
 		if(SlotNumber < InventorySlots.Num())
 		++SlotNumber;
-	}
-}
-
-void UInventoryWidget::ClientAddItemToInventory_Implementation(UTexture2D* SlotImage, int32 Quantity)
-{
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("InventorySlots.Num() = %d"), InventorySlots.Num()));
-	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Im calling"));
-		CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));//GetChildAt() возвращает указатель на базовый класс UWidget
-		CurrentSlot->SetSlotData(SlotImage, Quantity);
-		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
-
-		if (SlotNumber < InventorySlots.Num())
-			++SlotNumber;
 	}
 }
 
@@ -70,6 +58,8 @@ void UInventoryWidget::RefreshInventory()
 					}
 					else
 					{
+						SlotToReplace->ClearSlot();
+						SlotNumber = i;
 						break;
 					}
 				}
