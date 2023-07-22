@@ -25,6 +25,12 @@ void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 	SlotAmmo = Quantity;
 }
 
+void UInventorySlot::SetSlotQuantity(int32 Quantity)
+{
+	FString QuantityText = FString::Printf(TEXT("%d"), Quantity);
+	SlotQuantity->SetText(FText::FromString(QuantityText));
+}
+
 void UInventorySlot::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -43,7 +49,6 @@ void UInventorySlot::NativeConstruct()
 		}
 	}
 }
-
 
 void UInventorySlot::ClearSlot()
 {
@@ -85,6 +90,7 @@ void UInventorySlot::RemoveCarriedAmmoAmount(EWeaponType WeaponType)
 	if (Combat)
 	{
 		Combat->SetCarriedAmmo(WeaponType, SlotAmmo);//74
+		
 	}
 }
 

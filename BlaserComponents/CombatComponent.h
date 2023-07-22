@@ -79,6 +79,8 @@ protected:
 
 	int32 AmountToReload();
 
+	void UpdateCarriedAmmo();
+
 	const USkeletalMeshSocket* GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh);
 	/*
 	 * Aiming and FOV
@@ -99,16 +101,17 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void InterpFOV(float DeltaTime);
 
-	void UpdateCarriedAmmo();
-	
-
 private:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
 	UPROPERTY()
 	class ABlasterPlayerController* PlayerController;
-	UPROPERTY(Replicated)
+
+	UPROPERTY()
 	class ABlasterHUD* HUD;
+
+	UPROPERTY()
+	class UInventoryWidget* InventoryWidget;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
 	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon

@@ -47,6 +47,7 @@ public:
 	int32 SlotNumber = 0;
 
 	bool bNewItemAdded = false;
+	bool bTypeOfAmmoRunOut = false;
 	/*
 	 * Images
 	 */

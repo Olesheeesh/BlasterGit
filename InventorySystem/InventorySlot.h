@@ -23,6 +23,8 @@ public:
 	virtual void NativeConstruct() override;
 	void SetSlotData(class UTexture2D* SlotImage, int32 Quantity);
 
+	void SetSlotQuantity(int32 Quantity);
+
 	UFUNCTION(BlueprintImplementableEvent)//bp version
 	void OnClearSlot(class ABlasterCharacter* Character);
 
