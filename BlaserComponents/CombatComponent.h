@@ -48,7 +48,7 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientAddItemToInventory(EWeaponType WeaponType, int32 Quantity);
-
+	int32 SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount);
 protected:
 	virtual void BeginPlay() override;
 
@@ -100,6 +100,7 @@ protected:
 	void InterpFOV(float DeltaTime);
 
 	void UpdateCarriedAmmo();
+	
 
 private:
 	UPROPERTY()

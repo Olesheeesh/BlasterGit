@@ -21,6 +21,8 @@ public:
 	void RefreshInventory();
 	UTexture2D* SetContentForSlot(EWeaponType WeaponType);
 
+	class UInventorySlot* GetCurrentSlot();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	int32 Capacity = 10;
 
@@ -42,9 +44,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<EWeaponType> ExistingItemTypesInInventory;
 
-	UPROPERTY(VisibleAnywhere, Category = "Inventory")
 	int32 SlotNumber = 0;
 
+	bool bNewItemAdded = false;
 	/*
 	 * Images
 	 */

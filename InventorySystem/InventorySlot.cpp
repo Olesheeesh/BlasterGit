@@ -1,4 +1,6 @@
 #include "InventorySlot.h"
+
+#include "Blaster/BlaserComponents/CombatComponent.h"
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/HUD/BlasterHUD.h"
 #include "Blaster/HUD/InventoryWidget.h"
@@ -10,7 +12,6 @@ void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 {
 	Thumbnail->SetBrushFromTexture(SlotImage);
 	float AmmoPercent = Quantity / ProgressMagCapacity;
-	bMagIsFull = AmmoPercent > 1.f;
 
 	/*if (bMagIsFull)
 	{
@@ -21,7 +22,7 @@ void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 
 	ItemTexture = SlotImage;
-	ItemQuantity = Quantity;
+	SlotAmmo = Quantity;
 }
 
 void UInventorySlot::NativeConstruct()
@@ -53,22 +54,72 @@ void UInventorySlot::ClearSlot()
 		Thumbnail->SetBrushFromTexture(nullptr);
 		SlotQuantity->SetText(FText::FromString(""));
 		SetSlotState(ESlotState::ESS_Empty);
+		RemoveCarriedAmmoAmount(SlotType);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoWas = %d"), SlotAmmo));
+		SlotAmmo = 0;
+		if(InventoryWidget->ExistingItemTypesInInventory.Contains(SlotType))
+		{
+			InventoryWidget->ExistingItemTypesInInventory.Remove(SlotType);
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("CS_SlotType: %d"), InventoryWidget->ExistingItemTypesInInventory.Num()));
+		}
+		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoNow = %d"), SlotAmmo));
+		bSlotWasCleared = true;
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotTypeWas = %d"), SlotType));
+		SlotType = EWeaponType::EWT_None;
+		SlotState = ESlotState::ESS_Empty;
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotTypeNow = %d"), SlotType));
 		if (InventoryWidget->JustRemovedSlot != nullptr)
 		{
-			FString A = InventoryWidget->JustRemovedSlot->GetName();
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString(A));
 			InventoryWidget->RefreshInventory();
 		}
+
+		for(auto& SlotTaip : InventoryWidget->ExistingItemTypesInInventory)
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotType: %s"), *GetName()));
+		}
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotNumber: %d"), InventoryWidget->SlotNumber));
 	}
 }
 
-void UInventorySlot::TransferDataTo(UInventorySlot* OtherSlot)
+void UInventorySlot::RemoveCarriedAmmoAmount(EWeaponType WeaponType)
 {
-	OtherSlot->Thumbnail = Thumbnail;
-	OtherSlot->SlotQuantity = SlotQuantity;
+	class ABlasterCharacter* Character = Cast<ABlasterCharacter>(GetOwningPlayerPawn());
+	if (Character == nullptr) return;
+	class UCombatComponent* Combat = Character->GetCombatComponent();
+	if (Combat)
+	{
+		Combat->SetCarriedAmmo(WeaponType, SlotAmmo);//74
+	}
+}
+
+void UInventorySlot::TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull)
+{
+	Thumbnail->SetBrushFromTexture(SlotImage);
+	float AmmoPercent = Quantity / ProgressMagCapacity;
+
+	/*if (bMagIsFull)
+	{
+		AmmoPercent = 0.f;
+		Quantity =
+	}*/
+	FString QuantityText = FString::Printf(TEXT("%d"), Quantity);
+	SlotQuantity->SetText(FText::FromString(QuantityText));
+
+	ItemTexture = SlotImage;
+	SlotAmmo = Quantity;
+	SlotType = Type;
+	SlotState = State;
+	bMximumAmountOfAmmoReached = MximumAmountOfAmmoReached;
+	bSlotIsFull = SlotIsFull;
+
 }
 
 void UInventorySlot::SetSlotState(ESlotState State)
 {
 	SlotState = State;
+}
+
+bool UInventorySlot::SlotReachedLimit()
+{
+	return bSlotIsFull = SlotAmmo >= MaxSlotQuantity;
 }

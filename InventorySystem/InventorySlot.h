@@ -10,7 +10,7 @@ UENUM(BlueprintType)
 enum class ESlotState : uint8
 {
 	ESS_Empty UMETA(DisplayName = "Empty"),
-	ESS_Filled UMETA(DisplayName = "Empty")
+	ESS_Filled UMETA(DisplayName = "Filled")
 
 };
 
@@ -29,10 +29,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClearSlot();
 
-	void TransferDataTo(class UInventorySlot* OtherSlot);
+	void RemoveCarriedAmmoAmount(EWeaponType WeaponType);
+
+	void TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull);
 
 	void SetSlotState(ESlotState State);
 
+	bool SlotReachedLimit();
 	UPROPERTY()
 	class UInventoryComponent* InventoryComponent;
 
@@ -54,10 +57,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* SlotQuantity;
 
-	float ProgressMagCapacity = 30.f;
-	bool bMagIsFull = false;
-	int32 CurrentMag = 0;
-
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* ProgressBar1;
 
@@ -67,15 +66,28 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* ProgressBar3;
 
+	/*
+	 * Values
+	 */
+
+	float ProgressMagCapacity = 30.f;
+	bool bSlotIsFull = false;
+	bool bSlotWasCleared = false;
+	bool bMximumAmountOfAmmoReached = false;
+	int32 CurrentMagAmmo = 0;
+	UPROPERTY(EditAnywhere)
+	int32 MaxSlotQuantity = 80;
+	int32 SlotAmmo = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SlotIndex;
 
-	ESlotState SlotState;
+	UPROPERTY(BlueprintReadOnly)
+	ESlotState SlotState = ESlotState::ESS_Empty;
 
 	EWeaponType SlotType = EWeaponType::EWT_None;
 
 	UPROPERTY()
 	UTexture2D* ItemTexture;
 
-	int32 ItemQuantity = 0;
 };
