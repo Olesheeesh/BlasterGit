@@ -50,18 +50,17 @@ void UInventorySlot::ClearSlot()
 	if (InventoryWidget)
 	{
 		InventoryWidget->JustRemovedSlot = this;
-
+		for (auto& SlotTaip : InventoryWidget->ExistingItemTypesInInventory)
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_ST: %s"), *GetName()));
+		}
 		Thumbnail->SetBrushFromTexture(nullptr);
 		SlotQuantity->SetText(FText::FromString(""));
 		SetSlotState(ESlotState::ESS_Empty);
 		RemoveCarriedAmmoAmount(SlotType);
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoWas = %d"), SlotAmmo));
 		SlotAmmo = 0;
-		if(InventoryWidget->ExistingItemTypesInInventory.Contains(SlotType))
-		{
-			InventoryWidget->ExistingItemTypesInInventory.Remove(SlotType);
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("CS_SlotType: %d"), InventoryWidget->ExistingItemTypesInInventory.Num()));
-		}
+		
 		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoNow = %d"), SlotAmmo));
 		bSlotWasCleared = true;
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotTypeWas = %d"), SlotType));
@@ -73,10 +72,7 @@ void UInventorySlot::ClearSlot()
 			InventoryWidget->RefreshInventory();
 		}
 
-		for(auto& SlotTaip : InventoryWidget->ExistingItemTypesInInventory)
-		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotType: %s"), *GetName()));
-		}
+		
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotNumber: %d"), InventoryWidget->SlotNumber));
 	}
 }

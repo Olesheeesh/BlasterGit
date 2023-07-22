@@ -20,7 +20,7 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity,
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
 		ExistingItemTypesInInventory.Add(Type);
-		
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("IW_Num: %d"), ExistingItemTypesInInventory.Num()));
 		CurrentSlot->SlotType = Type;
 
 		if(SlotNumber < InventorySlots.Num())
