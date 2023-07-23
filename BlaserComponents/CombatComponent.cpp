@@ -249,6 +249,97 @@ void UCombatComponent::UpdateCarriedAmmo()
 	}
 }
 
+void UCombatComponent::ClientUpdateSlotAmmo_Implementation()
+{
+	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
+
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
+	if (PlayerController)//check if is valid
+	{
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
+		if (HUD)
+		{
+			InventoryWidget = HUD->InventoryWidget;
+			if (InventoryWidget)
+			{
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::White, FString("Im here, now not return"));
+				if (CarriedAmmo > 0)
+				{
+					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::White, FString("Im here)))"));
+					for (auto& Slot : InventoryWidget->InventorySlots)
+					{
+						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::White, FString("For the begining"));
+						if (Slot->SlotType == EquippedWeapon->GetWeaponType())
+						{
+							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Name0 = %s"), *Slot->GetName()));
+							if (Slot->bIsSlotToModify && Slot->SlotAmmo >= 0)
+							{
+								if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Name = %s"), *Slot->GetName()));
+
+								if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("FR_SlotAmmo = %d"), Slot->SlotAmmo));
+								GetCarriedAmmo();
+								if (AmountToReload() > Slot->SlotAmmo)
+								{
+									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("im here"));
+									SetCarriedAmmo(EquippedWeapon->GetWeaponType(), -Slot->SlotAmmo);
+									//SetCarriedAmmo(EquippedWeapon->GetWeaponType(), Slot->SlotAmmo);
+									InventoryWidget->bSlotNoLongerModified = true;
+									Slot->bIsSlotToModify = false;
+									for (auto& Slot2 : InventoryWidget->InventorySlots)
+									{
+										if (Slot2->SlotType == EquippedWeapon->GetWeaponType() && !Slot2->bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
+										{
+											if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Name2 = %s"), *Slot->GetName()));
+											if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("AmountToReload() = %d"), AmountToReload()));
+											if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Slot->SlotAmmo = %d"), Slot->SlotAmmo));
+											if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Im here2"));
+											Slot2->bIsSlotToModify = true;
+											InventoryWidget->bSlotNoLongerModified = false;
+											int32 UpdatedSlotValue2 = Slot2->SlotAmmo -= AmountToReload() - Slot->SlotAmmo;
+											Slot2->SetSlotQuantity(UpdatedSlotValue2);
+											Slot->ClearSlot();
+											break;
+										}
+									}
+								}
+								else
+								{
+									if (!InventoryWidget->bSlotNoLongerModified && Slot->bIsSlotToModify)
+									{
+										GetCarriedAmmo();
+										int32 UpdatedSlotValue = Slot->SlotAmmo -= AmountToReload();
+										Slot->SetSlotQuantity(UpdatedSlotValue);
+										if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("!!!!!Slot->SlotAmmo!!!!!!!!! = %d"), Slot->SlotAmmo));
+										if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("!!!!!AmountToReload()!!!!!!!!! = %d"), AmountToReload()));
+										if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("!!!!!UpdatedSlotValue!!!!!!!!! = %d"), UpdatedSlotValue));
+										if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("!!!!!!Break!!!!!!!!!"));
+										if (Slot->SlotAmmo <= 0)
+										{
+											if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("!!SlotAmmo = 0!!"));
+											Slot->ClearSlot();
+											//InventoryWidget->bSlotNoLongerModified = true;
+											Slot->bIsSlotToModify = false;
+											for (auto& Slot3 : InventoryWidget->InventorySlots)
+											{
+												if (Slot3->SlotType == EquippedWeapon->GetWeaponType() && !Slot3->bIsSlotToModify && Slot3->SlotReachedLimit())
+												{
+													Slot3->bIsSlotToModify = true;
+													break;
+												}
+											}
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 int32 UCombatComponent::SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount)
 {
 	if (CarriedAmmoMap.Contains(WeaponType))
@@ -294,14 +385,15 @@ void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType Weapo
 		if (HUD)
 		{
 			InventoryWidget = HUD->InventoryWidget;
-			if (InventoryWidget)
+			if (InventoryWidget && InventoryWidget->InventorySlots.Num() > 0)
 			{
 				for(auto& Slot : InventoryWidget->InventorySlots)
 				{
 					if (Slot->bIsSlotToModify) if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("IsSlotToModify slot name = %s"), *Slot->GetName()));
+					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString("Im here, now return"));
 				}
 				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::White, FString("Call"));
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Blue, FString::Printf(TEXT("CarriedAmmoMap: %d"), CarriedAmmoMap[WeaponType]));
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Blue, FString::Printf(TEXT("bTypeOfAmmoRunOut = %d"), InventoryWidget->bTypeOfAmmoRunOut));
 				if(InventoryWidget->bTypeOfAmmoRunOut)
 				{
 					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Green, FString("Toretto"));
@@ -457,110 +549,8 @@ void UCombatComponent::FinishReloading()
 {
 	if (Character == nullptr) return;
 
-	if (InventoryWidget)
-	{
-		if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()) && CarriedAmmoMap[EquippedWeapon->GetWeaponType()] > 0)
-		{
-			for(auto& Slot : InventoryWidget->InventorySlots)
-			{
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::White, FString("For the begining"));
-				if(Slot->SlotType == EquippedWeapon->GetWeaponType())
-				{
-					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Name0 = %s"), *Slot->GetName()));
-					if (Slot->bIsSlotToModify && Slot->SlotAmmo >= 0)
-					{
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Name = %s"), *Slot->GetName()));
-						
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("FR_SlotAmmo = %d"), Slot->SlotAmmo));
-
-						if (AmountToReload() > Slot->SlotAmmo)
-						{
-							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("im here"));
-							SetCarriedAmmo(EquippedWeapon->GetWeaponType(), -Slot->SlotAmmo);
-							//SetCarriedAmmo(EquippedWeapon->GetWeaponType(), Slot->SlotAmmo);
-							InventoryWidget->bSlotNoLongerModified = true;
-							Slot->bIsSlotToModify = false;
-							for (auto& Slot2 : InventoryWidget->InventorySlots)
-							{
-								if (Slot2->SlotType == EquippedWeapon->GetWeaponType() && !Slot2->bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
-								{
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Name2 = %s"), *Slot->GetName()));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("AmountToReload() = %d"), AmountToReload()));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("Slot->SlotAmmo = %d"), Slot->SlotAmmo));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("Im here2"));
-									Slot2->bIsSlotToModify = true;
-									InventoryWidget->bSlotNoLongerModified = false;
-									int32 UpdatedSlotValue2 = Slot2->SlotAmmo -= AmountToReload() - Slot->SlotAmmo;
-									Slot2->SetSlotQuantity(UpdatedSlotValue2);
-									Slot->ClearSlot();
-									break;
-								}
-							}
-						}
-						else 
-						{
-							if (!InventoryWidget->bSlotNoLongerModified && Slot->bIsSlotToModify)
-							{
-								int32 UpdatedSlotValue = Slot->SlotAmmo -= AmountToReload();
-								Slot->SetSlotQuantity(UpdatedSlotValue);
-								if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("!!!!!!Break!!!!!!!!!"));
-								if (Slot->SlotAmmo <= 0)
-								{
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("!!SlotAmmo = 0!!"));
-									Slot->ClearSlot();
-									//InventoryWidget->bSlotNoLongerModified = true;
-									Slot->bIsSlotToModify = false;
-									for(auto& Slot3 : InventoryWidget->InventorySlots)
-									{
-										if(Slot3->SlotType == EquippedWeapon->GetWeaponType() && !Slot3->bIsSlotToModify && Slot3->SlotReachedLimit())
-										{
-											Slot3->bIsSlotToModify = true;
-											break;
-										}
-									}
-								}
-								break;
-							}
-						}
-						/*if (Slot->SlotAmmo <= 0)
-						{
-							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString("!!SlotAmmo = 0!!"));
-							Slot->ClearSlot();
-							//InventoryWidget->bSlotNoLongerModified = true;
-							Slot->bIsSlotToModify = false;
-							break;
-							for (auto& Slot3 : InventoryWidget->InventorySlots)
-							{
-								if (Slot3->SlotType == EquippedWeapon->GetWeaponType() && !Slot3->bIsSlotToModify && Slot3->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
-								{
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("3Name3 = %s"), *Slot->GetName()));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("3AmountToReload() = %d"), AmountToReload()));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("3Slot->SlotAmmo = %d"), Slot->SlotAmmo));
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString("3Im here3"));
-									Slot3->bIsSlotToModify = true;
-									InventoryWidget->bSlotNoLongerModified = false;
-									int32 UpdatedSlotValue3 = Slot3->SlotAmmo -= AmountToReload() - Slot->SlotAmmo;
-									Slot3->SetSlotQuantity(UpdatedSlotValue3);
-									break;
-								}
-							}
-						}*/
-						
-					}/*
-					if (!Slot->bIsSlotToModify && Slot->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
-					{
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Im here3"));
-						Slot->bIsSlotToModify = true;
-						InventoryWidget->bSlotNoLongerModified = false;
-						int32 UpdatedSlotValue = Slot->SlotAmmo -= AmountToReload();
-						Slot->SetSlotQuantity(UpdatedSlotValue);
-						break;
-					}*/
-				}
-			}
-			
-		}
-	}
+	if (Character->HasAuthority()) GetCarriedAmmo();
+	ClientUpdateSlotAmmo();
 
 	if(Character->HasAuthority())
 	{
@@ -621,10 +611,10 @@ int32 UCombatComponent::AmountToReload()
 	if (EquippedWeapon == nullptr) return 0;
 	int32 RoomInMag = EquippedWeapon->GetMagCapacity() - EquippedWeapon->GetAmmo();
 
-	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	if (CarriedAmmo > 0)
 	{
 		if(GEngine)GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Red, FString("Im in )"));
-		int32 AmountCarried = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
+		int32 AmountCarried = CarriedAmmo;
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("AmountCarried: %d"), AmountCarried));
 		int32 least = FMath::Min(RoomInMag, AmountCarried);
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("least: %d"), least));
@@ -901,6 +891,15 @@ void UCombatComponent::OnRep_CarriedAmmo()
 	if (PlayerController)
 	{
 		PlayerController->SetHUDCarriedAmmo(CarriedAmmo);
+	}
+}
+
+void UCombatComponent::GetCarriedAmmo_Implementation()
+{
+	if (EquippedWeapon == nullptr) return;
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
 }
 

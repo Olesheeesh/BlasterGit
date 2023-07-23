@@ -44,11 +44,17 @@ public:
 	void ChoosePrimaryWeapon();
 
 	void ChooseSecondaryWeapon();
+
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
 
 	UFUNCTION(Client, Reliable)
 	void ClientAddItemToInventory(EWeaponType WeaponType, int32 Quantity);
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateSlotAmmo();
+
 	int32 SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -170,6 +176,9 @@ private:
 	//Carried ammo for a currently-equipped weapon
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
+
+	UFUNCTION(Server, Reliable)
+	void GetCarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
 

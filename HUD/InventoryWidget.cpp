@@ -3,6 +3,7 @@
 #include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/InventorySystem/InventorySlot.h"
 #include "Components/WrapBox.h"
+#include "Net/UnrealNetwork.h"
 
 void UInventoryWidget::NativeConstruct()
 {

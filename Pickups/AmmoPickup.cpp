@@ -15,7 +15,7 @@ void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		{
 			Combat->PickupAmmo(WeaponType, AmmoAmount);
 			FString RoleStr;
-			switch (GetLocalRole())
+			switch (Character->GetLocalRole())
 			{
 			case ROLE_None:
 				RoleStr = TEXT("None");
