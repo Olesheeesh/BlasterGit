@@ -76,6 +76,7 @@ public:
 	bool bSlotIsFull = false;
 	bool bSlotWasCleared = false;
 	bool bMximumAmountOfAmmoReached = false;
+	bool bIsSlotToModify = false;
 	int32 CurrentMagAmmo = 0;
 	UPROPERTY(EditAnywhere)
 	int32 MaxSlotQuantity = 80;

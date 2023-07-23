@@ -48,6 +48,7 @@ public:
 
 	bool bNewItemAdded = false;
 	bool bTypeOfAmmoRunOut = false;
+	bool bSlotNoLongerModified = false;
 	/*
 	 * Images
 	 */
