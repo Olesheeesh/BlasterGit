@@ -49,9 +49,9 @@ void UInventoryWidget::RefreshInventory()
 				{
 					int q = j + 1;
 					class UInventorySlot* NextSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(j));
-					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("NextSlot State: %d"), NextSlot->SlotState));
+					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("NextSlot Type: %d"), NextSlot->SlotType));
 					class UInventorySlot* LastSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(q));//здесь
-					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("LastSlot State: %d"), LastSlot->SlotState));
+					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("LastSlot Type: %d"), LastSlot->SlotType));
 					if (NextSlot && NextSlot->SlotState == ESlotState::ESS_Filled)
 					{
 						/*if (SlotToReplace->SlotType == NextSlot->SlotType)
@@ -61,12 +61,15 @@ void UInventoryWidget::RefreshInventory()
 
 						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("j = %d"), j));
 						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Next slots, that are filled: %s"), *NextSlot->GetName()));
-						SlotToReplace->TransferDataFrom(NextSlot->ItemTexture, NextSlot->SlotAmmo, NextSlot->SlotType, NextSlot->SlotState, NextSlot->bMximumAmountOfAmmoReached, NextSlot->bSlotIsFull);
+						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("I SlotTypeWas = %d"), SlotToReplace->SlotType));
+						SlotToReplace->TransferDataFrom(NextSlot->ItemTexture, NextSlot->SlotAmmo, NextSlot->SlotType, NextSlot->SlotState, NextSlot->bMximumAmountOfAmmoReached, NextSlot->bSlotIsFull, NextSlot->bIsSlotToModify);
+						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("I SlotTypeNow = %d"), SlotToReplace->SlotType));
 						SlotToReplace->SetSlotState(ESlotState::ESS_Filled);
 						if (LastSlot && LastSlot->SlotState == ESlotState::ESS_Empty)
 						{
 							NextSlot->ClearSlot();
 							SlotNumber = j;
+							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("BREAKK"));
 							break;
 						}
 					}

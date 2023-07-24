@@ -85,6 +85,12 @@ protected:
 
 	int32 AmountToReload();
 
+	UPROPERTY(Replicated)
+	int32 AmmoToReload = 0;
+
+	UFUNCTION(Client, Reliable)
+	void SetAmmoToReloadForClient(int32 ToReload);
+
 	UFUNCTION(Server, Reliable)
 	void UpdateCarriedAmmo();
 
@@ -178,6 +184,7 @@ private:
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
 
+	UFUNCTION(Server, Reliable)
 	void GetCarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
@@ -213,6 +220,8 @@ private:
 	void OnRep_CombatState();
 
 	void UpdateAmmoValues();
+
+	bool bCarriedAmmoIsSet = false;
 
 	bool isOutOfAmmo();
 

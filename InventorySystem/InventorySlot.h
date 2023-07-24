@@ -33,7 +33,7 @@ public:
 
 	void RemoveCarriedAmmoAmount(EWeaponType WeaponType);
 
-	void TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull);
+	void TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull, bool IsSlotToModify);
 
 	void SetSlotState(ESlotState State);
 
