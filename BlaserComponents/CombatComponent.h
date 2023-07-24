@@ -85,6 +85,7 @@ protected:
 
 	int32 AmountToReload();
 
+	UFUNCTION(Server, Reliable)
 	void UpdateCarriedAmmo();
 
 	const USkeletalMeshSocket* GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh);
@@ -177,7 +178,6 @@ private:
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
 
-	UFUNCTION(Server, Reliable)
 	void GetCarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
