@@ -55,31 +55,26 @@ void UInventorySlot::ClearSlot()
 	if (InventoryWidget)
 	{
 		InventoryWidget->JustRemovedSlot = this;
-		/*for (auto& SlotTaip : InventoryWidget->ExistingItemTypesInInventory)
-		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_ST: %s"), *GetName()));
-		}*/
+
 		Thumbnail->SetBrushFromTexture(nullptr);
 		SlotQuantity->SetText(FText::FromString(""));
+
 		SetSlotState(ESlotState::ESS_Empty);
 		RemoveCarriedAmmoAmount(SlotType);
-		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoWas = %d"), SlotAmmo));
+
 		SlotAmmo = 0;
-		
-		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoNow = %d"), SlotAmmo));
 		bSlotWasCleared = true;
-		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotTypeWas = %d"), SlotType));
 		SlotType = EWeaponType::EWT_None;
 		SlotState = ESlotState::ESS_Empty;
-		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotTypeNow = %d"), SlotType));
-		//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotAmmoNow = %d"), SlotAmmo));
+
+		if(bIsSlotToModify)
+		{
+			InventoryWidget->bSlotNoLongerModified = true;
+		}
 		if (InventoryWidget->JustRemovedSlot != nullptr)
 		{
 			InventoryWidget->RefreshInventory();
 		}
-
-		
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("CS_SlotNumber: %d"), InventoryWidget->SlotNumber));
 	}
 }
 
@@ -91,7 +86,6 @@ void UInventorySlot::RemoveCarriedAmmoAmount(EWeaponType WeaponType)
 	if (Combat)
 	{
 		Combat->SetCarriedAmmo(WeaponType, SlotAmmo);//74
-		
 	}
 }
 

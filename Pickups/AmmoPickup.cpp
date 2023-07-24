@@ -33,8 +33,6 @@ void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 				RoleStr = TEXT("Unknown");
 				break;
 			}
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("NetRole = %s"), *RoleStr));
-			//здесь добавить логику на добавление Ammo в инвентарь если обойма полная
 		}
 	}
 	Destroy();

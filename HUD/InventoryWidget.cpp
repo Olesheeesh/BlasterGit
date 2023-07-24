@@ -21,7 +21,6 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity,
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
 		ExistingItemTypesInInventory.Add(Type);
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("IW_Num: %d"), ExistingItemTypesInInventory.Num()));
 		CurrentSlot->SlotType = Type;
 
 		if(SlotNumber < InventorySlots.Num())
@@ -33,14 +32,12 @@ void UInventoryWidget::RefreshInventory()
 {
 	if (JustRemovedSlot == nullptr)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Null"));
 		return;
 	}
 	if (JustRemovedSlot)
 	{
 		for (int i = JustRemovedSlot->SlotIndex; i < InventorySlots.Num(); ++i)
 		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("i = %d"), i));
 			class UInventorySlot* SlotToReplace = Cast<UInventorySlot>(InventoryBox->GetChildAt(i));
 			if (SlotToReplace)
 			{
@@ -49,9 +46,7 @@ void UInventoryWidget::RefreshInventory()
 				{
 					int q = j + 1;
 					class UInventorySlot* NextSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(j));
-					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("NextSlot Type: %d"), NextSlot->SlotType));
 					class UInventorySlot* LastSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(q));//здесь
-					if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("LastSlot Type: %d"), LastSlot->SlotType));
 					if (NextSlot && NextSlot->SlotState == ESlotState::ESS_Filled)
 					{
 						/*if (SlotToReplace->SlotType == NextSlot->SlotType)
@@ -59,28 +54,17 @@ void UInventoryWidget::RefreshInventory()
 							SlotToReplace->SlotAmmo += NextSlot->SlotAmmo;
 						}*/
 
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("j = %d"), j));
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, FString::Printf(TEXT("Next slots, that are filled: %s"), *NextSlot->GetName()));
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("I SlotTypeWas = %d"), SlotToReplace->SlotType));
 						SlotToReplace->TransferDataFrom(NextSlot->ItemTexture, NextSlot->SlotAmmo, NextSlot->SlotType, NextSlot->SlotState, NextSlot->bMximumAmountOfAmmoReached, NextSlot->bSlotIsFull, NextSlot->bIsSlotToModify);
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, FString::Printf(TEXT("I SlotTypeNow = %d"), SlotToReplace->SlotType));
 						SlotToReplace->SetSlotState(ESlotState::ESS_Filled);
 						if (LastSlot && LastSlot->SlotState == ESlotState::ESS_Empty)
 						{
 							NextSlot->ClearSlot();
 							SlotNumber = j;
-							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("BREAKK"));
 							break;
 						}
 					}
 					else
 					{
-						if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Am I calling bruh?"));
-						//ExistingItemTypesInInventory.Empty();
-						if(LastSlot && LastSlot->SlotState == ESlotState::ESS_Empty)
-						{
-							if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Am I calling bruh!"));
-						}
 						SlotNumber = i;
 						break;
 					}
