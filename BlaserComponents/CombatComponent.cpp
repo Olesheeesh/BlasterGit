@@ -363,6 +363,22 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 	}
 }
 
+void UCombatComponent::PickupBooster(EBoosterType BoosterType, int32 AmountToRestore)
+{
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here0"));
+	if (Character == nullptr) return;
+	if (Character)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here1"));
+		switch (BoosterType)
+		{
+		case EBoosterType::EBT_Health:
+			Character->RestoreSomeHealth(AmountToRestore);
+			break;
+		}
+	}
+}
+
 void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 Quantity)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character

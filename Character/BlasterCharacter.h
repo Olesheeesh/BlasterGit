@@ -10,6 +10,8 @@
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "AbilitySystemInterface.h"
 #include <GameplayEffectTypes.h>
+
+#include "Blaster/BlasterTypes/Types.h"
 #include "BlasterCharacter.generated.h"
 
 UENUM(BlueprintType)
@@ -190,8 +192,6 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingScope)
 	class AScope* OverlappingScope;
 
-	
-
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
 
@@ -273,6 +273,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_Health();
+
+	UFUNCTION(Server, Reliable)
+	void RestoreSomeHealth(int32 AmountToRestore);
 
 	UPROPERTY(Replicated)
 	bool bElimmed = false;

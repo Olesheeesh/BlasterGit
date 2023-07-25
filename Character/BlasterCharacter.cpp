@@ -16,7 +16,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "TimerManager.h"
 #include "Blaster/BlaserComponents/AbilityComponent.h"
-#include "Blaster/DamageArea/DamageArea.h"
+#include "Blaster/World/DamageArea.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/GameMode/BlasterGameMode.h"
 #include "Blaster/HUD/OverheadWidget.h"
@@ -1136,6 +1136,17 @@ void ABlasterCharacter::OnRep_Health()
 {
 	UpdateHUDHealth();
 	PlayHitReactMontage();
+}
+
+void ABlasterCharacter::RestoreSomeHealth_Implementation(int32 AmountToRestore)
+{
+	if(CurrentHealth > 0.f)
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Hereeee"));
+		CurrentHealth = FMath::Clamp(CurrentHealth + AmountToRestore, 0.0f, MaxHealth);
+		UpdateHUDHealth();
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("CurrentHealth = %f"), CurrentHealth));
+	}
 }
 
 void ABlasterCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser)

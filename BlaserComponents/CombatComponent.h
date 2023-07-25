@@ -7,6 +7,7 @@
 #include "Blaster/Weapon/WeaponTypes.h"
 #include "Components/ActorComponent.h"
 #include "Blaster/BlasterTypes/CombatState.h"
+#include "Blaster/BlasterTypes/Types.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 99999.f
@@ -46,6 +47,7 @@ public:
 	void ChooseSecondaryWeapon();
 
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+	void PickupBooster(EBoosterType BoosterType, int32 AmountToRestore);
 
 	UFUNCTION(Client, Reliable)
 	void ClientAddItemToInventory(EWeaponType WeaponType, int32 Quantity);
