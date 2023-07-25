@@ -8,8 +8,11 @@ APickupSpawnPlatform::APickupSpawnPlatform()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	Scene = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Root"));
+	SetRootComponent(Scene);
+
 	PlatformMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	SetRootComponent(PlatformMesh);
+	PlatformMesh->SetupAttachment(Scene);
 
 }
 
@@ -28,7 +31,6 @@ UClass* APickupSpawnPlatform::GetRandomPickupType()
 	{
 		float RandomIndex = FMath::FRandRange(0.f, SpawnablePickups.Num() - 1);
 		PickupToSpawn = SpawnablePickups[RandomIndex];
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("RandomIndex = %d"), RandomIndex));
 		return PickupToSpawn;
 	}
 	return {};

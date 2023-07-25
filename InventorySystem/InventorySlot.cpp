@@ -21,8 +21,8 @@ void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 	FString QuantityText = FString::Printf(TEXT("%d"), Quantity);
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 
-	ItemTexture = SlotImage;
-	SlotAmmo = Quantity;
+	SlotData.ItemTexture = SlotImage;
+	SlotData.SlotAmmo = Quantity;
 }
 
 void UInventorySlot::SetSlotQuantity(int32 Quantity)
@@ -60,14 +60,14 @@ void UInventorySlot::ClearSlot()
 		SlotQuantity->SetText(FText::FromString(""));
 
 		SetSlotState(ESlotState::ESS_Empty);
-		RemoveCarriedAmmoAmount(SlotType);
+		RemoveCarriedAmmoAmount(SlotData.SlotType);
 
-		SlotAmmo = 0;
+		SlotData.SlotAmmo = 0;
 		bSlotWasCleared = true;
-		SlotType = EWeaponType::EWT_None;
-		SlotState = ESlotState::ESS_Empty;
+		SlotData.SlotType = EWeaponType::EWT_None;
+		SlotData.SlotState = ESlotState::ESS_Empty;
 
-		if(bIsSlotToModify)
+		if(SlotData.bIsSlotToModify)
 		{
 			InventoryWidget->bSlotNoLongerModified = true;
 		}
@@ -85,38 +85,38 @@ void UInventorySlot::RemoveCarriedAmmoAmount(EWeaponType WeaponType)
 	class UCombatComponent* Combat = Character->GetCombatComponent();
 	if (Combat)
 	{
-		Combat->SetCarriedAmmo(WeaponType, SlotAmmo);//74
+		Combat->SetCarriedAmmo(WeaponType, SlotData.SlotAmmo);//74
 	}
 }
 
-void UInventorySlot::TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull, bool IsSlotToModify)
+void UInventorySlot::TransferDataFrom(const FSlotData& Data)
 {
-	Thumbnail->SetBrushFromTexture(SlotImage);
-	float AmmoPercent = Quantity / ProgressMagCapacity;
+	Thumbnail->SetBrushFromTexture(Data.ItemTexture);
+	float AmmoPercent = Data.SlotAmmo / ProgressMagCapacity;
 
 	/*if (bMagIsFull)
 	{
 		AmmoPercent = 0.f;
 		Quantity =
 	}*/
-	FString QuantityText = FString::Printf(TEXT("%d"), Quantity);
+	FString QuantityText = FString::Printf(TEXT("%d"), Data.SlotAmmo);
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 
-	ItemTexture = SlotImage;
-	SlotAmmo = Quantity;
-	SlotType = Type;
-	SlotState = State;
-	bMximumAmountOfAmmoReached = MximumAmountOfAmmoReached;
-	bSlotIsFull = SlotIsFull;
-	bIsSlotToModify = IsSlotToModify;
+	SlotData.ItemTexture = Data.ItemTexture;
+	SlotData.SlotAmmo = Data.SlotAmmo;
+	SlotData.SlotType = Data.SlotType;
+	SlotData.SlotState = Data.SlotState;
+	SlotData.bMximumAmountOfAmmoReached = Data.bMximumAmountOfAmmoReached;
+	SlotData.bSlotIsFull = Data.bSlotIsFull;
+	SlotData.bIsSlotToModify = Data.bIsSlotToModify;
 }
 
 void UInventorySlot::SetSlotState(ESlotState State)
 {
-	SlotState = State;
+	SlotData.SlotState = State;
 }
 
 bool UInventorySlot::SlotReachedLimit()
 {
-	return bSlotIsFull = SlotAmmo >= MaxSlotQuantity;
+	return SlotData.bSlotIsFull = SlotData.SlotAmmo >= MaxSlotQuantity;
 }

@@ -213,7 +213,6 @@ private:
 	int32 StartingGrenadeLauncherAmmo = 0;
 
 	void InitializeCarriedAmmo();
-	
 
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
 	ECombatState CombatState = ECombatState::ECS_Unoccupied;
@@ -244,6 +243,8 @@ public:
 	FORCEINLINE float GetDefaultFov() const { return DefaultFov; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 	FORCEINLINE bool GetIsAiming() const { return bAiming; }
+	FORCEINLINE int32 GetAmmoToReload() const { return AmmoToReload; }
+
 };
 
 

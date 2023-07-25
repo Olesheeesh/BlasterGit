@@ -70,6 +70,7 @@ public:
 	void AddInventoryWidget();
 
 	void SetGameAndUIInputMode();
+	void SetGameOnlyInputMode();
 protected:
 	virtual void BeginPlay() override;
 

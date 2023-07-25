@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blaster/Weapon/WeaponTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "BlasterPlayerController.generated.h"
 
@@ -41,12 +42,21 @@ public:
 	void ShowScoreBoard();
 
 	void CloseScoreBoard();
+
 	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
 
 	UPROPERTY()
 	class ABlasterHUD* BlasterHUD;
 
 	void HideSniperScope();
+
+	/*
+	 * Inventory
+	 */
+
+	void AddItemToInventory(EWeaponType WeaponType, int32 Quantity);
+
+	void UpdateSlotAmmo();
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();

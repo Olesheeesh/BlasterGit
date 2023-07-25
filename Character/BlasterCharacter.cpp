@@ -198,6 +198,7 @@ void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PollInit();
+	
 	/*float Speed = GetCharacterMovement()->Velocity.Size();
 	if (HighestSpeed < Speed)
 	{
@@ -236,6 +237,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ABlasterCharacter, SprintSpeed);
 	DOREPLIFETIME(ABlasterCharacter, CurrentHealth);
 	DOREPLIFETIME(ABlasterCharacter, bDisableGameplay);
+	DOREPLIFETIME(ABlasterCharacter, bIsRestoringHealth);
 }
 
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -810,8 +812,18 @@ void ABlasterCharacter::OpenInventory()//temporary foo
 
 		if (BlasterHUD)
 		{
-			BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-			BlasterHUD->SetGameAndUIInputMode();
+			if (!bInventotyIsActive)
+			{
+				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+				BlasterHUD->SetGameAndUIInputMode();
+				bInventotyIsActive = true;
+			}
+			else
+			{
+				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
+				BlasterHUD->SetGameOnlyInputMode();
+				bInventotyIsActive = false;
+			}
 		}
 	}
 }
@@ -1140,12 +1152,27 @@ void ABlasterCharacter::OnRep_Health()
 
 void ABlasterCharacter::RestoreSomeHealth_Implementation(int32 AmountToRestore)
 {
+	if (CurrentHealth >= MaxHealth) return;
 	if(CurrentHealth > 0.f)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Hereeee"));
-		CurrentHealth = FMath::Clamp(CurrentHealth + AmountToRestore, 0.0f, MaxHealth);
-		UpdateHUDHealth();
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("CurrentHealth = %f"), CurrentHealth));
+		bIsRestoringHealth = true;
+		GetWorldTimerManager().SetTimer(HealthRestoreTimer, [this, AmountToRestore]()
+			{
+				IncrementHealth(AmountToRestore);
+			}, HealthRestoringDelay, true);
+	}
+}
+
+void ABlasterCharacter::IncrementHealth(int32 AmountToRestore)
+{
+	CurrentHealth = FMath::Clamp(FMath::FInterpTo(CurrentHealth, CurrentHealth + AmountToRestore, GetWorld()->GetDeltaSeconds(), 5.f), 0.0f, MaxHealth);
+	UpdateHUDHealth();
+
+	if (CurrentHealth == MaxHealth)
+	{
+		GetWorldTimerManager().ClearTimer(HealthRestoreTimer);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Stop"));
+		bIsRestoringHealth = false;
 	}
 }
 

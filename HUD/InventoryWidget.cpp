@@ -21,7 +21,7 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity,
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
 		ExistingItemTypesInInventory.Add(Type);
-		CurrentSlot->SlotType = Type;
+		CurrentSlot->SlotData.SlotType = Type;
 
 		if(SlotNumber < InventorySlots.Num())
 		++SlotNumber;
@@ -47,16 +47,16 @@ void UInventoryWidget::RefreshInventory()
 					int q = j + 1;
 					class UInventorySlot* NextSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(j));
 					class UInventorySlot* LastSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(q));//здесь
-					if (NextSlot && NextSlot->SlotState == ESlotState::ESS_Filled)
+					if (NextSlot && NextSlot->SlotData.SlotState == ESlotState::ESS_Filled)
 					{
 						/*if (SlotToReplace->SlotType == NextSlot->SlotType)
 						{
 							SlotToReplace->SlotAmmo += NextSlot->SlotAmmo;
 						}*/
 
-						SlotToReplace->TransferDataFrom(NextSlot->ItemTexture, NextSlot->SlotAmmo, NextSlot->SlotType, NextSlot->SlotState, NextSlot->bMximumAmountOfAmmoReached, NextSlot->bSlotIsFull, NextSlot->bIsSlotToModify);
+						SlotToReplace->TransferDataFrom(NextSlot->SlotData);
 						SlotToReplace->SetSlotState(ESlotState::ESS_Filled);
-						if (LastSlot && LastSlot->SlotState == ESlotState::ESS_Empty)
+						if (LastSlot && LastSlot->SlotData.SlotState == ESlotState::ESS_Empty)
 						{
 							NextSlot->ClearSlot();
 							SlotNumber = j;

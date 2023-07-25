@@ -257,78 +257,19 @@ void UCombatComponent::ClientUpdateSlotAmmo_Implementation()
 	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
 	if (PlayerController)//check if is valid
 	{
-		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
-		if (HUD)
-		{
-			InventoryWidget = HUD->InventoryWidget;
-			if (InventoryWidget)
-			{
-				if (AmmoToReload > 0)
-				{
-					for (auto& Slot : InventoryWidget->InventorySlots)
-					{
-						if (Slot->SlotType == EquippedWeapon->GetWeaponType())
-						{
-							/*SlotAmmo == MaxSlotQuantity*/
-							if (Slot->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
-							{
-								Slot->bIsSlotToModify = true;
-							}
-							if (Slot->bIsSlotToModify && Slot->SlotAmmo >= 0)
-							{
-								/*AmmoToReload > SlotAmmo*/
-								if (AmmoToReload > Slot->SlotAmmo)
-								{
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Here?!"));
-									SetCarriedAmmo(EquippedWeapon->GetWeaponType(), -Slot->SlotAmmo);
-									InventoryWidget->bSlotNoLongerModified = true;
-									Slot->bIsSlotToModify = false;
-									for (auto& Slot2 : InventoryWidget->InventorySlots)
-									{
-										/*Dicrease Ammo from another slot*/
-										if (Slot2->SlotType == EquippedWeapon->GetWeaponType() && !Slot2->bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
-										{
-											Slot2->bIsSlotToModify = true;
-											InventoryWidget->bSlotNoLongerModified = false;
-											int32 UpdatedSlotValue2 = Slot2->SlotAmmo -= AmmoToReload - Slot->SlotAmmo;
-											Slot2->SetSlotQuantity(UpdatedSlotValue2);
-											Slot2->SlotAmmo = UpdatedSlotValue2;
-											Slot->ClearSlot();
-											break;
-										}
-									}
-								}
-								else
-								{
-									/*Slot has enough ammo*/
-									if (Slot->bIsSlotToModify)
-									{
-										int32 UpdatedSlotValue = Slot->SlotAmmo -= AmmoToReload;
-										Slot->SetSlotQuantity(UpdatedSlotValue);
-										Slot->SlotAmmo = UpdatedSlotValue;
-										if (Slot->SlotAmmo <= 0)
-										{
-											Slot->ClearSlot();
-											Slot->bIsSlotToModify = false;
-											for (auto& Slot3 : InventoryWidget->InventorySlots)
-											{
-												if (Slot3->SlotType == EquippedWeapon->GetWeaponType() && !Slot3->bIsSlotToModify && Slot3->SlotReachedLimit())
-												{
-													Slot3->bIsSlotToModify = true;
-													break;
-												}
-											}
-										}
-										break;
-									}
-									
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here0"));
+		PlayerController->UpdateSlotAmmo();
+	}
+}
+
+void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 Quantity)
+{
+	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
+
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
+	if (PlayerController)//check if is valid
+	{
+		PlayerController->AddItemToInventory(WeaponType, Quantity);
 	}
 }
 
@@ -365,11 +306,9 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 
 void UCombatComponent::PickupBooster(EBoosterType BoosterType, int32 AmountToRestore)
 {
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here0"));
 	if (Character == nullptr) return;
 	if (Character)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here1"));
 		switch (BoosterType)
 		{
 		case EBoosterType::EBT_Health:
@@ -379,80 +318,6 @@ void UCombatComponent::PickupBooster(EBoosterType BoosterType, int32 AmountToRes
 	}
 }
 
-void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 Quantity)
-{
-	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
-
-	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
-	if (PlayerController)//check if is valid
-	{
-		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;//if HUD !null -> equel to itself(we are sure that our HUD is set)(для подстраховки/для избежания багов)
-		if (HUD)
-		{
-			InventoryWidget = HUD->InventoryWidget;
-			if (InventoryWidget && InventoryWidget->InventorySlots.Num() > 0)
-			{
-				if(InventoryWidget->bTypeOfAmmoRunOut)
-				{
-					InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
-					InventoryWidget->CurrentSlot->bIsSlotToModify = true;
-					InventoryWidget->bTypeOfAmmoRunOut = false;
-					return;
-				}
-				if (!InventoryWidget->ExistingItemTypesInInventory.Contains(WeaponType))
-				{
-					InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);//можно исползовать и CarrieAmmoMap вместо quantity
-					InventoryWidget->CurrentSlot->bIsSlotToModify = true;
-				}
-				else
-				{
-					for(auto& Item : InventoryWidget->InventorySlots)
-					{
-						if(Item->SlotType == WeaponType)//слот с тем же типом патронов
-						{
-							
-							Item->bIsSlotToModify = false;
-							if (Item->SlotAmmo + Quantity > Item->MaxSlotQuantity)
-							{
-								if (!Item->SlotReachedLimit())
-								{
-									Item->bSlotWasCleared = false;
-
-									int32 AmmoLeft = Item->SlotAmmo + Quantity - Item->MaxSlotQuantity;//10
-
-									Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotAmmo + Quantity - AmmoLeft);//устанавливает текущее значение слота в максимум (80)
-									Item->bIsSlotToModify = false;
-
-									Item->bMximumAmountOfAmmoReached = true;
-
-									InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), AmmoLeft, WeaponType);//новый слот с 10
-									InventoryWidget->CurrentSlot->bIsSlotToModify = true;
-
-									InventoryWidget->CurrentSlot->SlotAmmo = AmmoLeft;
-									break;
-								}
-								if(Item->SlotAmmo == Item->MaxSlotQuantity && !Item->bMximumAmountOfAmmoReached)
-								{
-									Item->bMximumAmountOfAmmoReached = true;
-									InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
-									InventoryWidget->CurrentSlot->bIsSlotToModify = true;
-									InventoryWidget->CurrentSlot->SlotAmmo = Quantity;
-									break;
-								}
-							}
-							else
-							{
-								Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotAmmo + Quantity);
-								Item->bIsSlotToModify = true;
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
 
 const USkeletalMeshSocket* UCombatComponent::GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh)
 {

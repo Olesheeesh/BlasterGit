@@ -16,6 +16,7 @@
 #include "Components/VerticalBox.h"
 #include "TimerManager.h"
 #include "Blaster/HUD/InventoryWidget.h"
+#include "Blaster/InventorySystem/InventorySlot.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Camera/CameraComponent.h"
 #include "Components/WrapBox.h"
@@ -67,7 +68,6 @@ void ABlasterPlayerController::OnPossess(APawn* InPawn)
 	if(BlasterCharacter)
 	{
 		SetHUDHealth(BlasterCharacter->GetCurrentHealth(), BlasterCharacter->GetMaxHealth());
-		
 	}
 }
 
@@ -297,6 +297,162 @@ void ABlasterPlayerController::HideSniperScope()
 	}
 }
 
+void ABlasterPlayerController::AddItemToInventory(EWeaponType WeaponType, int32 Quantity)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if(BlasterHUD)
+	{
+		InventoryWidget = InventoryWidget == nullptr ? BlasterHUD->InventoryWidget : InventoryWidget;
+		if (InventoryWidget && InventoryWidget->InventorySlots.Num() > 0)
+		{
+			if (InventoryWidget->bTypeOfAmmoRunOut)
+			{
+				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
+				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+				InventoryWidget->bTypeOfAmmoRunOut = false;
+				return;
+			}
+			if (!InventoryWidget->ExistingItemTypesInInventory.Contains(WeaponType))
+			{
+				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);//можно исползовать и CarrieAmmoMap вместо quantity
+				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+			}
+			else
+			{
+				for (auto& Item : InventoryWidget->InventorySlots)
+				{
+					if (Item->SlotData.SlotType == WeaponType)//слот с тем же типом патронов
+					{
+
+						Item->SlotData.bIsSlotToModify = false;
+						if (Item->SlotData.SlotAmmo + Quantity > Item->MaxSlotQuantity)
+						{
+							if (!Item->SlotReachedLimit())
+							{
+								Item->bSlotWasCleared = false;
+
+								int32 AmmoLeft = Item->SlotData.SlotAmmo + Quantity - Item->MaxSlotQuantity;//10
+
+								Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotData.SlotAmmo + Quantity - AmmoLeft);//устанавливает текущее значение слота в максимум (80)
+								Item->SlotData.bIsSlotToModify = false;
+
+								Item->SlotData.bMximumAmountOfAmmoReached = true;
+
+								InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), AmmoLeft, WeaponType);//новый слот с 10
+								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+
+								InventoryWidget->CurrentSlot->SlotData.SlotAmmo = AmmoLeft;
+								break;
+							}
+							if (Item->SlotData.SlotAmmo == Item->MaxSlotQuantity && !Item->SlotData.bMximumAmountOfAmmoReached)
+							{
+								Item->SlotData.bMximumAmountOfAmmoReached = true;
+								InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
+								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+								InventoryWidget->CurrentSlot->SlotData.SlotAmmo = Quantity;
+								break;
+							}
+						}
+						else
+						{
+							Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotData.SlotAmmo + Quantity);
+							Item->SlotData.bIsSlotToModify = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void ABlasterPlayerController::UpdateSlotAmmo()
+{
+	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+	if(BlasterCharacter && BlasterCharacter->GetCombatComponent())
+	{
+		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+		if (BlasterHUD)
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check0"));
+			InventoryWidget = InventoryWidget == nullptr ? BlasterHUD->InventoryWidget : InventoryWidget;
+			if (InventoryWidget)
+			{
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
+
+
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
+				class UCombatComponent* Combat = BlasterCharacter->GetCombatComponent();
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("AmmoToReload = %d"), Combat->GetAmmoToReload()));
+				if (Combat->GetAmmoToReload() > 0)
+				{
+					for (auto& Slot : InventoryWidget->InventorySlots)
+					{
+						if (Slot->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType())
+						{
+							/*SlotAmmo == MaxSlotQuantity*/
+							if (Slot->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
+							{
+								Slot->SlotData.bIsSlotToModify = true;
+							}
+							if (Slot->SlotData.bIsSlotToModify && Slot->SlotData.SlotAmmo >= 0)
+							{
+								/*AmmoToReload > SlotAmmo*/
+								if (Combat->GetAmmoToReload() > Slot->SlotData.SlotAmmo)
+								{
+									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Here?!"));
+									Combat->SetCarriedAmmo(Combat->GetEquippedWeapon()->GetWeaponType(), -Slot->SlotData.SlotAmmo);
+									InventoryWidget->bSlotNoLongerModified = true;
+									Slot->SlotData.bIsSlotToModify = false;
+									for (auto& Slot2 : InventoryWidget->InventorySlots)
+									{
+										/*Dicrease Ammo from another slot*/
+										if (Slot2->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot2->SlotData.bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
+										{
+											Slot2->SlotData.bIsSlotToModify = true;
+											InventoryWidget->bSlotNoLongerModified = false;
+											int32 UpdatedSlotValue2 = Slot2->SlotData.SlotAmmo -= Combat->GetAmmoToReload() - Slot->SlotData.SlotAmmo;
+											Slot2->SetSlotQuantity(UpdatedSlotValue2);
+											Slot2->SlotData.SlotAmmo = UpdatedSlotValue2;
+											Slot->ClearSlot();
+											break;
+										}
+									}
+								}
+								else
+								{
+									/*Slot has enough ammo*/
+									if (Slot->SlotData.bIsSlotToModify)
+									{
+										int32 UpdatedSlotValue = Slot->SlotData.SlotAmmo -= Combat->GetAmmoToReload();
+										Slot->SetSlotQuantity(UpdatedSlotValue);
+										Slot->SlotData.SlotAmmo = UpdatedSlotValue;
+										if (Slot->SlotData.SlotAmmo <= 0)
+										{
+											Slot->ClearSlot();
+											Slot->SlotData.bIsSlotToModify = false;
+											for (auto& Slot3 : InventoryWidget->InventorySlots)
+											{
+												if (Slot3->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot3->SlotData.bIsSlotToModify && Slot3->SlotReachedLimit())
+												{
+													Slot3->SlotData.bIsSlotToModify = true;
+													break;
+												}
+											}
+										}
+										break;
+									}
+
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 void ABlasterPlayerController::PollInit()
 {
 	if (CharacterOverlay == nullptr)
@@ -313,10 +469,6 @@ void ABlasterPlayerController::PollInit()
 			}
 		}
 	}
-	/*else if (ScoreBoardWidget == nullptr)
-	{
-		
-	}*/
 }
 
 void ABlasterPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)

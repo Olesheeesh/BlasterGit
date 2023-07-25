@@ -13,7 +13,10 @@ void ABoosterPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 		UCombatComponent* Combat = Character->GetCombatComponent();
 		if (Combat)
 		{
-			Combat->PickupBooster(BoosterType, AmountToRestore);
+			if (!Character->GetIsRestoringHealth())
+			{
+				Combat->PickupBooster(BoosterType, AmountToRestore);
+			}
 		}
 	}
 

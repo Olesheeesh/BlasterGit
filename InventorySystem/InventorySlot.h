@@ -14,6 +14,28 @@ enum class ESlotState : uint8
 
 };
 
+USTRUCT(BlueprintType)
+struct FSlotData
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	UTexture2D* ItemTexture;
+
+	int32 SlotAmmo = 0;
+
+	EWeaponType SlotType = EWeaponType::EWT_None;
+
+	UPROPERTY(BlueprintReadOnly)
+	ESlotState SlotState = ESlotState::ESS_Empty;
+
+	bool bMximumAmountOfAmmoReached = false;
+
+	bool bSlotIsFull = false;
+
+	bool bIsSlotToModify = false;
+
+};
 UCLASS()
 class BLASTER_API UInventorySlot : public UUserWidget
 {
@@ -33,11 +55,15 @@ public:
 
 	void RemoveCarriedAmmoAmount(EWeaponType WeaponType);
 
-	void TransferDataFrom(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type, ESlotState State, bool MximumAmountOfAmmoReached, bool SlotIsFull, bool IsSlotToModify);
+	void TransferDataFrom(const FSlotData& MyData);
 
 	void SetSlotState(ESlotState State);
 
 	bool SlotReachedLimit();
+
+	/*Sctruct*/
+	FSlotData SlotData;
+
 	UPROPERTY()
 	class UInventoryComponent* InventoryComponent;
 
@@ -73,24 +99,17 @@ public:
 	 */
 
 	float ProgressMagCapacity = 30.f;
-	bool bSlotIsFull = false;
 	bool bSlotWasCleared = false;
-	bool bMximumAmountOfAmmoReached = false;
-	bool bIsSlotToModify = false;
 	int32 CurrentMagAmmo = 0;
 	UPROPERTY(EditAnywhere)
 	int32 MaxSlotQuantity = 80;
-	int32 SlotAmmo = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SlotIndex;
 
-	UPROPERTY(BlueprintReadOnly)
-	ESlotState SlotState = ESlotState::ESS_Empty;
+	
 
-	EWeaponType SlotType = EWeaponType::EWT_None;
 
-	UPROPERTY()
-	UTexture2D* ItemTexture;
+	
 
 };

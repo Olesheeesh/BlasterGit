@@ -74,6 +74,14 @@ void ABlasterHUD::SetGameAndUIInputMode()
 	PlayerController->bShowMouseCursor = true;
 }
 
+void ABlasterHUD::SetGameOnlyInputMode()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	FInputModeGameOnly InputMode;
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->bShowMouseCursor = false;
+}
+
 void ABlasterHUD::DrawHUD()
 {
 	Super::DrawHUD();

@@ -277,6 +277,19 @@ private:
 	UFUNCTION(Server, Reliable)
 	void RestoreSomeHealth(int32 AmountToRestore);
 
+	void IncrementHealth(int32 AmountToRestore);
+
+	UPROPERTY(Replicated)
+	bool bIsRestoringHealth = false;
+
+	UPROPERTY(EditAnywhere)
+	float HealthRestoringDelay = .5f;
+
+	FTimerHandle HealthRestoreTimer;
+
+	/*
+	 * Elim
+	 */
 	UPROPERTY(Replicated)
 	bool bElimmed = false;
 
@@ -334,6 +347,11 @@ private:
 	UPROPERTY()
 	class ABlasterPlayerState* BlasterPlayerState;
 
+	/*
+	 * Inventory
+	 */
+
+	bool bInventotyIsActive = false;
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);
@@ -360,6 +378,7 @@ public:
 	ECombatState GetCombatState() const;
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
+	FORCEINLINE bool GetIsRestoringHealth() const { return bIsRestoringHealth; }
 };
 
 //tî replicate:

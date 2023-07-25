@@ -13,12 +13,15 @@ public:
 	APickupSpawnPlatform();
 
 protected:
-	virtual void BeginPlay() override;
 
+	virtual void BeginPlay() override;
 	UClass* GetRandomPickupType();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void SpawnPickup(UClass* Pickup);
+
+	UPROPERTY(EditAnywhere)
+	class USceneComponent* Scene;
 
 	UPROPERTY(EditAnywhere, Category = "Platform Properties")
 	UStaticMeshComponent* PlatformMesh;
