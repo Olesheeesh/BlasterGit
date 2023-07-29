@@ -410,9 +410,9 @@ void AWeapon::OnRep_EquippedScope()
 void AWeapon::CycleThroughOptics()
 {
 	if (BlasterOwnerCharacter == nullptr || EquippedScope == nullptr) return;
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->GetMesh()->GetAnimInstance()) : AnimInstance;
+	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->FPSMesh->GetAnimInstance()) : AnimInstance;
 
-	if (AnimInstance && CurrentScope && EquippedScope && BlasterOwnerCharacter->GetMesh())
+	if (AnimInstance && CurrentScope && EquippedScope && BlasterOwnerCharacter->FPSMesh)
 	{
 		if (++OpticIndex >= Optics.Num())
 		{

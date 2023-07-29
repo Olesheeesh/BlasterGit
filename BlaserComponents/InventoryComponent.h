@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blaster/Weapon/WeaponTypes.h"
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
@@ -12,12 +11,6 @@ class BLASTER_API UInventoryComponent : public UActorComponent
 
 public:	
 	UInventoryComponent();
-
-protected:
-	//virtual void BeginPlay() override;
-private:
-
-public:
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
 	TArray<class UInventorySlot*> DefaultItems;
@@ -32,6 +25,17 @@ public:
 	class UInventoryWidget* InventoryWidget;
 
 	/*
-	 * Images
+	 * Gold
 	 */
+
+	int32 PlayerGold = 0;
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+	
+public:
+
+	
 };

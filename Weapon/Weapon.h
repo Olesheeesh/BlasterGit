@@ -101,6 +101,9 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_HideWeapon)
 	bool bHideWeapon = false;
 
+	UPROPERTY(EditAnywhere)
+	bool bWeaponCanUseOptic = false;
+
 	UFUNCTION()
 	void OnRep_HideWeapon();
 protected:
@@ -151,6 +154,7 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_OpticIndex)
 	uint8 OpticIndex = 0;
 
+	
 private:
 	UPROPERTY(VisibleAnyWhere, Category = "Weapon Properties")
 	USkeletalMeshComponent* WeaponMesh;

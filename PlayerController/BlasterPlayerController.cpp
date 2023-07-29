@@ -374,16 +374,16 @@ void ABlasterPlayerController::UpdateSlotAmmo()
 		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 		if (BlasterHUD)
 		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check0"));
+			//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check0"));
 			InventoryWidget = InventoryWidget == nullptr ? BlasterHUD->InventoryWidget : InventoryWidget;
 			if (InventoryWidget)
 			{
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
+				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
 
 
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
+				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
 				class UCombatComponent* Combat = BlasterCharacter->GetCombatComponent();
-				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("AmmoToReload = %d"), Combat->GetAmmoToReload()));
+				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("AmmoToReload = %d"), Combat->GetAmmoToReload()));
 				if (Combat->GetAmmoToReload() > 0)
 				{
 					for (auto& Slot : InventoryWidget->InventorySlots)
@@ -400,7 +400,7 @@ void ABlasterPlayerController::UpdateSlotAmmo()
 								/*AmmoToReload > SlotAmmo*/
 								if (Combat->GetAmmoToReload() > Slot->SlotData.SlotAmmo)
 								{
-									if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Here?!"));
+									//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Here?!"));
 									Combat->SetCarriedAmmo(Combat->GetEquippedWeapon()->GetWeaponType(), -Slot->SlotData.SlotAmmo);
 									InventoryWidget->bSlotNoLongerModified = true;
 									Slot->SlotData.bIsSlotToModify = false;

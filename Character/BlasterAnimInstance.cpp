@@ -60,7 +60,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	 * Youtube tutorial
 	 */
 
-	if (bWeaponEquipped)
+	if (bWeaponEquipped && BlasterCharacter->IsLocallyControlled())
 	{
 		UpdateMovingCurve(DeltaTime);
 		UpdateTurningSway(DeltaTime);
@@ -101,7 +101,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 	AO_Yaw = BlasterCharacter->GetAO_Yaw();
 	AO_Pitch = BlasterCharacter->GetAO_Pitch();
 
-	if(bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && BlasterCharacter->GetMesh())
+	if(bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && BlasterCharacter->FPSMesh)
 	{
 		LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
 		FVector OutPosition;
@@ -109,7 +109,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 
 		//выполняет преобразование позиции LeftHandTransform.GetLocation() из мирового пространства в локальное пространство кости "hand_r" на меше персонажа BlasterCharacter->GetMesh(). Результат преобразования сохраняется в переменных OutPosition (локальная позиция) и OutRotation (локальный поворот).
 		//преобразуем в пространство hand_r потому, что оружие прикреплено к этой же кости и в таком случае, LeftHandSocket будет передвигаться вместе с оружием
-		BlasterCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+		BlasterCharacter->FPSMesh->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
 		
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
@@ -133,17 +133,18 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 			FColor::Red
 		);
 	}
-	bUseFabric = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading;//when not reloading, we can use fabric
-	bUseAimOffsets = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
-	bTransfromRightHand = BlasterCharacter->GetCombatState() != ECombatState::ECS_Reloading && !BlasterCharacter->GetDisableGameplay();
+	bUseFabric = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;//when not reloading, we can use fabric
+	bUseAimOffsets = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetDisableGameplay();
+	bTransfromRightHand = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetDisableGameplay();
 }
 
 
 void UBlasterAnimInstance::SetSightTransform()
 {
-	if (EquippedWeapon && BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->GetMesh()) {
+	if (EquippedWeapon && BlasterCharacter && BlasterCharacter->GetFollowCamera() && BlasterCharacter->FPSMesh)
+	{
 		FTransform FollowCameraTransform = BlasterCharacter->GetFollowCamera()->GetComponentTransform();
-		FTransform FPSMeshTransfrom = BlasterCharacter->GetMesh()->GetComponentTransform();
+		FTransform FPSMeshTransfrom = BlasterCharacter->FPSMesh->GetComponentTransform();
 		FTransform CameraRelativeToArms = FollowCameraTransform.GetRelativeTransform(FPSMeshTransfrom);//make camera relative to arms
 		FVector SightForwardVector = CameraRelativeToArms.GetRotation().GetForwardVector();
 		FVector SightLocation = SightForwardVector * EquippedWeapon->GetDistanceToSight() + CameraRelativeToArms.GetLocation();
@@ -160,7 +161,7 @@ void UBlasterAnimInstance::SetRelativeHandTransform()
 	if(EquippedWeapon && EquippedScope == nullptr)
 	{
 		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
-		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
 		if (EquippedScope == nullptr) UE_LOG(LogTemp, Warning, TEXT("Am I in?"));
@@ -169,7 +170,7 @@ void UBlasterAnimInstance::SetRelativeHandTransform()
 	else if (EquippedScope && EquippedWeapon && EquippedWeapon->GetCurrentScope())
 	{
 		FTransform AimSocketTransform = EquippedWeapon->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
-		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		RelativeHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
 	}
@@ -184,14 +185,14 @@ void UBlasterAnimInstance::SetFinalHandTransform()
 	if (EquippedWeapon && EquippedScope == nullptr)
 	{
 		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
-		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		FinalHandTransform = SightSocketTransform.GetRelativeTransform(HandSocketTransform);
 		bRelativeHandIsSet = true;
 	}
 	else if(EquippedWeapon && EquippedScope && EquippedWeapon->GetCurrentScope())
 	{
 		FTransform AimSocketTransform = EquippedWeapon->GetCurrentScope()->GetScope()->GetSocketTransform("AimSocket", ERelativeTransformSpace::RTS_World);
-		FTransform HandSocketTransform = BlasterCharacter->GetMesh()->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
+		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
 		FinalHandTransform = AimSocketTransform.GetRelativeTransform(HandSocketTransform);
 	}
 }

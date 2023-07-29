@@ -34,6 +34,7 @@
 #include "Blaster/Grappling/GrappleTarget.h"
 #include "Blaster/HUD/InventoryWidget.h"
 #include "Blaster/InventorySystem/Items/Item.h"
+#include "Blaster/Weapon/Grenade/SingularityGrenade.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
@@ -41,10 +42,14 @@ ABlasterCharacter::ABlasterCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	PlayerCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("head"));
-	PlayerCamera->bUsePawnControlRotation = true;
-	bUseControllerRotationYaw = true;
+	/*
+	 * TP
+	 */
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	GetMesh()->bOwnerNoSee = true;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
@@ -55,6 +60,25 @@ ABlasterCharacter::ABlasterCharacter()
 	TPCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	TPCamera->bUsePawnControlRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	/*
+	 * FP
+	 */
+	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
+	PlayerCamera->SetupAttachment(RootComponent);
+	PlayerCamera->bUsePawnControlRotation = true;
+	bUseControllerRotationYaw = true;
+
+	Scene = CreateDefaultSubobject<USceneComponent>(TEXT("FPS Scene"));
+	Scene->SetupAttachment(PlayerCamera);
+
+	FPSMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSMesh"));
+	FPSMesh->SetupAttachment(Scene);
+	FPSMesh->SetCollisionObjectType(ECC_SkeletalMesh);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	FPSMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	FPSMesh->bOnlyOwnerSee = true;
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
@@ -87,18 +111,16 @@ ABlasterCharacter::ABlasterCharacter()
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
-	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	GetMesh()->bOwnerNoSee = false;
-
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 	NetUpdateFrequency = 120.f;
 	MinNetUpdateFrequency = 120.f;
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
+
+	AttachedGrenade = CreateDefaultSubobject<UStaticMeshComponent>("Attached Grenade");
+	AttachedGrenade->SetupAttachment(FPSMesh, FName("GrenadeSocket"));
+	AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 UAbilitySystemComponent* ABlasterCharacter::GetAbilitySystemComponent() const
@@ -192,6 +214,10 @@ void ABlasterCharacter::BeginPlay()
 	{
 		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::RecieveDamage);//добавляет функцию которая будет вызвана при возникновении события OnTakeAnyDamage
 	}
+	if(AttachedGrenade)
+	{
+		AttachedGrenade->SetVisibility(false);
+	}
 }
 
 void ABlasterCharacter::Tick(float DeltaTime)
@@ -269,6 +295,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("EquipFirstWeapon", IE_Pressed, this, &ABlasterCharacter::EquipFirstWeaponButtonPressed);
 	PlayerInputComponent->BindAction("EquipSecondWeapon", IE_Pressed, this, &ABlasterCharacter::EquipSecondWeaponButtonPressed);
 	PlayerInputComponent->BindAction("OpenInventory", IE_Pressed, this, &ABlasterCharacter::OpenInventory);
+	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ABlasterCharacter::ThrowGrenadeButtonPressed);
 
 	if (AbilitySystemComponent && InputComponent)
 	{
@@ -295,6 +322,22 @@ void ABlasterCharacter::PostInitializeComponents()
 	if(Inventory)
 	{
 		Inventory->OwningCharacter = this;
+	}
+}
+
+USkeletalMeshComponent* ABlasterCharacter::GetCharacterMesh()
+{
+	if(IsLocallyControlled())
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("0"));
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("FP Mesh name = %s"), *FPSMesh->GetName()));
+		return FPSMesh;
+	}
+	else
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("1"));
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("TP Mesh name = %s"), *GetMesh()->GetName()));
+		return GetMesh();
 	}
 }
 
@@ -474,7 +517,8 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
 {
 	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
 
-	if (bPlayMontage == true) {
+	if (bPlayMontage == true) 
+	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();//обращается к текущему animinstance
 		if (AnimInstance && FireWeaponMontage)
 		{
@@ -508,6 +552,16 @@ void ABlasterCharacter::PlayHitReactMontage()
 	}
 }
 
+void ABlasterCharacter::PlayGrenadeThrowMontage()
+{
+	if (Combatt == nullptr) return;
+
+	UAnimInstance* AnimInstance = FPSMesh->GetAnimInstance();//обращается к текущему animinstance
+	if (AnimInstance && GrenadeThrowMontage)
+	{
+		AnimInstance->Montage_Play(GrenadeThrowMontage);
+	}
+}
 
 void ABlasterCharacter::MoveForward(float Value)
 {
@@ -555,6 +609,8 @@ void ABlasterCharacter::EquipButtonPressed()
 	if (bDisableGameplay)return;
 	if(Combatt)
 	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("One"));
+
 		if (HasAuthority()) { //на сервере
 			Combatt->EquipWeapon(OverlappingWeapon);
 			if (Combatt->GetEquippedWeapon() && Combatt->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_AssaultRifle)
@@ -828,6 +884,15 @@ void ABlasterCharacter::OpenInventory()//temporary foo
 	}
 }
 
+
+void ABlasterCharacter::ThrowGrenadeButtonPressed()
+{
+	if(Combatt)
+	{
+		Combatt->ThrowGrenade();
+	}
+}
+
 void ABlasterCharacter::ReloadButtonPressed()
 {
 	if (bDisableGameplay)return;
@@ -841,7 +906,7 @@ void ABlasterCharacter::PlayReloadingMontage()
 {
 	if (Combatt == nullptr || Combatt->EquippedWeapon == nullptr) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	UAnimInstance* AnimInstance = FPSMesh->GetAnimInstance();
 	if (ReloadingMontage && AnimInstance)
 	{
 		AnimInstance->Montage_Play(ReloadingMontage);

@@ -4,7 +4,6 @@
 #include "Projectile.h"
 
 #include "NiagaraFunctionLibrary.h"
-#include "ProjectileRocket.h"
 #include "Components/BoxComponent.h"
 #include "Components/DecalComponent.h"
 #include "Particles/ParticleSystemComponent.h"

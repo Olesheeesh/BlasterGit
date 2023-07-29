@@ -44,7 +44,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	class USkeletalMeshComponent* TPMesh;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMeshComponent* FPSMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (allowPrivateAccess = "true"))
@@ -74,10 +74,12 @@ public:
 	friend class UCombatComponent;
 	friend class UAbilityComponent;
 	friend class UGrappleComponent;
+	friend class UInventoryComponent;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;// Called to bind functionality to input
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	USkeletalMeshComponent* GetCharacterMesh();
 	void PlayFireMontage(bool bAiming);
 	void PlayElimMontage();
 	virtual void OnRep_ReplicatedMovement() override;
@@ -93,6 +95,7 @@ public:
 	void MulticastElim();
 
 	void PlayReloadingMontage();
+	void PlayGrenadeThrowMontage();
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
@@ -102,6 +105,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)//should implement in character blueprint
 	void ShowGrenadeLauncherScopeWidget(bool bShowScope);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class USceneComponent* Scene;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* PlayerCamera;
@@ -169,6 +175,7 @@ protected:
 	bool GetIsSprinting();
 	void SetCollisionSettings(ECollisionSettings CurrentCollisionSetting);
 	void OpenInventory();
+	void ThrowGrenadeButtonPressed();
 private:
 
 	float HighestSpeed = 0.f;
@@ -242,6 +249,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	class UAnimMontage* ReloadingMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	class UAnimMontage* GrenadeThrowMontage;
 
 	void HideCharacterWhenCameraClose();
 
@@ -352,6 +362,13 @@ private:
 	 */
 
 	bool bInventotyIsActive = false;
+
+	/*
+	 * Grenade
+	 */
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* AttachedGrenade;
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);
@@ -379,6 +396,7 @@ public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combatt; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 	FORCEINLINE bool GetIsRestoringHealth() const { return bIsRestoringHealth; }
+	FORCEINLINE UStaticMeshComponent* GetAttachedGrenade() const { return AttachedGrenade; }
 };
 
 //tî replicate:

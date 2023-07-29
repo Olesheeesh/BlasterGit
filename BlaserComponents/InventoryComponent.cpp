@@ -6,4 +6,9 @@ UInventoryComponent::UInventoryComponent()
 
 }
 
+void UInventoryComponent::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
 

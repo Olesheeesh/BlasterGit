@@ -104,6 +104,8 @@ UTexture2D* UInventoryWidget::SetContentForSlot(EWeaponType WeaponType)
 		return ShotgunAmmoImage;
 	case EWeaponType::EWT_SubmachineGun:
 		return LightAmmoImage;
+	case EWeaponType::EWT_SingularityGrenade:
+		return SingularityGrenadeImage;
 	}
 	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Badd"));
 	return nullptr;

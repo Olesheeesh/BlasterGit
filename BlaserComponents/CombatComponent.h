@@ -31,12 +31,27 @@ public:
 
 	void EquipSecondaryWeapon(AWeapon* WeaponToEquip);
 
-	void AttachWeaponToSocket(AWeapon* WeaponToEquip);
+	void AttachWeaponToSocket(AWeapon* WeaponToEquip, USkeletalMeshComponent* Mesh);
+
+	UFUNCTION(Client, Reliable)
+	void ClientAttachWeaponToSocket(AWeapon* WeaponToEquip, USkeletalMeshComponent* Mesh);
+
+	UFUNCTION(Server, Reliable)
+	void ServerAttachWeaponToSocket(AWeapon* WeaponToEquip);
 
 	void Reload();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable)//calls on all machines
 	void FinishReloading();
+
+	UFUNCTION(BlueprintCallable)
+	void GrenadeThrowFinished();
+
+	UFUNCTION(BlueprintCallable)
+	void LaunchGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ServerLaunchGrenade(const FVector_NetQuantize& Target);
 
 	void FireButtonPressed(bool bPressed);
 
@@ -56,6 +71,8 @@ public:
 	void ClientUpdateSlotAmmo();
 
 	int32 SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount);
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
+	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon
 
 protected:
 	virtual void BeginPlay() override;
@@ -116,6 +133,20 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void InterpFOV(float DeltaTime);
 
+	/*
+	 * Grenade
+	 */
+
+	void ThrowGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ServerThrowGrenade();
+
+	void ShowAttachedGrenade(bool bShowGrenade);
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AProjectile> GrenadeClass;
+
 private:
 	UPROPERTY()
 	class ABlasterCharacter* Character;
@@ -127,9 +158,6 @@ private:
 
 	UPROPERTY()
 	class UInventoryWidget* InventoryWidget;
-
-	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
-	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon
 
 	UPROPERTY(Replicated) 
 	class AWeapon* PrimaryWeapon;
@@ -211,6 +239,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	int32 StartingGrenadeLauncherAmmo = 0;
+
+	UPROPERTY(EditAnywhere)
+	int32 StartingSingularityGrenadeAmmo = 0;
 
 	void InitializeCarriedAmmo();
 

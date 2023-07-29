@@ -75,4 +75,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UTexture2D* RocketAmmoImage;
+
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* SingularityGrenadeImage;
 };
