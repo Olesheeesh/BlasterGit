@@ -33,27 +33,58 @@ protected:
 	);
 
 private:
+	/*
+	 * Properties
+	 */
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* SingularitySystem;
+
+	UPROPERTY()
+	class UNiagaraComponent* SingularitySystemComponent;
+
 	UPROPERTY(EditAnywhere)
 	float CharCapsuleRadius = -34;
+
 	/*
 	 * Ablility
 	 */
+
+	UFUNCTION(NetMulticast, Reliable)
 	void SpawnSingularity();
+
 	bool bUseGrenateAbility = false;
+
 	TArray<class ABlasterCharacter*> OverlappingCharacters;
+
 	void MoveCharacterToEpicenter(class ABlasterCharacter* Character, float DeltaTime);
+
 	UPROPERTY(EditAnywhere)
 	float InterpolationSpeed;
+
 	/*
-	 * Collapse Timer
+	 * SpawnSingularity
 	 */
+
+	void StartSpawnSingularityTimer();
+	void SpawnSingularityTimerFinished();
+
+	FTimerHandle SpawnSingularityTimer;
+
+	UPROPERTY(EditAnywhere)
+	float TimeToSpawnSingularity = 1.3f;
+
+	/*
+	 * Collapse Singularity Timer
+	 */
+
 	void StartCollapseSingularityTimer();
 	void CollapseSingularityTimerFinished();
 	
 	FTimerHandle SingularityTimer;
 
 	UPROPERTY(EditAnywhere)
-	float TimeToSpawnSingularity = 3.f;
+	float TimeToCollapseSingularity = .5f;
 
 	/*
 	 * ExplosionTimer
@@ -65,6 +96,6 @@ private:
 	FTimerHandle ExplosionTimer;
 
 	UPROPERTY(EditAnywhere)
-	float TimeToExplosion = 1.2f;
+	float TimeToExplosion = 2.f;
 
 };

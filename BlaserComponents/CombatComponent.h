@@ -210,14 +210,21 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
 	int32 CarriedAmmo;
 
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedGrenade)
+	int32 CarriedGrenade;
+
 	//Carried ammo for a currently-equipped weapon
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
+
+	UFUNCTION()
+	void OnRep_CarriedGrenade();
 
 	UFUNCTION(Server, Reliable)
 	void GetCarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
+	TMap<EGrenadeType, int32> CarriedGrenadesMap;
 
 	UPROPERTY(EditAnywhere)
 	int32 StartingARAmmo = 30;
@@ -244,6 +251,7 @@ private:
 	int32 StartingSingularityGrenadeAmmo = 0;
 
 	void InitializeCarriedAmmo();
+	void InitializeCarriedGrenades();
 
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
 	ECombatState CombatState = ECombatState::ECS_Unoccupied;

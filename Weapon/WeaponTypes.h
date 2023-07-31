@@ -28,6 +28,13 @@ enum class EWeaponType : uint8
 };
 
 UENUM(BlueprintType)
+enum class EGrenadeType : uint8
+{
+	EGT_SingularityGrenade UMETA(DisplayName = "Singularity Grenade")
+
+};
+
+UENUM(BlueprintType)
 enum class EWeaponSocketType : uint8
 {
 	EWST_Custom UMETA(DisplayName = "Custom"),

@@ -64,6 +64,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UCombatComponent, AmmoToReload);
 	DOREPLIFETIME_CONDITION(UCombatComponent, bAiming, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
+	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedGrenade, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
 }
 
@@ -828,6 +829,11 @@ void UCombatComponent::OnRep_CarriedAmmo()
 	}
 }
 
+void UCombatComponent::OnRep_CarriedGrenade()
+{
+
+}
+
 void UCombatComponent::GetCarriedAmmo_Implementation()
 {
 	if (EquippedWeapon == nullptr) return;
@@ -851,4 +857,9 @@ void UCombatComponent::InitializeCarriedAmmo()
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, StartingGrenadeLauncherAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrapplingHook, StartingGrenadeLauncherAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_SingularityGrenade, StartingGrenadeLauncherAmmo);
+}
+
+void UCombatComponent::InitializeCarriedGrenades()
+{
+	CarriedGrenadesMap.Emplace(EGrenadeType::EGT_SingularityGrenade, 0);
 }
