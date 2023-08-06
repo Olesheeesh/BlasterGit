@@ -121,6 +121,18 @@ void AProjectile::ApplyExplodeDamage()
 	}
 }
 
+void AProjectile::SpawnSound(USoundCue* Sound)
+{
+	if(Sound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(
+			GetWorld(),
+			Sound,
+			GetActorLocation()
+		);
+	}
+}
+
 void AProjectile::Destroyed()
 {
 	Super::Destroyed();

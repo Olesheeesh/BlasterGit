@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryWidget.generated.h"
 
+
 /**
  * 
  */
@@ -16,10 +17,14 @@ class BLASTER_API UInventoryWidget : public UUserWidget
 	virtual void NativeConstruct() override;//толи это же что и UInventoryWidget()?
 public:
 	UFUNCTION(BlueprintCallable)
-	void AddItemToInventory(class UTexture2D* SlotImage, int32 Quantity, EWeaponType Type);
+	void AddAmmoItemToInventory(UTexture2D* SlotImage, int32 Quantity, EWeaponType InWeaponType);
+
+	UFUNCTION(BlueprintCallable)
+	void AddGrenadeItemToInventory(UTexture2D* SlotImage, int32 Quantity, EGrenadeType InGrenadeType);
 
 	void RefreshInventory();
-	UTexture2D* SetContentForSlot(EWeaponType WeaponType);
+	UTexture2D* SetAmmoContentForSlot(EWeaponType InWeaponType);
+	UTexture2D* SetGrenadeContentForSlot(EGrenadeType InGrenadeType);
 
 	class UInventorySlot* GetCurrentSlot();
 
@@ -42,7 +47,10 @@ public:
 	TArray<class UInventorySlot*> InventorySlots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	TArray<EWeaponType> ExistingItemTypesInInventory;
+	TArray<EWeaponType> ExistingAmmoTypesInInventory;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TArray<EGrenadeType> ExistingGrenadeTypesInInventory;
 
 	int32 SlotNumber = 0;
 
@@ -52,6 +60,9 @@ public:
 	/*
 	 * Images
 	 */
+	UPROPERTY(EditAnywhere)
+	class UTexture2D* EmptyImage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UTexture2D* HeavyAmmoImage;
 
@@ -76,6 +87,13 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UTexture2D* RocketAmmoImage;
 
+	/*
+	 * Grenades
+	 */
+
 	UPROPERTY(EditAnywhere)
 	class UTexture2D* SingularityGrenadeImage;
+
+	
+	
 };

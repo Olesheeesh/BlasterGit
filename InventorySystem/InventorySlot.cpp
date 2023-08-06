@@ -22,7 +22,7 @@ void UInventorySlot::SetSlotData(class UTexture2D* SlotImage, int32 Quantity)
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 
 	SlotData.ItemTexture = SlotImage;
-	SlotData.SlotAmmo = Quantity;
+	SlotData.SlotAmount = Quantity;
 }
 
 void UInventorySlot::SetSlotQuantity(int32 Quantity)
@@ -56,21 +56,11 @@ void UInventorySlot::ClearSlot()
 	{
 		InventoryWidget->JustRemovedSlot = this;
 
-		Thumbnail->SetBrushFromTexture(nullptr);
-		SlotQuantity->SetText(FText::FromString(""));
+		if(SlotData.WeaponType != EWeaponType::EWT_None) RemoveCarriedAmmoAmount(SlotData.WeaponType);
+		if(SlotData.GrenadeType != EGrenadeType::EGT_None) RemoveCarriedGrenadesAmount(SlotData.GrenadeType);
 
-		SetSlotState(ESlotState::ESS_Empty);
-		RemoveCarriedAmmoAmount(SlotData.SlotType);
-
-		SlotData.SlotAmmo = 0;
-		bSlotWasCleared = true;
-		SlotData.SlotType = EWeaponType::EWT_None;
-		SlotData.SlotState = ESlotState::ESS_Empty;
-
-		if(SlotData.bIsSlotToModify)
-		{
-			InventoryWidget->bSlotNoLongerModified = true;
-		}
+		ClearSlotData();
+		
 		if (InventoryWidget->JustRemovedSlot != nullptr)
 		{
 			InventoryWidget->RefreshInventory();
@@ -78,33 +68,70 @@ void UInventorySlot::ClearSlot()
 	}
 }
 
+void UInventorySlot::ClearSlotData()
+{
+	Thumbnail->SetBrushFromTexture(nullptr);
+	SlotQuantity->SetText(FText::FromString(""));
+
+	SetSlotState(ESlotState::ESS_Empty);
+
+	SlotData.SlotAmount = 0;
+	bSlotWasCleared = true;
+	SlotData.WeaponType = EWeaponType::EWT_None;
+	SlotData.GrenadeType = EGrenadeType::EGT_None;
+	SlotData.SlotState = ESlotState::ESS_Empty;
+
+	if (SlotData.bIsSlotToModify)
+	{
+		InventoryWidget->bSlotNoLongerModified = true;
+	}
+}
+
 void UInventorySlot::RemoveCarriedAmmoAmount(EWeaponType WeaponType)
 {
 	class ABlasterCharacter* Character = Cast<ABlasterCharacter>(GetOwningPlayerPawn());
 	if (Character == nullptr) return;
-	class UCombatComponent* Combat = Character->GetCombatComponent();
-	if (Combat)
+	if (Character && Character->HasAuthority())
 	{
-		Combat->SetCarriedAmmo(WeaponType, SlotData.SlotAmmo);//74
+		class UCombatComponent* Combat = Character->GetCombatComponent();
+		if (Combat)
+		{
+			Combat->RemoveCarriedAmmo(WeaponType, SlotData.SlotAmount);//74
+		}
+	}
+}
+
+void UInventorySlot::RemoveCarriedGrenadesAmount(EGrenadeType GrenadeType)
+{
+	class ABlasterCharacter* Character = Cast<ABlasterCharacter>(GetOwningPlayerPawn());
+	if (Character == nullptr) return;
+	if (Character && Character->HasAuthority())
+	{
+		class UCombatComponent* Combat = Character->GetCombatComponent();
+		if (Combat)
+		{
+			Combat->RemoveCarriedGrenades(GrenadeType, SlotData.SlotAmount);//74
+		}
 	}
 }
 
 void UInventorySlot::TransferDataFrom(const FSlotData& Data)
 {
 	Thumbnail->SetBrushFromTexture(Data.ItemTexture);
-	float AmmoPercent = Data.SlotAmmo / ProgressMagCapacity;
+	float AmmoPercent = Data.SlotAmount / ProgressMagCapacity;
 
 	/*if (bMagIsFull)
 	{
 		AmmoPercent = 0.f;
 		Quantity =
 	}*/
-	FString QuantityText = FString::Printf(TEXT("%d"), Data.SlotAmmo);
+	FString QuantityText = FString::Printf(TEXT("%d"), Data.SlotAmount);
 	SlotQuantity->SetText(FText::FromString(QuantityText));
 
 	SlotData.ItemTexture = Data.ItemTexture;
-	SlotData.SlotAmmo = Data.SlotAmmo;
-	SlotData.SlotType = Data.SlotType;
+	SlotData.SlotAmount = Data.SlotAmount;
+	SlotData.WeaponType = Data.WeaponType;
+	SlotData.GrenadeType = Data.GrenadeType;
 	SlotData.SlotState = Data.SlotState;
 	SlotData.bMximumAmountOfAmmoReached = Data.bMximumAmountOfAmmoReached;
 	SlotData.bSlotIsFull = Data.bSlotIsFull;
@@ -118,5 +145,5 @@ void UInventorySlot::SetSlotState(ESlotState State)
 
 bool UInventorySlot::SlotReachedLimit()
 {
-	return SlotData.bSlotIsFull = SlotData.SlotAmmo >= MaxSlotQuantity;
+	return SlotData.bSlotIsFull = SlotData.SlotAmount >= MaxSlotQuantity;
 }

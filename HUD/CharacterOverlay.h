@@ -38,4 +38,13 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* MatchCountdownText;
+
+	//Grenade
+	UPROPERTY(meta = (BindWidget))
+	class UImage* GrenadeSlot;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* GrenadeAmountText;
+
+	bool bGrenadeSlotIsEmpty = true;
 };

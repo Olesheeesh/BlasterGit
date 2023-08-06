@@ -7,15 +7,16 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
-#include "DrawDebugHelpers.h"
-#include "ParameterCollection.h"
 #include "Camera/CameraComponent.h"
 #include "Blaster/HUD/BlasterHUD.h"
 #include "TimerManager.h"
 #include "Blaster/Character/BlasterAnimInstance.h"
+#include "Blaster/HUD/CharacterOverlay.h"
 #include "Blaster/HUD/InventoryWidget.h"
-#include "Blaster/InventorySystem/InventorySlot.h"
+#include "Blaster/HUD/StoreWidget.h"
+#include "Blaster/StoreSystem/StoreSlot.h"
 #include "Blaster/Weapon/Grenade/SingularityGrenade.h"
+#include "Components/HorizontalBox.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -38,6 +39,7 @@ void UCombatComponent::BeginPlay()
 	if(Character->HasAuthority())
 	{
 		InitializeCarriedAmmo();
+		InitializeCarriedGrenades();
 	}
 }
 
@@ -64,7 +66,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UCombatComponent, AmmoToReload);
 	DOREPLIFETIME_CONDITION(UCombatComponent, bAiming, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);//replicates only to a client that actively controlled
-	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedGrenade, COND_OwnerOnly);//replicates only to a client that actively controlled
+	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedGrenadeAmount, COND_OwnerOnly);//replicates only to a client that actively controlled
 	DOREPLIFETIME(UCombatComponent, CombatState);
 }
 
@@ -158,6 +160,11 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::OnRep_EquippedGrenade()
+{
+	UpdateGrenadeAmount();
 }
 
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
@@ -277,6 +284,30 @@ void UCombatComponent::UpdateCarriedAmmo_Implementation()
 	}
 }
 
+void UCombatComponent::BuyGrenade(EGrenadeType GrenadeType)
+{
+	if (Character && Character->HasAuthority())
+	{
+		if (CarriedGrenadesMap.Contains(GrenadeType))
+		{
+			CarriedGrenadesMap[GrenadeType] += 1;
+			PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+			if (PlayerController)
+			{
+				PlayerController->BuyGrenade(GrenadeType, GetCarriedGrenadeAmount());
+			}
+		}
+	}
+}
+
+void UCombatComponent::UpdateGrenadeAmount()
+{
+	if(EquippedGrenade)
+	{
+		CarriedGrenadeAmount = CarriedGrenadesMap[EquippedGrenade->GetGrenadeType()];
+	}
+}
+
 void UCombatComponent::ClientUpdateSlotAmmo_Implementation()
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
@@ -289,27 +320,62 @@ void UCombatComponent::ClientUpdateSlotAmmo_Implementation()
 	}
 }
 
-void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType WeaponType, int32 Quantity)
+void UCombatComponent::ClientAddItemToInventory_Implementation(EWeaponType InWeaponType, EGrenadeType InGrenadeType, int32 Quantity)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;//so we can access controller via character
 
 	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController; //if Controller !null -> equel to itself
 	if (PlayerController)//check if is valid
 	{
-		PlayerController->AddItemToInventory(WeaponType, Quantity);
+		if (InWeaponType != EWeaponType::EWT_None)
+		{
+			PlayerController->AddAmmoToInventory(InWeaponType, Quantity);
+		}
+		if (InGrenadeType != EGrenadeType::EGT_None)
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here0"));
+			PlayerController->AddGrenadeToInventory(InGrenadeType, Quantity);
+		}
 	}
 }
 
-int32 UCombatComponent::SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount)
+int32 UCombatComponent::RemoveCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount)
 {
 	if (CarriedAmmoMap.Contains(WeaponType))
 	{
-		UpdateCarriedAmmo();
-		CarriedAmmo -= RemoveAmmoAmount;
+		//CarriedAmmo -= RemoveAmmoAmount;
+		CarriedAmmoMap[WeaponType] -= RemoveAmmoAmount;
+		if (EquippedWeapon->GetWeaponType() == WeaponType) UpdateCarriedAmmo();
+
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("RemovedAmmo = %d"), RemoveAmmoAmount));
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("NewAmmo = %d"), CarriedAmmoMap[WeaponType]));
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("WeaponType = %d"), WeaponType));
 		if (InventoryWidget)
 		{
-			if (CarriedAmmo == 0)
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("A?"));
+			if (CarriedAmmoMap[WeaponType] == 0)
 			{
+				InventoryWidget->bTypeOfAmmoRunOut = true;
+			}
+		}
+	}
+	return 0;
+}
+
+int32 UCombatComponent::RemoveCarriedGrenades(EGrenadeType GrenadeType, int32 RemoveGrenadeAmount)
+{
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("M?"));
+	if (CarriedGrenadesMap.Contains(GrenadeType))
+	{
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("MM?"));
+		CarriedGrenadesMap[GrenadeType] -= RemoveGrenadeAmount;
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(PlayerController->GetHUD()) : HUD;
+		InventoryWidget = InventoryWidget == nullptr ? HUD->InventoryWidget : InventoryWidget;
+		if (InventoryWidget)
+		{
+			if (CarriedGrenadesMap[GrenadeType] == 0)
+			{
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("MMM?"));
 				InventoryWidget->bTypeOfAmmoRunOut = true;
 			}
 		}
@@ -323,7 +389,7 @@ void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
 	{
 		CarriedAmmoMap[WeaponType] += AmmoAmount;
 		UpdateCarriedAmmo();
-		ClientAddItemToInventory(WeaponType, AmmoAmount);
+		ClientAddItemToInventory(WeaponType, EGrenadeType::EGT_None, AmmoAmount);
 	}
 
 	if(EquippedWeapon && EquippedWeapon->IsEmpty() && EquippedWeapon->GetWeaponType() == WeaponType)
@@ -496,6 +562,31 @@ void UCombatComponent::ShowAttachedGrenade(bool bShowGrenade)
 	{
 		Character->GetAttachedGrenade()->SetVisibility(bShowGrenade);
 	}
+}
+
+void UCombatComponent::SetEquippedGrenade()
+{
+	if(GrenadeClass)
+	{
+		EquippedGrenade = GrenadeClass.GetDefaultObject();
+	}
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("GrenadeClass is not set"));
+}
+
+
+TSubclassOf<AProjectileGrenade> UCombatComponent::GetGrenadeByType(EGrenadeType Type)
+{
+	if (GrenadeObjects.SingularityGrenade)
+	{
+		switch (Type)
+		{
+		case EGrenadeType::EGT_SingularityGrenade:
+			return *GrenadeObjects.SingularityGrenade;
+		}
+	}
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Grenade is not set in wbp_store"));
+
+	return nullptr;
 }
 
 void UCombatComponent::ServerThrowGrenade_Implementation()

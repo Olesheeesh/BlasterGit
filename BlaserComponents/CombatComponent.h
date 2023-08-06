@@ -8,7 +8,17 @@
 #include "Components/ActorComponent.h"
 #include "Blaster/BlasterTypes/CombatState.h"
 #include "Blaster/BlasterTypes/Types.h"
+#include "Blaster/Weapon/Grenade/SingularityGrenade.h"
 #include "CombatComponent.generated.h"
+
+USTRUCT(BlueprintType, Category = "GrenadeStruct")
+struct FGrenadeObjects
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class ASingularityGrenade> SingularityGrenade;
+};
 
 #define TRACE_LENGTH 99999.f
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -61,18 +71,23 @@ public:
 
 	void ChooseSecondaryWeapon();
 
-	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+	void PickupAmmo(EWeaponType Type, int32 AmmoAmount);
 	void PickupBooster(EBoosterType BoosterType, int32 AmountToRestore);
 
 	UFUNCTION(Client, Reliable)
-	void ClientAddItemToInventory(EWeaponType WeaponType, int32 Quantity);
+	void ClientAddItemToInventory(EWeaponType InWeaponType, EGrenadeType InGrenadeType, int32 Quantity);
 
 	UFUNCTION(Client, Reliable)
 	void ClientUpdateSlotAmmo();
 
-	int32 SetCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount);
+	int32 RemoveCarriedAmmo(EWeaponType WeaponType, int32 RemoveAmmoAmount);
+	int32 RemoveCarriedGrenades(EGrenadeType GrenadeType, int32 RemoveGrenadeAmount);
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_EquippedWeapon) //to replicate we have to register variable first
 	class AWeapon* EquippedWeapon; //variable to store currently equipped weapon
+
+	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_EquippedGrenade)
+	class AProjectileGrenade* EquippedGrenade;
+	void SetEquippedGrenade();
 
 protected:
 	virtual void BeginPlay() override;
@@ -82,6 +97,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+
+	UFUNCTION()
+	void OnRep_EquippedGrenade();
 
 	//UFUNCTION()
 	//void OnRep_CurrentScope();
@@ -107,11 +125,16 @@ protected:
 	UPROPERTY(Replicated)
 	int32 AmmoToReload = 0;
 
-	UFUNCTION(Client, Reliable)
+	UFUNCTION(Client, Reliable)//может не нужно
 	void SetAmmoToReloadForClient(int32 ToReload);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable)//не нужно
 	void UpdateCarriedAmmo();
+
+	UFUNCTION(BlueprintCallable)
+	void BuyGrenade(EGrenadeType Grenade);
+	UFUNCTION(BlueprintCallable)
+	void UpdateGrenadeAmount();
 
 	const USkeletalMeshSocket* GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh);
 	/*
@@ -145,7 +168,11 @@ protected:
 	void ShowAttachedGrenade(bool bShowGrenade);
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AProjectile> GrenadeClass;
+	TSubclassOf<class AProjectileGrenade> GrenadeClass;
+
+
+	UFUNCTION(BlueprintCallable)
+	TSubclassOf<AProjectileGrenade> GetGrenadeByType(EGrenadeType Type);
 
 private:
 	UPROPERTY()
@@ -181,7 +208,6 @@ private:
 
 	FVector HitTarget;
 
-
 	bool bSprinting;
 
 	/*
@@ -211,7 +237,9 @@ private:
 	int32 CarriedAmmo;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CarriedGrenade)
-	int32 CarriedGrenade;
+	int32 CarriedGrenadeAmount;
+
+	int32 GetCarriedGrenadeAmount() const { return CarriedGrenadeAmount; }
 
 	//Carried ammo for a currently-equipped weapon
 	UFUNCTION()
@@ -227,7 +255,7 @@ private:
 	TMap<EGrenadeType, int32> CarriedGrenadesMap;
 
 	UPROPERTY(EditAnywhere)
-	int32 StartingARAmmo = 30;
+	int32 StartingARAmmo = 0;
 
 	UPROPERTY(EditAnywhere)
 	int32 StartingRocketAmmo = 0;
@@ -268,7 +296,14 @@ private:
 	void PlayOutOfAmmoSound();
 
 	/*
-	 * FPS TUTORIAL
+	 * Grenade objects
+	 */
+
+	UPROPERTY(EditAnywhere)
+	FGrenadeObjects GrenadeObjects;
+
+	/*
+	 * Store
 	 */
 
 protected:

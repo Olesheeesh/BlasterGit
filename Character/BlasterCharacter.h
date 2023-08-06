@@ -118,9 +118,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	class UCameraComponent* FirstPersonCamera;
 
-	UPROPERTY(BlueprintReadWrite)
-	class UInventoryWidget* InventoryWidget;
-
 	UPROPERTY(EditAnywhere)
 	class UChildActorComponent* ChildActor;
 
@@ -175,6 +172,7 @@ protected:
 	bool GetIsSprinting();
 	void SetCollisionSettings(ECollisionSettings CurrentCollisionSetting);
 	void OpenInventory();
+	void OpenStore();
 	void ThrowGrenadeButtonPressed();
 private:
 
@@ -284,10 +282,9 @@ private:
 	UFUNCTION()
 	void OnRep_Health();
 
-	UFUNCTION(Server, Reliable)
 	void RestoreSomeHealth(int32 AmountToRestore);
 
-	void IncrementHealth(int32 AmountToRestore);
+	void IncrementHealth(int32 DesiredHealth);
 
 	UPROPERTY(Replicated)
 	bool bIsRestoringHealth = false;
@@ -358,17 +355,17 @@ private:
 	class ABlasterPlayerState* BlasterPlayerState;
 
 	/*
-	 * Inventory
-	 */
-
-	bool bInventotyIsActive = false;
-
-	/*
 	 * Grenade
 	 */
 
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* AttachedGrenade;
+
+	/*
+	 * Store
+	 */
+
+	void Buy(int32 StoreSlotIndex);
 public:
 	float MaxSpeed;
 	void UELogInfo(float Value);

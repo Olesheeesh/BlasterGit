@@ -12,7 +12,7 @@ void UInventoryWidget::NativeConstruct()
 
 }
 
-void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity, EWeaponType Type)
+void UInventoryWidget::AddAmmoItemToInventory(UTexture2D* SlotImage, int32 Quantity, EWeaponType InWeaponType)
 {
 	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
 	{
@@ -20,11 +20,27 @@ void UInventoryWidget::AddItemToInventory(UTexture2D* SlotImage, int32 Quantity,
 		CurrentSlot->SetSlotData(SlotImage, Quantity);
 		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
 
-		ExistingItemTypesInInventory.Add(Type);
-		CurrentSlot->SlotData.SlotType = Type;
+		ExistingAmmoTypesInInventory.Add(InWeaponType);
+		CurrentSlot->SlotData.WeaponType = InWeaponType;
 
 		if(SlotNumber < InventorySlots.Num())
 		++SlotNumber;
+	}
+}
+
+void UInventoryWidget::AddGrenadeItemToInventory(UTexture2D* SlotImage, int32 Quantity, EGrenadeType InGrenadeType)
+{
+	if (InventorySlots.Num() > 0 && SlotNumber < InventorySlots.Num())
+	{
+		CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));//GetChildAt() возвращает указатель на базовый класс UWidget
+		CurrentSlot->SetSlotData(SlotImage, Quantity);
+		CurrentSlot->SetSlotState(ESlotState::ESS_Filled);
+
+		ExistingGrenadeTypesInInventory.Add(InGrenadeType);
+		CurrentSlot->SlotData.GrenadeType = InGrenadeType;
+
+		if (SlotNumber < InventorySlots.Num())
+			++SlotNumber;
 	}
 }
 
@@ -58,7 +74,7 @@ void UInventoryWidget::RefreshInventory()
 						SlotToReplace->SetSlotState(ESlotState::ESS_Filled);
 						if (LastSlot && LastSlot->SlotData.SlotState == ESlotState::ESS_Empty)
 						{
-							NextSlot->ClearSlot();
+							NextSlot->ClearSlotData();
 							SlotNumber = j;
 							break;
 						}
@@ -80,9 +96,9 @@ UInventorySlot* UInventoryWidget::GetCurrentSlot()
 	return CurrentSlot = Cast<UInventorySlot>(InventoryBox->GetChildAt(SlotNumber));
 }
 
-UTexture2D* UInventoryWidget::SetContentForSlot(EWeaponType WeaponType)
+UTexture2D* UInventoryWidget::SetAmmoContentForSlot(EWeaponType InWeaponType)
 {
-	switch(WeaponType)
+	switch (InWeaponType)
 	{
 	case EWeaponType::EWT_AssaultRifle:
 		return HeavyAmmoImage;
@@ -107,7 +123,20 @@ UTexture2D* UInventoryWidget::SetContentForSlot(EWeaponType WeaponType)
 	case EWeaponType::EWT_SingularityGrenade:
 		return SingularityGrenadeImage;
 	}
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Badd"));
+	
+	
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Baddd"));
+	return nullptr;
+}
+
+UTexture2D* UInventoryWidget::SetGrenadeContentForSlot(EGrenadeType InGrenadeType)
+{
+	switch (InGrenadeType)
+	{
+	case EGrenadeType::EGT_SingularityGrenade:
+		return SingularityGrenadeImage;
+	}
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Baddd2"));
 	return nullptr;
 }
 

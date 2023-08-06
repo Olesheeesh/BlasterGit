@@ -12,15 +12,15 @@ struct FHUDPackage
 {
 	GENERATED_BODY()//so the reflection system can work with FHUDPackage struct
 public:
-	UPROPERTY() // ADDED THIS!!!
+	UPROPERTY() 
 	UTexture2D* CrosshairsCenter;
-	UPROPERTY() // ADDED THIS!!!
+	UPROPERTY() 
 	UTexture2D* CrosshairsLeft;
-	UPROPERTY() // ADDED THIS!!!
+	UPROPERTY() 
 	UTexture2D* CrosshairsRight;
-	UPROPERTY() // ADDED THIS!!!
+	UPROPERTY() 
 	UTexture2D* CrosshairsTop;
-	UPROPERTY() // ADDED THIS!!!
+	UPROPERTY() 
 	UTexture2D* CrosshairsBottom;
 	float CrosshairSpread;
 	FLinearColor CrosshairsColor;
@@ -45,8 +45,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "PlayerScore");
 	TSubclassOf<class UUserWidget> PlayerScoreClass;
 
-	UPROPERTY(EditAnywhere, Category = "PlayerScore");
+	UPROPERTY(EditAnywhere, Category = "Inventory");
 	TSubclassOf<class UUserWidget> InventoryWidgetClass;
+
+	UPROPERTY(EditAnywhere, Category = "Store");
+	TSubclassOf<class UUserWidget> StoreWidgetClass;
 
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;//reference to an instance of the UCharacterOverlay class
@@ -61,13 +64,17 @@ public:
 	UPlayerScore* PlayerScoreWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	class UInventoryWidget* InventoryWidget;	
+	class UInventoryWidget* InventoryWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	class UStoreWidget* StoreWidget;
 
 	void AddCharacterOverlay();
 	void AddAnnouncementWidget();
 	void AddScoreBoardWidget();
 	void AddPlayerScoreWidget();
 	void AddInventoryWidget();
+	void AddStoreWidget();
 
 	void SetGameAndUIInputMode();
 	void SetGameOnlyInputMode();

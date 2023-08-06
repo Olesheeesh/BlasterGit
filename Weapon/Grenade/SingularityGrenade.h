@@ -37,13 +37,13 @@ private:
 	 * Properties
 	 */
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties")
 	class UNiagaraSystem* SingularitySystem;
 
 	UPROPERTY()
 	class UNiagaraComponent* SingularitySystemComponent;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties")
 	float CharCapsuleRadius = -34;
 
 	/*
@@ -53,13 +53,16 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void SpawnSingularity();
 
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	USoundCue* SingularitySound;
+
 	bool bUseGrenateAbility = false;
 
 	TArray<class ABlasterCharacter*> OverlappingCharacters;
 
 	void MoveCharacterToEpicenter(class ABlasterCharacter* Character, float DeltaTime);
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties")
 	float InterpolationSpeed;
 
 	/*
@@ -71,7 +74,7 @@ private:
 
 	FTimerHandle SpawnSingularityTimer;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties | Timer")
 	float TimeToSpawnSingularity = 1.3f;
 
 	/*
@@ -83,7 +86,7 @@ private:
 	
 	FTimerHandle SingularityTimer;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties | Timer")
 	float TimeToCollapseSingularity = .5f;
 
 	/*
@@ -95,7 +98,7 @@ private:
 
 	FTimerHandle ExplosionTimer;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Properties | Timer")
 	float TimeToExplosion = 2.f;
 
 };

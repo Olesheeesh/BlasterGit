@@ -16,9 +16,13 @@
 #include "Components/VerticalBox.h"
 #include "TimerManager.h"
 #include "Blaster/HUD/InventoryWidget.h"
+#include "Blaster/HUD/StoreWidget.h"
 #include "Blaster/InventorySystem/InventorySlot.h"
+#include "Blaster/StoreSystem/StoreSlot.h"
+#include "Blaster/Weapon/ProjectileGrenade.h"
 #include "Blaster/Weapon/Weapon.h"
 #include "Camera/CameraComponent.h"
+#include "Components/HorizontalBox.h"
 #include "Components/WrapBox.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -121,11 +125,36 @@ void ABlasterPlayerController::ShowAmmoHUD_Implementation(bool ShowHUD)
 			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Visible);
 			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Visible);
 		}
-		else {
+		else 
+		{
 			BlasterHUD->CharacterOverlay->WeaponAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->CharacterOverlay->AmmoText->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->CharacterOverlay->Slash->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->CharacterOverlay->CarriedAmmoAmount->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void ABlasterPlayerController::ShowGrenadeHUD(bool ShowHUD)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+
+	bool bHUDValid = BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->GrenadeSlot &&
+		BlasterHUD->CharacterOverlay->GrenadeAmountText;
+
+	if (bHUDValid)
+	{
+		if (ShowHUD == true)
+		{
+			BlasterHUD->CharacterOverlay->GrenadeSlot->SetVisibility(ESlateVisibility::Visible);
+			BlasterHUD->CharacterOverlay->GrenadeAmountText->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			BlasterHUD->CharacterOverlay->GrenadeSlot->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->CharacterOverlay->GrenadeAmountText->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
@@ -193,6 +222,32 @@ void ABlasterPlayerController::SetHUDDefeats(int Defeats)
 		HUDDefeats = Defeats;
 	}
 }
+
+
+void ABlasterPlayerController::SetGrenadeHUD(int32 Amount)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
+
+	bool bHUDValid = BlasterCharacter &&
+		BlasterCharacter->GetCombatComponent() &&
+		BlasterHUD &&
+		BlasterHUD->CharacterOverlay &&
+		BlasterHUD->CharacterOverlay->GrenadeSlot &&
+		BlasterHUD->CharacterOverlay->GrenadeAmountText;
+
+	if(bHUDValid)
+	{
+		BlasterHUD->CharacterOverlay->GrenadeSlot->SetBrushFromTexture(BlasterCharacter->GetCombatComponent()->EquippedGrenade->GetGrenadeImage());
+		FString GrenadeQuantity = FString::Printf(TEXT("%d"), Amount);
+		BlasterHUD->CharacterOverlay->GrenadeAmountText->SetText(FText::FromString(GrenadeQuantity));
+		if (BlasterHUD->CharacterOverlay->bGrenadeSlotIsEmpty)
+		{
+			BlasterHUD->CharacterOverlay->bGrenadeSlotIsEmpty = false;
+		}
+	}
+}
+
 
 void ABlasterPlayerController::SetHUDMatchCountdown(float CountdownTime)
 {
@@ -297,7 +352,7 @@ void ABlasterPlayerController::HideSniperScope()
 	}
 }
 
-void ABlasterPlayerController::AddItemToInventory(EWeaponType WeaponType, int32 Quantity)
+void ABlasterPlayerController::AddAmmoToInventory(EWeaponType WeaponType, int32 Quantity)
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	if(BlasterHUD)
@@ -307,55 +362,125 @@ void ABlasterPlayerController::AddItemToInventory(EWeaponType WeaponType, int32 
 		{
 			if (InventoryWidget->bTypeOfAmmoRunOut)
 			{
-				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
+				InventoryWidget->AddAmmoItemToInventory(InventoryWidget->SetAmmoContentForSlot(WeaponType), Quantity, WeaponType);
 				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
 				InventoryWidget->bTypeOfAmmoRunOut = false;
 				return;
 			}
-			if (!InventoryWidget->ExistingItemTypesInInventory.Contains(WeaponType))
+			if (!InventoryWidget->ExistingAmmoTypesInInventory.Contains(WeaponType))
 			{
-				InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);//можно исползовать и CarrieAmmoMap вместо quantity
+				InventoryWidget->AddAmmoItemToInventory(InventoryWidget->SetAmmoContentForSlot(WeaponType), Quantity, WeaponType);//можно исползовать и CarrieAmmoMap вместо quantity
 				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
 			}
 			else
 			{
 				for (auto& Item : InventoryWidget->InventorySlots)
 				{
-					if (Item->SlotData.SlotType == WeaponType)//слот с тем же типом патронов
+					if (Item->SlotData.WeaponType == WeaponType)//слот с тем же типом патронов
 					{
 
 						Item->SlotData.bIsSlotToModify = false;
-						if (Item->SlotData.SlotAmmo + Quantity > Item->MaxSlotQuantity)
+						if (Item->SlotData.SlotAmount + Quantity > Item->MaxSlotQuantity)
 						{
 							if (!Item->SlotReachedLimit())
 							{
 								Item->bSlotWasCleared = false;
 
-								int32 AmmoLeft = Item->SlotData.SlotAmmo + Quantity - Item->MaxSlotQuantity;//10
+								int32 AmmoLeft = Item->SlotData.SlotAmount + Quantity - Item->MaxSlotQuantity;//10
 
-								Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotData.SlotAmmo + Quantity - AmmoLeft);//устанавливает текущее значение слота в максимум (80)
+								Item->SetSlotData(InventoryWidget->SetAmmoContentForSlot(WeaponType), Item->SlotData.SlotAmount + Quantity - AmmoLeft);//устанавливает текущее значение слота в максимум (80)
 								Item->SlotData.bIsSlotToModify = false;
 
 								Item->SlotData.bMximumAmountOfAmmoReached = true;
 
-								InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), AmmoLeft, WeaponType);//новый слот с 10
+								InventoryWidget->AddAmmoItemToInventory(InventoryWidget->SetAmmoContentForSlot(WeaponType), AmmoLeft, WeaponType);//новый слот с 10
 								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
 
-								InventoryWidget->CurrentSlot->SlotData.SlotAmmo = AmmoLeft;
+								InventoryWidget->CurrentSlot->SlotData.SlotAmount = AmmoLeft;
 								break;
 							}
-							if (Item->SlotData.SlotAmmo == Item->MaxSlotQuantity && !Item->SlotData.bMximumAmountOfAmmoReached)
+							if (Item->SlotData.SlotAmount == Item->MaxSlotQuantity && !Item->SlotData.bMximumAmountOfAmmoReached)
 							{
 								Item->SlotData.bMximumAmountOfAmmoReached = true;
-								InventoryWidget->AddItemToInventory(InventoryWidget->SetContentForSlot(WeaponType), Quantity, WeaponType);
+								InventoryWidget->AddAmmoItemToInventory(InventoryWidget->SetAmmoContentForSlot(WeaponType), Quantity, WeaponType);
 								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
-								InventoryWidget->CurrentSlot->SlotData.SlotAmmo = Quantity;
+								InventoryWidget->CurrentSlot->SlotData.SlotAmount = Quantity;
 								break;
 							}
 						}
 						else
 						{
-							Item->SetSlotData(InventoryWidget->SetContentForSlot(WeaponType), Item->SlotData.SlotAmmo + Quantity);
+							Item->SetSlotData(InventoryWidget->SetAmmoContentForSlot(WeaponType), Item->SlotData.SlotAmount + Quantity);
+							Item->SlotData.bIsSlotToModify = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void ABlasterPlayerController::AddGrenadeToInventory(EGrenadeType InGrenadeType, int32 Quantity)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD)
+	{
+		InventoryWidget = InventoryWidget == nullptr ? BlasterHUD->InventoryWidget : InventoryWidget;
+		if (InventoryWidget && InventoryWidget->InventorySlots.Num() > 0)
+		{
+			if (InventoryWidget->bTypeOfAmmoRunOut)
+			{
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("MMMMM???"));
+				InventoryWidget->AddGrenadeItemToInventory(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), Quantity, InGrenadeType);
+				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+				InventoryWidget->bTypeOfAmmoRunOut = false;
+				return;
+			}
+			if (!InventoryWidget->ExistingGrenadeTypesInInventory.Contains(InGrenadeType))
+			{
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Here1"));
+				InventoryWidget->AddGrenadeItemToInventory(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), Quantity, InGrenadeType);//можно исползовать и CarrieAmmoMap вместо quantity
+				InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+			}
+			else
+			{
+				for (auto& Item : InventoryWidget->InventorySlots)
+				{
+					if (Item->SlotData.GrenadeType == InGrenadeType)//слот с тем же типом патронов
+					{
+						Item->SlotData.bIsSlotToModify = false;
+						if (Item->SlotData.SlotAmount + Quantity > Item->MaxSlotQuantity)
+						{
+							if (!Item->SlotReachedLimit())
+							{
+								Item->bSlotWasCleared = false;
+
+								int32 AmmoLeft = Item->SlotData.SlotAmount + Quantity - Item->MaxSlotQuantity;//10
+
+								Item->SetSlotData(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), Item->SlotData.SlotAmount + Quantity - AmmoLeft);//устанавливает текущее значение слота в максимум (80)
+								Item->SlotData.bIsSlotToModify = false;
+
+								Item->SlotData.bMximumAmountOfAmmoReached = true;
+
+								InventoryWidget->AddGrenadeItemToInventory(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), AmmoLeft, InGrenadeType);//новый слот с 10
+								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+
+								InventoryWidget->CurrentSlot->SlotData.SlotAmount = AmmoLeft;
+								break;
+							}
+							if (Item->SlotData.SlotAmount == Item->MaxSlotQuantity && !Item->SlotData.bMximumAmountOfAmmoReached)
+							{
+								Item->SlotData.bMximumAmountOfAmmoReached = true;
+								InventoryWidget->AddGrenadeItemToInventory(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), Quantity, InGrenadeType);
+								InventoryWidget->CurrentSlot->SlotData.bIsSlotToModify = true;
+								InventoryWidget->CurrentSlot->SlotData.SlotAmount = Quantity;
+								break;
+							}
+						}
+						else
+						{
+							Item->SetSlotData(InventoryWidget->SetGrenadeContentForSlot(InGrenadeType), Item->SlotData.SlotAmount + Quantity);
 							Item->SlotData.bIsSlotToModify = true;
 							break;
 						}
@@ -380,7 +505,6 @@ void ABlasterPlayerController::UpdateSlotAmmo()
 			{
 				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check1"));
 
-
 				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Check2"));
 				class UCombatComponent* Combat = BlasterCharacter->GetCombatComponent();
 				//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("AmmoToReload = %d"), Combat->GetAmmoToReload()));
@@ -388,32 +512,32 @@ void ABlasterPlayerController::UpdateSlotAmmo()
 				{
 					for (auto& Slot : InventoryWidget->InventorySlots)
 					{
-						if (Slot->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType())
+						if (Slot->SlotData.WeaponType == Combat->GetEquippedWeapon()->GetWeaponType())
 						{
 							/*SlotAmmo == MaxSlotQuantity*/
 							if (Slot->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
 							{
 								Slot->SlotData.bIsSlotToModify = true;
 							}
-							if (Slot->SlotData.bIsSlotToModify && Slot->SlotData.SlotAmmo >= 0)
+							if (Slot->SlotData.bIsSlotToModify && Slot->SlotData.SlotAmount >= 0)
 							{
 								/*AmmoToReload > SlotAmmo*/
-								if (Combat->GetAmmoToReload() > Slot->SlotData.SlotAmmo)
+								if (Combat->GetAmmoToReload() > Slot->SlotData.SlotAmount)
 								{
 									//if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Here?!"));
-									Combat->SetCarriedAmmo(Combat->GetEquippedWeapon()->GetWeaponType(), -Slot->SlotData.SlotAmmo);
+									Combat->RemoveCarriedAmmo(Combat->GetEquippedWeapon()->GetWeaponType(), -Slot->SlotData.SlotAmount);
 									InventoryWidget->bSlotNoLongerModified = true;
 									Slot->SlotData.bIsSlotToModify = false;
 									for (auto& Slot2 : InventoryWidget->InventorySlots)
 									{
 										/*Dicrease Ammo from another slot*/
-										if (Slot2->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot2->SlotData.bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
+										if (Slot2->SlotData.WeaponType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot2->SlotData.bIsSlotToModify && Slot2->SlotReachedLimit() && InventoryWidget->bSlotNoLongerModified)
 										{
 											Slot2->SlotData.bIsSlotToModify = true;
 											InventoryWidget->bSlotNoLongerModified = false;
-											int32 UpdatedSlotValue2 = Slot2->SlotData.SlotAmmo -= Combat->GetAmmoToReload() - Slot->SlotData.SlotAmmo;
+											int32 UpdatedSlotValue2 = Slot2->SlotData.SlotAmount -= Combat->GetAmmoToReload() - Slot->SlotData.SlotAmount;
 											Slot2->SetSlotQuantity(UpdatedSlotValue2);
-											Slot2->SlotData.SlotAmmo = UpdatedSlotValue2;
+											Slot2->SlotData.SlotAmount = UpdatedSlotValue2;
 											Slot->ClearSlot();
 											break;
 										}
@@ -424,16 +548,16 @@ void ABlasterPlayerController::UpdateSlotAmmo()
 									/*Slot has enough ammo*/
 									if (Slot->SlotData.bIsSlotToModify)
 									{
-										int32 UpdatedSlotValue = Slot->SlotData.SlotAmmo -= Combat->GetAmmoToReload();
+										int32 UpdatedSlotValue = Slot->SlotData.SlotAmount -= Combat->GetAmmoToReload();
 										Slot->SetSlotQuantity(UpdatedSlotValue);
-										Slot->SlotData.SlotAmmo = UpdatedSlotValue;
-										if (Slot->SlotData.SlotAmmo <= 0)
+										Slot->SlotData.SlotAmount = UpdatedSlotValue;
+										if (Slot->SlotData.SlotAmount <= 0)
 										{
 											Slot->ClearSlot();
 											Slot->SlotData.bIsSlotToModify = false;
 											for (auto& Slot3 : InventoryWidget->InventorySlots)
 											{
-												if (Slot3->SlotData.SlotType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot3->SlotData.bIsSlotToModify && Slot3->SlotReachedLimit())
+												if (Slot3->SlotData.WeaponType == Combat->GetEquippedWeapon()->GetWeaponType() && !Slot3->SlotData.bIsSlotToModify && Slot3->SlotReachedLimit())
 												{
 													Slot3->SlotData.bIsSlotToModify = true;
 													break;
@@ -567,14 +691,16 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 	if (BlasterHUD)
 	{
 		if(BlasterHUD->CharacterOverlay == nullptr) BlasterHUD->AddCharacterOverlay();
-		if (BlasterHUD->InventoryWidget == nullptr)
-		{
-			BlasterHUD->AddInventoryWidget();
-		}
+		if(BlasterHUD->ScoreBoardWidget == nullptr) BlasterHUD->AddScoreBoardWidget();
+		if (BlasterHUD->InventoryWidget == nullptr) BlasterHUD->AddInventoryWidget();
+		if (BlasterHUD->StoreWidget == nullptr) BlasterHUD->AddStoreWidget();
+		
 		if (BlasterHUD->AnnouncementWidget && BlasterHUD->InventoryWidget)
 		{
 			BlasterHUD->AnnouncementWidget->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Hidden);
 			BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
+			BlasterHUD->StoreWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }
@@ -586,6 +712,8 @@ void ABlasterPlayerController::HandleCooldown()
 	if (BlasterHUD)
 	{
 		BlasterHUD->CharacterOverlay->RemoveFromParent();
+		BlasterHUD->InventoryWidget->RemoveFromParent();
+		BlasterHUD->StoreWidget->RemoveFromParent();
 		BlasterHUD->AddScoreBoardWidget();
 
 		bool bHUDValid = BlasterHUD->ScoreBoardWidget &&
@@ -613,6 +741,11 @@ void ABlasterPlayerController::HandleCooldown()
 		BlasterCharacter->bDisableGameplay = true;
 		BlasterCharacter->GetCombatComponent()->FireButtonPressed(false);
 	}
+}
+
+int32 ABlasterPlayerController::GetStoreSlotIndex(int32 SlotIndex)
+{
+	return StoreSlotIndex = SlotIndex;
 }
 
 void ABlasterPlayerController::HandleCooldownn()
@@ -755,10 +888,13 @@ void ABlasterPlayerController::StopSBTimer()
 void ABlasterPlayerController::ShowScoreBoard()
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
-	if (BlasterHUD)
+	if (BlasterHUD && BlasterHUD->ScoreBoardWidget)
 	{
+		HideActiveWidget();
+		ActiveWidget = BlasterHUD->ScoreBoardWidget;
+		BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Visible);
 		SBIsVisible = true;
-		BlasterHUD->AddScoreBoardWidget();
+
 		FillScoreBoard();
 	}
 }
@@ -770,6 +906,79 @@ void ABlasterPlayerController::CloseScoreBoard()
 	{
 		SBIsVisible = false;
 		BlasterHUD->ScoreBoardWidget->SetVisibility(ESlateVisibility::Hidden);
+		BlasterHUD->SetGameOnlyInputMode();
+		ActiveWidget = nullptr;
+	}
+}
+
+void ABlasterPlayerController::OpenInventory()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD && BlasterHUD->InventoryWidget)
+	{
+		HideActiveWidget();
+		ActiveWidget = BlasterHUD->InventoryWidget;
+		BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		BlasterHUD->SetGameAndUIInputMode();
+		bInventotyIsActive = true;
+	}
+}
+
+void ABlasterPlayerController::CloseInventory()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD && BlasterHUD->InventoryWidget)
+	{
+		BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
+		BlasterHUD->SetGameOnlyInputMode();
+		bInventotyIsActive = false;
+		ActiveWidget = nullptr;
+	}
+}
+
+void ABlasterPlayerController::OpenStore()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD && BlasterHUD->StoreWidget)
+	{
+		HideActiveWidget();
+		ActiveWidget = BlasterHUD->StoreWidget;
+		BlasterHUD->StoreWidget->SetVisibility(ESlateVisibility::Visible);
+		BlasterHUD->SetGameAndUIInputMode();
+		bStoreIsActive = true;
+	}
+}
+
+void ABlasterPlayerController::CloseStore()
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	if (BlasterHUD && BlasterHUD->StoreWidget)
+	{
+		BlasterHUD->StoreWidget->SetVisibility(ESlateVisibility::Hidden);
+		BlasterHUD->SetGameOnlyInputMode();
+		bStoreIsActive = false;
+		ActiveWidget = nullptr;
+	}
+}
+
+void ABlasterPlayerController::BuyGrenade(EGrenadeType GrenadeType, int32 GrenadesAmount)
+{
+	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
+	
+	//SetGrenadeHUD(GrenadesAmount);
+
+	AddGrenadeToInventory(GrenadeType, 1);
+	
+}
+
+void ABlasterPlayerController::HideActiveWidget()
+{
+	if(ActiveWidget)
+	{
+		ActiveWidget->SetVisibility(ESlateVisibility::Hidden);
+		if (ActiveWidget == BlasterHUD->ScoreBoardWidget) SBIsVisible = false;
+		if (ActiveWidget == BlasterHUD->InventoryWidget) bInventotyIsActive = false;
+		if (ActiveWidget == BlasterHUD->StoreWidget) bStoreIsActive = false;
 	}
 }
 

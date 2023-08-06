@@ -24,12 +24,13 @@ enum class EWeaponType : uint8
 	EWT_SF_ShotGun UMETA(DisplayName = "SciFi Shotgun"),
 	EWT_MAX UMETA(DisplayName = "DeffaultMAX")
 
-	//Custom
 };
 
 UENUM(BlueprintType)
 enum class EGrenadeType : uint8
 {
+	EGT_None UMETA(DisplayName = "None"),
+	EGT_HEGrenade UMETA(DisplayName = "HE Grenade"),
 	EGT_SingularityGrenade UMETA(DisplayName = "Singularity Grenade")
 
 };
@@ -39,5 +40,6 @@ enum class EWeaponSocketType : uint8
 {
 	EWST_Custom UMETA(DisplayName = "Custom"),
 	EWST_SilverWeapon UMETA(DisplayName = "Default | Silver Weapon"),
-	EWST_SciFiWeapon UMETA(DisplayName = "Default | SciFiWeapon Weapon"),
+	EWST_SciFiWeapon UMETA(DisplayName = "Default | SciFiWeapon Weapon")
 };
+

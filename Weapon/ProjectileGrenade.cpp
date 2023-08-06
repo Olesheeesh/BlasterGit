@@ -31,14 +31,7 @@ void AProjectileGrenade::BeginPlay()
 
 void AProjectileGrenade::OnBounce(const FHitResult& ImpactResult, const FVector& ImpactVelocity)
 {
-	if(BounceSound)
-	{
-		UGameplayStatics::SpawnSoundAtLocation(
-			GetWorld(), 
-			BounceSound, 
-			GetActorLocation()
-		);
-	}
+	SpawnSound(BounceSound);
 }
 
 void AProjectileGrenade::Destroyed()
@@ -47,3 +40,4 @@ void AProjectileGrenade::Destroyed()
 
 	Super::Destroyed();
 }
+

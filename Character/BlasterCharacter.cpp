@@ -32,7 +32,6 @@
 #include "Blaster/BlaserComponents/GrappleComponent.h"
 #include "Blaster/BlaserComponents/InventoryComponent.h"
 #include "Blaster/Grappling/GrappleTarget.h"
-#include "Blaster/HUD/InventoryWidget.h"
 #include "Blaster/InventorySystem/Items/Item.h"
 #include "Blaster/Weapon/Grenade/SingularityGrenade.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -295,6 +294,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("EquipFirstWeapon", IE_Pressed, this, &ABlasterCharacter::EquipFirstWeaponButtonPressed);
 	PlayerInputComponent->BindAction("EquipSecondWeapon", IE_Pressed, this, &ABlasterCharacter::EquipSecondWeaponButtonPressed);
 	PlayerInputComponent->BindAction("OpenInventory", IE_Pressed, this, &ABlasterCharacter::OpenInventory);
+	PlayerInputComponent->BindAction("OpenStore", IE_Pressed, this, &ABlasterCharacter::OpenStore);
 	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ABlasterCharacter::ThrowGrenadeButtonPressed);
 
 	if (AbilitySystemComponent && InputComponent)
@@ -820,14 +820,11 @@ bool ABlasterCharacter::GetIsSprinting()
 	{
 		return false;
 	}
-	else if(isSprinting)
+	if(isSprinting)
 	{
 		return true;
 	}
-	else
-	{
-		return false;
-	}
+	return false;
 }
 
 void ABlasterCharacter::SetCollisionSettings(ECollisionSettings CurrentCollisionSetting)
@@ -864,22 +861,31 @@ void ABlasterCharacter::OpenInventory()//temporary foo
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 	if(BlasterPlayerController)
 	{
-		BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(BlasterPlayerController->GetHUD()) : BlasterHUD;
-
-		if (BlasterHUD)
+		if (!BlasterPlayerController->bInventotyIsActive)
 		{
-			if (!bInventotyIsActive)
-			{
-				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-				BlasterHUD->SetGameAndUIInputMode();
-				bInventotyIsActive = true;
-			}
-			else
-			{
-				BlasterHUD->InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
-				BlasterHUD->SetGameOnlyInputMode();
-				bInventotyIsActive = false;
-			}
+			BlasterPlayerController->OpenInventory();
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("InventoryIsOpened"));
+		}
+		else
+		{
+			BlasterPlayerController->CloseInventory();
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("InventoryIsClosed"));
+		}
+	}
+}
+
+void ABlasterCharacter::OpenStore()
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
+	if (BlasterPlayerController)
+	{
+		if (!BlasterPlayerController->bStoreIsActive)
+		{
+			BlasterPlayerController->OpenStore();
+		}
+		else
+		{
+			BlasterPlayerController->CloseStore();
 		}
 	}
 }
@@ -1215,29 +1221,39 @@ void ABlasterCharacter::OnRep_Health()
 	PlayHitReactMontage();
 }
 
-void ABlasterCharacter::RestoreSomeHealth_Implementation(int32 AmountToRestore)
+void ABlasterCharacter::RestoreSomeHealth(int32 AmountToRestore)
 {
 	if (CurrentHealth >= MaxHealth) return;
 	if(CurrentHealth > 0.f)
 	{
 		bIsRestoringHealth = true;
-		GetWorldTimerManager().SetTimer(HealthRestoreTimer, [this, AmountToRestore]()
+		int32 NewHealth = CurrentHealth + AmountToRestore;
+		GetWorldTimerManager().SetTimer(HealthRestoreTimer, [this, NewHealth]()
 			{
-				IncrementHealth(AmountToRestore);
+				IncrementHealth(NewHealth);
 			}, HealthRestoringDelay, true);
 	}
 }
 
-void ABlasterCharacter::IncrementHealth(int32 AmountToRestore)
+void ABlasterCharacter::IncrementHealth(int32 DesiredHealth)
 {
-	CurrentHealth = FMath::Clamp(FMath::FInterpTo(CurrentHealth, CurrentHealth + AmountToRestore, GetWorld()->GetDeltaSeconds(), 5.f), 0.0f, MaxHealth);
-	UpdateHUDHealth();
+	if (CurrentHealth >= DesiredHealth)
+	{
+		UE_LOG(LogTemp, Error, TEXT("DesiredHealth is out of range."));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("Current health: %f"), CurrentHealth));
 
-	if (CurrentHealth == MaxHealth)
+		return;
+	}
+	CurrentHealth = FMath::Clamp(FMath::Lerp(CurrentHealth, DesiredHealth, GetWorld()->GetDeltaSeconds() * 5.f), 0.0f, MaxHealth);
+	UpdateHUDHealth();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Current health: %f"), CurrentHealth));
+
+	if (FMath::IsNearlyEqual(CurrentHealth, DesiredHealth, 0.9f))
 	{
 		GetWorldTimerManager().ClearTimer(HealthRestoreTimer);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("Stop"));
 		bIsRestoringHealth = false;
+		CurrentHealth = DesiredHealth;
 	}
 }
 
@@ -1280,6 +1296,15 @@ void ABlasterCharacter::PollInit()//update hud values
 			BlasterPlayerState->AddToScore(0.f);
 			BlasterPlayerState->AddToDefeats(0);
 		}
+	}
+}
+
+void ABlasterCharacter::Buy(int32 StoreSlotIndex)
+{
+	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;//allows to not cast multiple times(make sure that BlasterPlayerController is set) 
+	if (BlasterPlayerController)
+	{
+		
 	}
 }
 

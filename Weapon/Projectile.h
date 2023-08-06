@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WeaponTypes.h"
 #include "GameFramework/Actor.h"
 #include "Projectile.generated.h"
 
@@ -23,6 +24,7 @@ protected:
 	void DestroyTimerFinished();
 	void SpawnTrailSystem();
 	void ApplyExplodeDamage();
+	void SpawnSound(class USoundCue* Sound);
 
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);//collision box, actor being hit, comp that was hit, Impuls
@@ -72,5 +74,6 @@ private:
 	UPROPERTY(EditAnywhere)
 	float DamageOuterRadius = 500.f;
 
+	
 };
 

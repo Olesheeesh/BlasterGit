@@ -80,6 +80,7 @@ void ASingularityGrenade::SpawnSingularityTimerFinished()
 		ProjectileMovementComponent->StopMovementImmediately();
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("Stop?"));
 		SpawnSingularity();
+		ProjectileMesh->SetVisibility(false);
 		StartCollapseSingularityTimer();
 		StartExplosionTimer();
 	}
@@ -112,6 +113,7 @@ void ASingularityGrenade::CollapseSingularityTimerFinished()
 
 void ASingularityGrenade::SpawnSingularity_Implementation()
 {
+	SpawnSound(SingularitySound);
 	if(SingularitySystem)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(

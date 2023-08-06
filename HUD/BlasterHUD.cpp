@@ -6,6 +6,7 @@
 #include "InventoryWidget.h"
 #include "PlayerScore.h"
 #include "ScoreBoardWidget.h"
+#include "StoreWidget.h"
 
 void ABlasterHUD::BeginPlay()
 {
@@ -60,6 +61,16 @@ void ABlasterHUD::AddInventoryWidget()
 	{
 		InventoryWidget = CreateWidget<UInventoryWidget>(PlayerController, InventoryWidgetClass);
 		InventoryWidget->AddToViewport();
+	}
+}
+
+void ABlasterHUD::AddStoreWidget()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if (PlayerController && StoreWidgetClass)
+	{
+		StoreWidget = CreateWidget<UStoreWidget>(PlayerController, StoreWidgetClass);
+		StoreWidget->AddToViewport();
 	}
 }
 

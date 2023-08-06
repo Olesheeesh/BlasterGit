@@ -23,4 +23,6 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* MapNameText;
+
+	bool IsActive = false;
 };

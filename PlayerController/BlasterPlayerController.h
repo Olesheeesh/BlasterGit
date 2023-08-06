@@ -21,8 +21,13 @@ public:
 	void OnPossess(APawn* InPawn) override;
 	void SetHUDWeaponAmmo(int32 AmmoAmount);
 	void SetHUDCarriedAmmo(int32 AmmoAmount);
+
 	UFUNCTION(Client, Reliable)
 	void ShowAmmoHUD(bool ShowHUD);
+
+	void ShowGrenadeHUD(bool ShowHUD);
+
+	void SetGrenadeHUD(int32 Amount);
 
 	void SetHUDMatchCountdown(float CountdownTime);
 	void SetHUDAnnouncementCountdown(float CountdownTime);
@@ -40,12 +45,28 @@ public:
 	void RequestPlayerStates();
 
 	void ShowScoreBoard();
-
 	void CloseScoreBoard();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bInventotyIsActive = false;
+	void OpenInventory();
+	void CloseInventory();
+
+	bool bStoreIsActive = false;
+	void OpenStore();
+	void CloseStore();
+
+	UFUNCTION(BlueprintCallable)
+	void BuyGrenade(EGrenadeType GrenadeType, int32 GrenadesAmount);
+
+	UPROPERTY()
+	class UUserWidget* ActiveWidget;
+
+	void HideActiveWidget();
 
 	TArray<class ABlasterPlayerState*> BlasterPlayerStates;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class ABlasterHUD* BlasterHUD;
 
 	void HideSniperScope();
@@ -53,10 +74,11 @@ public:
 	/*
 	 * Inventory
 	 */
-
-	void AddItemToInventory(EWeaponType WeaponType, int32 Quantity);
+	void AddAmmoToInventory(EWeaponType WeaponType, int32 Quantity);
+	void AddGrenadeToInventory(EGrenadeType InGrenadeType, int32 Quantity);
 
 	void UpdateSlotAmmo();
+
 protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
@@ -98,8 +120,12 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void ClientJoinMidGame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float EndGame, float Cooldown);//informing client of the match state when it joins
 
-private:
+	UPROPERTY(BlueprintReadWrite)
+	int32 StoreSlotIndex;
 
+	UFUNCTION(BlueprintCallable)
+	int32 GetStoreSlotIndex(int32 SlotIndex);
+private:
 
 	UPROPERTY()
 	class ABlasterCharacter* BlasterCharacter;

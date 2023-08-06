@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Blaster/BlasterTypes/Types.h"
 #include "Blaster/Weapon/WeaponTypes.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
@@ -18,13 +19,17 @@ USTRUCT(BlueprintType)
 struct FSlotData
 {
 	GENERATED_BODY()
+
 public:
 	UPROPERTY()
 	UTexture2D* ItemTexture;
 
-	int32 SlotAmmo = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 SlotAmount = 0;
 
-	EWeaponType SlotType = EWeaponType::EWT_None;
+	EWeaponType WeaponType;
+
+	EGrenadeType GrenadeType;
 
 	UPROPERTY(BlueprintReadOnly)
 	ESlotState SlotState = ESlotState::ESS_Empty;
@@ -36,6 +41,7 @@ public:
 	bool bIsSlotToModify = false;
 
 };
+
 UCLASS()
 class BLASTER_API UInventorySlot : public UUserWidget
 {
@@ -52,8 +58,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ClearSlot();
+	void ClearSlotData();
 
 	void RemoveCarriedAmmoAmount(EWeaponType WeaponType);
+	void RemoveCarriedGrenadesAmount(EGrenadeType GrenadeType);
 
 	void TransferDataFrom(const FSlotData& MyData);
 
@@ -61,7 +69,8 @@ public:
 
 	bool SlotReachedLimit();
 
-	/*Sctruct*/
+	/*Struct*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FSlotData SlotData;
 
 	UPROPERTY()
@@ -107,7 +116,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SlotIndex;
 
-	
+public:
+	EWeaponType GetWeaponSlotType() const { return SlotData.WeaponType; }
+	EGrenadeType GetGrenadeSlotType() const { return SlotData.GrenadeType; }
 
 
 	

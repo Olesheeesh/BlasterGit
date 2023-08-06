@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "Blaster/Weapon/WeaponTypes.h"
 #include "UObject/NoExportTypes.h"
 #include "Types.generated.h"
 
@@ -10,4 +11,15 @@ enum class EBoosterType : uint8
 	EBT_Health UMETA(DisplayName = "Health"),
 	EBT_Armor UMETA(DisplayName = "Armor")
 
+};
+
+USTRUCT(BlueprintType)
+struct FItemType
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+		EWeaponType WeaponType;
+	UPROPERTY(EditAnywhere)
+		EGrenadeType GrenadeType;
 };
