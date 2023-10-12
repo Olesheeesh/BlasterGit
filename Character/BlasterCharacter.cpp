@@ -668,6 +668,11 @@ void ABlasterCharacter::Jump()
 void ABlasterCharacter::AimButtonPressed()
 {
 	if (bDisableGameplay)return;
+	if (!Combatt->EquippedWeapon->bWeaponCanUseOptic)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Red, FString(TEXT("Weapon cant use optic")));
+		return;
+	}
 	if(Combatt)
 	{
 		Combatt->SetAiming(true);
@@ -745,7 +750,7 @@ void ABlasterCharacter::InitializeHookButtonPressed()
 
 void ABlasterCharacter::EquipFirstWeaponButtonPressed()
 {
-	if(HasAuthority())
+	if (HasAuthority())
 	{
 		if (Combatt && Combatt->GetEquippedWeapon())
 		{

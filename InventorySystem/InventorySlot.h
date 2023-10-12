@@ -27,8 +27,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SlotAmount = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EWeaponType WeaponType;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EGrenadeType GrenadeType;
 
 	UPROPERTY(BlueprintReadOnly)

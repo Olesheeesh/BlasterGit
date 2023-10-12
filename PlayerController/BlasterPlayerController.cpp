@@ -223,22 +223,22 @@ void ABlasterPlayerController::SetHUDDefeats(int Defeats)
 	}
 }
 
-
-void ABlasterPlayerController::SetGrenadeHUD(int32 Amount)
+void ABlasterPlayerController::SetGrenadeHUD(class AProjectileGrenade* Grenade, int32 Amount)
 {
 	BlasterHUD = BlasterHUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : BlasterHUD;
 	BlasterCharacter = Cast<ABlasterCharacter>(GetPawn());
 
 	bool bHUDValid = BlasterCharacter &&
 		BlasterCharacter->GetCombatComponent() &&
+		BlasterCharacter->GetCombatComponent()->EquippedGrenade &&
 		BlasterHUD &&
 		BlasterHUD->CharacterOverlay &&
 		BlasterHUD->CharacterOverlay->GrenadeSlot &&
 		BlasterHUD->CharacterOverlay->GrenadeAmountText;
-
+	
 	if(bHUDValid)
 	{
-		BlasterHUD->CharacterOverlay->GrenadeSlot->SetBrushFromTexture(BlasterCharacter->GetCombatComponent()->EquippedGrenade->GetGrenadeImage());
+		BlasterHUD->CharacterOverlay->GrenadeSlot->SetBrushFromTexture(Grenade->GetGrenadeImage());
 		FString GrenadeQuantity = FString::Printf(TEXT("%d"), Amount);
 		BlasterHUD->CharacterOverlay->GrenadeAmountText->SetText(FText::FromString(GrenadeQuantity));
 		if (BlasterHUD->CharacterOverlay->bGrenadeSlotIsEmpty)
@@ -967,7 +967,7 @@ void ABlasterPlayerController::BuyGrenade(EGrenadeType GrenadeType, int32 Grenad
 	
 	//SetGrenadeHUD(GrenadesAmount);
 
-	AddGrenadeToInventory(GrenadeType, 1);
+	AddGrenadeToInventory(GrenadeType, GrenadesAmount);
 	
 }
 

@@ -61,6 +61,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);//when changes, it will be reflected on all clients
+	DOREPLIFETIME(UCombatComponent, EquippedGrenade);//when changes, it will be reflected on all clients
 	DOREPLIFETIME(UCombatComponent, PrimaryWeapon);
 	DOREPLIFETIME(UCombatComponent, SecondaryWeapon);
 	DOREPLIFETIME(UCombatComponent, AmmoToReload);
@@ -97,17 +98,6 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 		EquipSecondaryWeapon(WeaponToEquip);
 	}
 
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->FPSMesh->GetAnimInstance()) : AnimInstance;
-
-	if (AnimInstance && EquippedWeapon)
-	{
-		AnimInstance->SetRelativeHandTransform();
-		AnimInstance->ChangeOptic();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("WTF"));
-	}
 	EquippedWeapon->SetHUDAmmo();
 
 	UpdateCarriedAmmo();
@@ -131,22 +121,12 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 
 void UCombatComponent::OnRep_EquippedWeapon()//client
 {
-	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(Character->FPSMesh->GetAnimInstance()) : AnimInstance;
-	
 	if (EquippedWeapon && Character)
 	{
 		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
-		UpdateCarriedAmmo();
-
 		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString("Three"));
 		AttachWeaponToSocket(EquippedWeapon, Character->FPSMesh);
-
-		if (AnimInstance && EquippedWeapon)
-		{
-			AnimInstance->SetRelativeHandTransform();
-			AnimInstance->ChangeOptic();
-		}
 	}
 
 	if (EquippedWeapon->EquipSound)
@@ -164,7 +144,13 @@ void UCombatComponent::OnRep_EquippedWeapon()//client
 
 void UCombatComponent::OnRep_EquippedGrenade()
 {
-	UpdateGrenadeAmount();
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("OnRep_EquippedGrenade Calling!"));
+
+	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (Character->IsLocallyControlled())
+	{
+		Character->AttachedGrenade->SetStaticMesh(EquippedGrenade->GetProjectileMesh());
+	}
 }
 
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
@@ -184,6 +170,7 @@ void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
 	if (SecondaryWeapon)
 	{
 		SecondaryWeapon = WeaponToEquip;
@@ -248,8 +235,11 @@ void UCombatComponent::ChoosePrimaryWeapon()
 
 		UpdateCarriedAmmo();
 		EquippedWeapon->SetHUDAmmo();
-
 		AttachWeaponToSocket(EquippedWeapon, Character->FPSMesh);
+		
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("bAiming1 = %d"), bAiming));
+		if (bAiming) SetAiming(false);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString(TEXT("3")));
 	}
 }
 
@@ -261,15 +251,19 @@ void UCombatComponent::ChooseSecondaryWeapon()
 		EquippedWeapon = SecondaryWeapon;
 		EquippedWeapon->SetOwner(Character);
 		EquippedWeapon->Activate(Character);
-		                                                                                                                                                      
+
 		UpdateCarriedAmmo();
 		EquippedWeapon->SetHUDAmmo();
 
 		AttachWeaponToSocket(EquippedWeapon, Character->FPSMesh);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString(TEXT("1")));
+
+		if (bAiming) SetAiming(false);
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString(TEXT("3")));
 	}
 }
 
-void UCombatComponent::UpdateCarriedAmmo_Implementation()
+void UCombatComponent::UpdateCarriedAmmo()
 {
 	if (EquippedWeapon == nullptr) return;
 	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
@@ -291,12 +285,12 @@ void UCombatComponent::BuyGrenade(EGrenadeType GrenadeType)
 		if (CarriedGrenadesMap.Contains(GrenadeType))
 		{
 			CarriedGrenadesMap[GrenadeType] += 1;
-			PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
-			if (PlayerController)
-			{
-				PlayerController->BuyGrenade(GrenadeType, GetCarriedGrenadeAmount());
-			}
 		}
+	}
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+	if (PlayerController)
+	{
+		PlayerController->BuyGrenade(GrenadeType, 1);
 	}
 }
 
@@ -305,6 +299,52 @@ void UCombatComponent::UpdateGrenadeAmount()
 	if(EquippedGrenade)
 	{
 		CarriedGrenadeAmount = CarriedGrenadesMap[EquippedGrenade->GetGrenadeType()];
+	}
+}
+
+void UCombatComponent::EquipGrenade(EGrenadeType GrenadeType)
+{
+	if (Character)
+	{
+		if (!Character->HasAuthority())
+		{
+			ServerEquipGrenade(GrenadeType);
+			if(EquippedGrenade) Character->AttachedGrenade->SetStaticMesh(EquippedGrenade->GetProjectileMesh());
+		}
+		else
+		{
+			SetEquippedGrenadeByType(GrenadeType);
+			if (EquippedGrenade)
+			{
+				EquippedGrenade->SetOwner(Character);
+				UpdateGrenadeAmount();
+				Character->AttachedGrenade->SetStaticMesh(EquippedGrenade->GetProjectileMesh());
+				if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("EquippedGrenade = %s"), *EquippedGrenade->GetName()));
+			}
+		}
+		if (Character->IsLocallyControlled())
+		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString("Calling"));
+			PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+			if (PlayerController && EquippedGrenade)
+			{
+				PlayerController->SetGrenadeHUD(EquippedGrenade, CarriedGrenadeAmount);//CarriedGrenadesMap[GrenadeType]
+			}
+		}
+	}
+}
+
+void UCombatComponent::ServerEquipGrenade_Implementation(EGrenadeType GrenadeType)
+{
+	if (Character)
+	{
+		SetEquippedGrenadeByType(GrenadeType);
+		if (EquippedGrenade)
+		{
+			EquippedGrenade->SetOwner(Character);
+			UpdateGrenadeAmount();
+			if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("EquippedGrenade = %s"), *EquippedGrenade->GetName()));
+		}
 	}
 }
 
@@ -471,7 +511,6 @@ void UCombatComponent::FinishReloading()
 		CombatState = ECombatState::ECS_Unoccupied;
 		UpdateAmmoValues();
 		ClientUpdateSlotAmmo();
-
 	}
 	
 	if(bFireButtonPressed)
@@ -542,7 +581,7 @@ void UCombatComponent::SetAmmoToReloadForClient_Implementation(int32 ToReload)
 
 void UCombatComponent::ThrowGrenade()
 {
-	if (CombatState != ECombatState::ECS_Unoccupied) return;
+	if (CombatState != ECombatState::ECS_Unoccupied || EquippedGrenade == nullptr) return;
 	CombatState = ECombatState::ECS_ThrowingGrenade;
 	if(Character)
 	{
@@ -564,29 +603,25 @@ void UCombatComponent::ShowAttachedGrenade(bool bShowGrenade)
 	}
 }
 
-void UCombatComponent::SetEquippedGrenade()
+void UCombatComponent::SetEquippedGrenade(AProjectileGrenade* GrenadeToEquip)
 {
-	if(GrenadeClass)
-	{
-		EquippedGrenade = GrenadeClass.GetDefaultObject();
-	}
+	EquippedGrenade = GrenadeToEquip;
 	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("GrenadeClass is not set"));
 }
 
 
-TSubclassOf<AProjectileGrenade> UCombatComponent::GetGrenadeByType(EGrenadeType Type)
+void UCombatComponent::SetEquippedGrenadeByType(EGrenadeType Type)
 {
-	if (GrenadeObjects.SingularityGrenade)
+	switch (Type)
 	{
-		switch (Type)
-		{
-		case EGrenadeType::EGT_SingularityGrenade:
-			return *GrenadeObjects.SingularityGrenade;
-		}
-	}
-	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Grenade is not set in wbp_store"));
+	case EGrenadeType::EGT_SingularityGrenade:
+		if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Type = %d"), Type));
+		EquippedGrenade = NewObject<AProjectileGrenade>(this, GrenadeObjects.SingularityGrenade);
+		return;
 
-	return nullptr;
+	}
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Bad. Type = %d"), Type));
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString("Bad. Grenade is not set in wbp_store"));
 }
 
 void UCombatComponent::ServerThrowGrenade_Implementation()
@@ -686,7 +721,7 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
 	if (Character == nullptr || EquippedWeapon == nullptr) return;
-	if (!EquippedWeapon->bWeaponCanUseOptic) return;
+	
 	bAiming = bIsAiming;//для тебя в аиме
 	if (!Character->HasAuthority())
 	{
@@ -922,7 +957,13 @@ void UCombatComponent::OnRep_CarriedAmmo()
 
 void UCombatComponent::OnRep_CarriedGrenade()
 {
+	if (GEngine)GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString("OnRep_CarriedGrenade Calling!"));
 
+	PlayerController = PlayerController == nullptr ? Cast<ABlasterPlayerController>(Character->Controller) : PlayerController;
+	if (PlayerController)
+	{
+		PlayerController->SetGrenadeHUD(EquippedGrenade, CarriedGrenadeAmount);//CarriedGrenadesMap[GrenadeType]
+	}
 }
 
 void UCombatComponent::GetCarriedAmmo_Implementation()

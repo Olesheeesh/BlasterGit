@@ -27,7 +27,7 @@ public:
 
 	void ShowGrenadeHUD(bool ShowHUD);
 
-	void SetGrenadeHUD(int32 Amount);
+	void SetGrenadeHUD(class AProjectileGrenade* Grenade, int32 Amount);
 
 	void SetHUDMatchCountdown(float CountdownTime);
 	void SetHUDAnnouncementCountdown(float CountdownTime);

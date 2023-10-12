@@ -87,7 +87,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnRep_EquippedGrenade)
 	class AProjectileGrenade* EquippedGrenade;
-	void SetEquippedGrenade();
+	void SetEquippedGrenade(AProjectileGrenade* GrenadeToEquip);
 
 protected:
 	virtual void BeginPlay() override;
@@ -98,11 +98,49 @@ protected:
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
+	/*
+	 * Grenade
+	 */
+
 	UFUNCTION()
 	void OnRep_EquippedGrenade();
 
-	//UFUNCTION()
-	//void OnRep_CurrentScope();
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedGrenade)
+	int32 CarriedGrenadeAmount;
+
+	UFUNCTION()
+	void OnRep_CarriedGrenade();
+
+	UPROPERTY(EditAnywhere)
+	FGrenadeObjects GrenadeObjects;
+
+	UFUNCTION(BlueprintCallable)
+	void BuyGrenade(EGrenadeType Grenade);
+
+	void UpdateGrenadeAmount();
+
+	UFUNCTION(BlueprintCallable)
+	void EquipGrenade(EGrenadeType GrenadeType);
+
+	UFUNCTION(Server, Reliable)
+	void ServerEquipGrenade(EGrenadeType GrenadeType);
+
+	void ThrowGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ServerThrowGrenade();
+
+	void ShowAttachedGrenade(bool bShowGrenade);
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AProjectileGrenade> GrenadeClass;
+
+	UFUNCTION(BlueprintCallable)
+	void SetEquippedGrenadeByType(EGrenadeType Type);
+
+	/*
+	 * Fire
+	 */
 
 	void Fire();
 
@@ -128,13 +166,7 @@ protected:
 	UFUNCTION(Client, Reliable)//может не нужно
 	void SetAmmoToReloadForClient(int32 ToReload);
 
-	UFUNCTION(Server, Reliable)//не нужно
 	void UpdateCarriedAmmo();
-
-	UFUNCTION(BlueprintCallable)
-	void BuyGrenade(EGrenadeType Grenade);
-	UFUNCTION(BlueprintCallable)
-	void UpdateGrenadeAmount();
 
 	const USkeletalMeshSocket* GetWeaponSocket(USkeletalMeshComponent* SkeletalMesh);
 	/*
@@ -155,24 +187,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void InterpFOV(float DeltaTime);
-
-	/*
-	 * Grenade
-	 */
-
-	void ThrowGrenade();
-
-	UFUNCTION(Server, Reliable)
-	void ServerThrowGrenade();
-
-	void ShowAttachedGrenade(bool bShowGrenade);
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AProjectileGrenade> GrenadeClass;
-
-
-	UFUNCTION(BlueprintCallable)
-	TSubclassOf<AProjectileGrenade> GetGrenadeByType(EGrenadeType Type);
 
 private:
 	UPROPERTY()
@@ -236,17 +250,9 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
 	int32 CarriedAmmo;
 
-	UPROPERTY(ReplicatedUsing = OnRep_CarriedGrenade)
-	int32 CarriedGrenadeAmount;
-
-	int32 GetCarriedGrenadeAmount() const { return CarriedGrenadeAmount; }
-
 	//Carried ammo for a currently-equipped weapon
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
-
-	UFUNCTION()
-	void OnRep_CarriedGrenade();
 
 	UFUNCTION(Server, Reliable)
 	void GetCarriedAmmo();
@@ -299,8 +305,6 @@ private:
 	 * Grenade objects
 	 */
 
-	UPROPERTY(EditAnywhere)
-	FGrenadeObjects GrenadeObjects;
 
 	/*
 	 * Store
@@ -318,6 +322,7 @@ public:
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 	FORCEINLINE bool GetIsAiming() const { return bAiming; }
 	FORCEINLINE int32 GetAmmoToReload() const { return AmmoToReload; }
+	FORCEINLINE int32 GetCarriedGrenadeAmount() const { return CarriedGrenadeAmount; }
 
 };
 

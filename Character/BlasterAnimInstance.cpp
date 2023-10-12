@@ -68,6 +68,10 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 		{
 			SetSightTransform();
 			InterpAiming(DeltaTime, 1.f);
+			if (AimAlpha != 0.0f)
+			{
+				//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Green, FString::Printf(TEXT("AimAlpha = %f"), AimAlpha));
+			}
 			if (bInterpRelativeHand)
 			{
 				InterpRelativeHand(DeltaTime);
@@ -75,7 +79,11 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)//tick
 		}
 		else
 		{
-			InterpAiming(DeltaTime, 0.f);
+			if (AimAlpha != 0.0f)
+			{
+				InterpAiming(DeltaTime, 0.f);
+			}
+			//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Yellow, FString::Printf(TEXT("AimAlpha = %f"), AimAlpha));
 		}
 	}
 
@@ -158,7 +166,7 @@ void UBlasterAnimInstance::SetSightTransform()
 
 void UBlasterAnimInstance::SetRelativeHandTransform()
 {
-	if(EquippedWeapon && EquippedScope == nullptr)
+	if(EquippedWeapon && BlasterCharacter->FPSMesh && EquippedScope == nullptr)
 	{
 		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
@@ -182,7 +190,7 @@ void UBlasterAnimInstance::SetRelativeHandTransform()
 
 void UBlasterAnimInstance::SetFinalHandTransform()
 {
-	if (EquippedWeapon && EquippedScope == nullptr)
+	if (EquippedWeapon && BlasterCharacter->FPSMesh && EquippedScope == nullptr)
 	{
 		FTransform SightSocketTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("SightSocket", ERelativeTransformSpace::RTS_World);
 		FTransform HandSocketTransform = BlasterCharacter->FPSMesh->GetSocketTransform("hand_r", ERelativeTransformSpace::RTS_World);
@@ -200,6 +208,7 @@ void UBlasterAnimInstance::SetFinalHandTransform()
 void UBlasterAnimInstance::InterpAiming(float DeltaTime, float Target)
 {
 	AimAlpha = FMath::FInterpTo(AimAlpha, Target, DeltaTime, EquippedWeapon->AimInterpSpeed);
+	//GEngine->AddOnScreenDebugMessage(-1, 7.f, FColor::Green, FString(TEXT("Calling?")));
 }
 
 void UBlasterAnimInstance::InterpRelativeHand(float DeltaTime)
@@ -209,6 +218,7 @@ void UBlasterAnimInstance::InterpRelativeHand(float DeltaTime)
 	{
 		bInterpRelativeHand = false;
 		SetRelativeHandTransform();
+		
 	}
 }
 

@@ -147,3 +147,4 @@ bool UInventorySlot::SlotReachedLimit()
 {
 	return SlotData.bSlotIsFull = SlotData.SlotAmount >= MaxSlotQuantity;
 }
+

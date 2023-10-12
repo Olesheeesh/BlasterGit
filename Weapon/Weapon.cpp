@@ -412,7 +412,7 @@ void AWeapon::CycleThroughOptics()
 	if (BlasterOwnerCharacter == nullptr || EquippedScope == nullptr) return;
 	AnimInstance = AnimInstance == nullptr ? Cast<UBlasterAnimInstance>(BlasterOwnerCharacter->FPSMesh->GetAnimInstance()) : AnimInstance;
 
-	if (AnimInstance && CurrentScope && EquippedScope && BlasterOwnerCharacter->FPSMesh)
+	if (AnimInstance && CurrentScope && EquippedScope)
 	{
 		if (++OpticIndex >= Optics.Num())
 		{

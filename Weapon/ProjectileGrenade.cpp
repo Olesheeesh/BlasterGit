@@ -1,5 +1,8 @@
 #include "ProjectileGrenade.h"
 
+#include "Blaster/BlaserComponents/CombatComponent.h"
+#include "Blaster/Character/BlasterCharacter.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
@@ -40,4 +43,5 @@ void AProjectileGrenade::Destroyed()
 
 	Super::Destroyed();
 }
+
 

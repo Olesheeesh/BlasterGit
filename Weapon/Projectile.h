@@ -25,7 +25,6 @@ protected:
 	void SpawnTrailSystem();
 	void ApplyExplodeDamage();
 	void SpawnSound(class USoundCue* Sound);
-
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);//collision box, actor being hit, comp that was hit, Impuls
 
@@ -74,6 +73,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float DamageOuterRadius = 500.f;
 
-	
+public:
+	FORCEINLINE UStaticMesh* GetProjectileMesh() { return ProjectileMesh->GetStaticMesh(); }
 };
 
